@@ -8,15 +8,15 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Welcome to the project website. 
+## Welcome to the project website. 
 
 This project is about using functional profiling of lung immune cells to better understand the genetics of asthma and allergy diseases.
 
-# Introduction
+## Introduction
 TBD
 
-## Literature reviews 
+### Literature reviews 
 
-## Results
+### Results
 
-## Notes
+### Notes
