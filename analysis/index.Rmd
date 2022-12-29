@@ -1,5 +1,5 @@
 ---
-title: "Home"
+title: "Lung-resident immune cells"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
@@ -8,4 +8,15 @@ editor_options:
   chunk_output_type: console
 ---
 
-Welcome to my research website.
+# Welcome to the project website. 
+
+This project is about using functional profiling of lung immune cells to better understand the genetics of asthma and allergy diseases.
+
+# Introduction
+TBD
+
+## Literature reviews 
+
+## Results
+
+## Notes
