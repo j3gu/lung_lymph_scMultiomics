@@ -18,5 +18,6 @@ TBD
 ### Literature reviews 
 
 ### Results
+[identify tissue-specific DEG for each cell type](DEG_analysis.html)
 
 ### Notes
