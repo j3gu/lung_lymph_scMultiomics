@@ -292,7 +292,7 @@ $(document).ready(function () {
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
 <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
-workflowr <span class="glyphicon glyphicon-ok text-success"
+workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
 aria-hidden="true"></span>
 </button>
 </p>
@@ -303,8 +303,8 @@ aria-hidden="true"></span>
 </li>
 <li>
 <a data-toggle="tab" href="#checks"> Checks <span
-class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
-</a>
+class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> </a>
 </li>
 <li>
 <a data-toggle="tab" href="#versions">Past versions</a>
@@ -313,13 +313,13 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2022-12-29
+<strong>Last updated:</strong> 2023-01-19
 </p>
 <p>
 <strong>Checks:</strong> <span
-class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 1
 <span class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> 0
+aria-hidden="true"></span> 1
 </p>
 <p>
 <strong>Knit directory:</strong> <code>lung_immune_fine_mapping/</code>
@@ -342,33 +342,36 @@ versions</em> tab lists the development history.
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
-<span class="glyphicon glyphicon-ok text-success"
-aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
-</a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
+changes </a>
 </p>
 </div>
-<div id="strongRMarkdownfilestronguptodate"
+<div id="strongRMarkdownfilestronguncommittedchanges"
 class="panel-collapse collapse">
 <div class="panel-body">
-<p>Great! Since the R Markdown file has been committed to the Git
-repository, you know the exact version of the code that produced these
-results.</p>
+<p>The R Markdown file has unstaged changes. To know which version of
+the R Markdown file created these results, you’ll want to first commit
+it to the Git repo. If you’re still working on the analysis, you can
+ignore this warning. When you’re finished, you can run
+<code>wflow_publish</code> to commit the R Markdown file and build the
+HTML.</p>
 </div>
 </div>
 </div>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulungimmunefinemappingtree2003997c17dadc231f51e6b15c44ad0b80d60e4atargetblank2003997a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulungimmunefinemappingtreefe8799987a2b1f779459e2a14930009847b37470targetblankfe87999a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_immune_fine_mapping/tree/2003997c17dadc231f51e6b15c44ad0b80d60e4a" target="_blank">2003997</a>
+<a href="https://github.com/j3gu/lung_immune_fine_mapping/tree/fe8799987a2b1f779459e2a14930009847b37470" target="_blank">fe87999</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulungimmunefinemappingtree2003997c17dadc231f51e6b15c44ad0b80d60e4atargetblank2003997a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulungimmunefinemappingtreefe8799987a2b1f779459e2a14930009847b37470targetblankfe87999a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -378,7 +381,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_immune_fine_mapping/tree/2003997c17dadc231f51e6b15c44ad0b80d60e4a" target="_blank">2003997</a>.
+<a href="https://github.com/j3gu/lung_immune_fine_mapping/tree/fe8799987a2b1f779459e2a14930009847b37470" target="_blank">fe87999</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -392,11 +395,24 @@ depends on. Below is the status of the Git repository when the results
 were generated:
 </p>
 <pre><code>
+Ignored files:
+    Ignored:    .ipynb_checkpoints/
+    Ignored:    analysis/annotate_clusters.nb.html
+    Ignored:    output/.ipynb_checkpoints/
+
 Untracked files:
     Untracked:  README.html
+    Untracked:  analysis/.ipynb_checkpoints/
+    Untracked:  analysis/annotate_clusters.Rmd
+    Untracked:  analysis/notebooks/
+    Untracked:  analysis/peak_characterization.Rmd
+    Untracked:  analysis/quality_control.Rmd
+    Untracked:  output/DE_analysis_mast/
+    Untracked:  output/DE_analysis_wilcox/
 
 Unstaged changes:
     Modified:   README.md
+    Modified:   analysis/index.Rmd
 
 </code></pre>
 <p>
@@ -441,6 +457,23 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/fe8799987a2b1f779459e2a14930009847b37470/docs/index.html" target="_blank">fe87999</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2022-12-29
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -563,6 +596,8 @@ to better understand the genetics of asthma and allergy diseases.</p>
 </div>
 <div id="results" class="section level3">
 <h3>Results</h3>
+<p><a href="DEG_analysis.html">identify tissue-specific DEG for each
+cell type</a></p>
 </div>
 <div id="notes" class="section level3">
 <h3>Notes</h3>
