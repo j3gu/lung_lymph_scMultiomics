@@ -1,0 +1,217 @@
+---
+title: "cross-tissue DE analysis with fastTopics"
+output: html_document
+date: '2024-04-29'
+author: 'Jing Gu'
+---
+# GoM DE analysis on u19 dataset
+
+## Model fitting 
+
+Parameters: 
+
+N_updates = 200
+N_topics = 16
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(Matrix)
+library(fastTopics)
+library(ggplot2)
+library(cowplot)
+library(poolr)
+set.seed(10)
+
+# load data
+counts<-readRDS("../output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
+fit<-readRDS("../output/fastTopics/fit_model_updates200_k16.RDS")
+metadata<-readRDS("../output/fastTopics/u19_cell_metadata.RDS")
+
+# add sample covariates information
+metadata$donor_id<-metadata$orig.ident
+metadata$donor_id[metadata$full.ident=="spleens_2"]<-'3'
+metadata$donor_id[metadata$full.ident=="spleens_3"]<-'6'
+batch_ids<-c("batch1", "batch1", "batch2", "batch2", "batch3", "batch3", "batch1", "batch2", "batch3")
+metadata$batch<-factor(metadata$full.ident, labels = batch_ids)
+
+
+```
+
+
+## Evaluating the model fitting
+```{r}
+fit<-readRDS("../output/fastTopics/fit_model_updates12_k150.RDS")
+```
+
+check the convergence
+```{r}
+# check for convergence of model fitting 
+plot_progress(fit,x = "iter",add.point.every = 10,colors = "black") +
+  theme_cowplot(font_size = 10)
+
+summary(fit)
+```
+
+```{r}
+loglik <- loglik_multinom_topic_model(counts,fit)
+pdat <- data.frame(loglik)
+ggplot(pdat,aes(loglik)) +
+  geom_histogram(bins = 64,color = "white",fill = "black", linewidth = 0.25) +
+  labs(y = "number of cells") +
+  theme_cowplot(font_size = 10)
+
+```
+
+```{r}
+pdat <- data.frame(loglik = loglik,subpop = metadata$majority_voting)
+celltypes<-setdiff(unique(pdat$subpop),
+                   c("ILC3", "Epithelial cells", "Plasma cells",
+                     "Classical monocytes"))
+
+ggplot(pdat %>% filter(subpop %in% celltypes),aes(x = loglik,fill = subpop)) +
+  geom_histogram(bins = 64,color = "white",size = 0.25) +
+  labs(y = "number of cells") +
+  theme_cowplot(font_size = 10)
+```
+## Structural plots
+```{r}
+clusters<-factor(metadata$majority_voting)
+structure_plot(fit,topics = 1:12,gap = 25,
+               grouping = clusters) 
+```
+
+```{r}
+structure_plot(fit,topics = 1:12,gap = 25,
+               grouping = metadata$tissue.ident) 
+```
+```{r}
+metadata$major<-factor(metadata$majority_voting, 
+                       labels = c("NK cells", "NK cells", "other", "other",
+                                  "other", "Memory B cells", "Naive B cells",
+                                  "other", "Regulatory T cells", "Tcm/Naive helper T cells",
+                                  "Tem/Trm cytotoxic T cells", "Type 17 helper T cells"))
+tissue_samples<-paste(metadata$tissue.ident, metadata$major, sep="_")
+ordered_tissue_samples<-unlist(
+  lapply(unique(metadata$major), function(i){c(paste0("lungs_",  i),
+                                               paste0("spleens_", i)
+                                               )}))
+tissue_samples<-factor(tissue_samples,
+                       levels = ordered_tissue_samples)
+structure_plot(fit,topics = 1:12,gap = 25,
+               grouping = tissue_samples
+               ) 
+```
+
+
+
+## Identify topics correlated with differences in tissue of origin
+1. test whether any topic is associated with transcriptional differences across tissue
+$$
+L  = \beta X_{\text{tissue}} + \text{Covariates} + \epsilon
+$$
+2. perform T-test to see whether topic proportions between two tissues are significantly different
+```{r}
+# convert poisson NMF model to multinational model
+multinom_fit<-poisson2multinom(fit)
+
+# compare by tissue
+lungs<-multinom_fit$L[metadata$tissue.ident == "lungs", ]
+spleens<-multinom_fit$L[metadata$tissue.ident == "spleens", ]
+apply(lungs, 2, hist)
+apply(spleens, 2, hist)
+```
+### Visualize topic proportion across cells
+
+```{r}
+pdat<-data.frame(multinom_fit$L)
+pdat$tissue<-metadata$tissue.ident
+pdat$celltype<-metadata$major
+pdat$donor_id<-metadata$donor_id
+pdat<-pdat %>%
+  pivot_longer(!c(tissue, celltype, donor_id), 
+               names_to = "topic", values_to="proportion")
+ggplot(pdat, aes(factor(topic), proportion)) + 
+  geom_violin(aes(fill=factor(tissue)))
+```
+### Perform t-test while adjusting for confounders
+
+```{r}
+# No adjustment of confounding factors
+out_list<-c()
+
+for (j in unique(pdat$celltype)){
+  pdat_sub<-pdat %>% filter(celltype == j)
+  out<-c()
+  for(k in unique(pdat_sub$topic)){
+    model<-t.test(pdat_sub %>% filter(tissue =="lungs" & topic == k) %>% 
+                    select(proportion),
+                  pdat_sub %>% filter(tissue =="spleens" & topic == k) %>% 
+                    select(proportion))
+    out<-rbind(out, c(k, model$estimate, model$p.value))
+  }
+  out<-data.frame(out)
+  colnames(out)<-c("topic", "mean_lungs", "mean_spleens", "pval")
+  out_list[[j]]<-out
+}
+
+```
+Test mean difference between tissue one donor at a time and then do meta-analysis
+
+```{r}
+celltypes<-setdiff(unique(pdat$celltype),
+                    c("Regulatory T cells", "Type 17 helper T cells")
+                    )
+test_meandiff_by_celltype<-function(pdat){
+  out_list<-list()
+  for (j in setdiff(unique(pdat$celltype),
+                    c("Regulatory T cells", "Type 17 helper T cells")
+                    )){
+    pdat_sub<-pdat %>% filter(celltype == j)
+    out<-c()
+    for(k in unique(pdat_sub$topic)){
+      model<-t.test(pdat_sub %>% filter(tissue =="lungs" & topic == k) %>% 
+                      select(proportion),
+                    pdat_sub %>% filter(tissue =="spleens" & topic == k) %>% 
+                      select(proportion))
+      out<-rbind(out, c(k, model$estimate, model$p.value))
+    }
+    out<-data.frame(out)
+    colnames(out)<-c("topic", "mean_lungs", "mean_spleens", "pval")
+    out_list[[j]]<-out
+  }
+  return(out_list)
+}
+  
+
+donor1<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="1"))
+donor2<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="3"))
+donor3<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="6"))
+
+combined_pvals<-list()
+for(i in celltypes){
+  combined_pvals[[i]]<-c()
+  for(j in 1:length(unique(pdat$topic))){
+    model<-fisher(
+      as.numeric(
+          donor1[[i]][j, "pval"],
+          donor2[[i]][j, "pval"],
+          donor3[[i]][j, "pval"])
+      )
+    combined_pvals[[i]]<-c(combined_pvals[[i]], model$p)
+  }
+}
+
+```
+Combined p-values 
+```{r}
+
+df<-do.call(rbind, combined_pvals)
+head(df)
+barplot(df[,1])
+
+```
+
+
+
+
+
+
