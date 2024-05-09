@@ -18,6 +18,6 @@ TBD
 ### Literature reviews 
 
 ### Results
-[cross-tissue comparison with topic modeling](corss_tissue_DE_u19_fastTopics.html)
+[cross-tissue comparison with topic modeling](cross_tissue_DE_u19_fastTopics.html)
 
 ### Notes
