@@ -13,7 +13,7 @@
 
 <title>Lung-resident immune cells</title>
 
-<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.26/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
@@ -32,8 +32,8 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
-<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
-<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet" />
 
 <link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
 <!-- Add a small amount of space between sections. -->
@@ -153,11 +153,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -186,8 +190,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -195,16 +199,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -292,7 +289,7 @@ $(document).ready(function () {
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
 <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
-workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
+workflowr <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span>
 </button>
 </p>
@@ -303,8 +300,8 @@ aria-hidden="true"></span>
 </li>
 <li>
 <a data-toggle="tab" href="#checks"> Checks <span
-class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> </a>
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
 </li>
 <li>
 <a data-toggle="tab" href="#versions">Past versions</a>
@@ -313,18 +310,17 @@ aria-hidden="true"></span> </a>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2023-04-17
+<strong>Last updated:</strong> 2024-05-09
 </p>
 <p>
 <strong>Checks:</strong> <span
-class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 1
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2
 <span class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> 1
+aria-hidden="true"></span> 0
 </p>
 <p>
-<strong>Knit directory:</strong>
-<code>~/projects/lung_immune_fine_mapping/</code> <span
-class="glyphicon glyphicon-question-sign" aria-hidden="true"
+<strong>Knit directory:</strong> <code>lung_lymph_scMultiomics/</code>
+<span class="glyphicon glyphicon-question-sign" aria-hidden="true"
 title="This is the local directory in which the code in this file was executed.">
 </span>
 </p>
@@ -332,7 +328,7 @@ title="This is the local directory in which the code in this file was executed."
 This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
 analysis was created with <a
   href="https://github.com/workflowr/workflowr">workflowr</a> (version
-1.7.0). The <em>Checks</em> tab describes the reproducibility checks
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
 that were applied when the results were created. The <em>Past
 versions</em> tab lists the development history.
 </p>
@@ -343,36 +339,33 @@ versions</em> tab lists the development history.
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
-<span class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
-changes </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
 </p>
 </div>
-<div id="strongRMarkdownfilestronguncommittedchanges"
+<div id="strongRMarkdownfilestronguptodate"
 class="panel-collapse collapse">
 <div class="panel-body">
-<p>The R Markdown file has unstaged changes. To know which version of
-the R Markdown file created these results, you’ll want to first commit
-it to the Git repo. If you’re still working on the analysis, you can
-ignore this warning. When you’re finished, you can run
-<code>wflow_publish</code> to commit the R Markdown file and build the
-HTML.</p>
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
 </div>
 </div>
 </div>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulungimmunefinemappingtreeb52834ca7a80da423862b9167a7a29966ae7a66btargetblankb52834ca">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree7ca45f65c382b0a20a2b14e62730ecd79f9140f9targetblank7ca45f6a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_immune_fine_mapping/tree/b52834ca7a80da423862b9167a7a29966ae7a66b" target="_blank">b52834c</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/7ca45f65c382b0a20a2b14e62730ecd79f9140f9" target="_blank">7ca45f6</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulungimmunefinemappingtreeb52834ca7a80da423862b9167a7a29966ae7a66btargetblankb52834ca"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree7ca45f65c382b0a20a2b14e62730ecd79f9140f9targetblank7ca45f6a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -382,7 +375,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_immune_fine_mapping/tree/b52834ca7a80da423862b9167a7a29966ae7a66b" target="_blank">b52834c</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/7ca45f65c382b0a20a2b14e62730ecd79f9140f9" target="_blank">7ca45f6</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -397,41 +390,16 @@ were generated:
 </p>
 <pre><code>
 Ignored files:
-    Ignored:    .ipynb_checkpoints/
-    Ignored:    analysis/annotate_clusters.nb.html
-    Ignored:    analysis/data_QC.nb.html
-    Ignored:    output/DE_analysis_mast_Tsub/
+    Ignored:    analysis/.RData
+    Ignored:    analysis/.Rhistory
 
 Untracked files:
-    Untracked:  README.html
     Untracked:  analysis/.ipynb_checkpoints/
-    Untracked:  analysis/annotate_clusters.Rmd
-    Untracked:  analysis/data_QC.Rmd
-    Untracked:  analysis/lung_immune_fine_mapping.Rproj
-    Untracked:  analysis/notebooks/
-    Untracked:  analysis/peak_characterization.Rmd
-    Untracked:  analysis/quality_control.Rmd
-    Untracked:  code/.ipynb_checkpoints/
-    Untracked:  code/learn_best_practices_in_R.r
-    Untracked:  code/run_DE_under_null.r
-    Untracked:  output/.ipynb_checkpoints/
-    Untracked:  output/DA_analysis_LR/
-    Untracked:  output/DA_analysis_LR_covariate/
-    Untracked:  output/DA_peaks_nearby_genes.csv
-    Untracked:  output/DEG_T_subsets_by_celltype_heatmap.pdf
-    Untracked:  output/DEG_Tsub_by_celltype_heatmap.pdf
-    Untracked:  output/DEG_merged_by_celltype_heatmap.pdf
-    Untracked:  output/DE_across_celltypes/
-    Untracked:  output/DE_analysis_mast/
-    Untracked:  output/DE_analysis_mast_minpct_0.25/
-    Untracked:  output/DE_analysis_wilcox/
-    Untracked:  output/DE_analysis_wilcox_Tsub/
-    Untracked:  output/all_merged_metadata.txt
-    Untracked:  output/history/
+    Untracked:  analysis/test_GO_enrichment.ipynb
+    Untracked:  output/fastTopics
 
 Unstaged changes:
-    Modified:   analysis/index.Rmd
-    Deleted:    lung_immune_fine_mapping.Rproj
+    Deleted:    code/run_fastTopic.R
 
 </code></pre>
 <p>
@@ -478,10 +446,44 @@ Message
 <tbody>
 <tr>
 <td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/7ca45f65c382b0a20a2b14e62730ecd79f9140f9/analysis/index.Rmd" target="_blank">7ca45f6</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-05-09
+</td>
+<td>
+cross-tissue comparison
+</td>
+</tr>
+<tr>
+<td>
 html
 </td>
 <td>
-<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/a747e1b8e856f748a34b28aff6bca38575df3f0a/docs/index.html" target="_blank">a747e1b</a>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/7c312730cdf9608349140f2f1d104af5e7163e9c/docs/index.html" target="_blank">7c31273</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2023-04-17
+</td>
+<td>
+updates on DEG
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/a747e1b8e856f748a34b28aff6bca38575df3f0a/docs/index.html" target="_blank">a747e1b</a>
 </td>
 <td>
 Jing Gu
@@ -498,7 +500,7 @@ add motif enrichment analyses
 html
 </td>
 <td>
-<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/3210eeb27eb6d96e89632d73f3975a387327e49c/docs/index.html" target="_blank">3210eeb</a>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/3210eeb27eb6d96e89632d73f3975a387327e49c/docs/index.html" target="_blank">3210eeb</a>
 </td>
 <td>
 Jing Gu
@@ -515,7 +517,7 @@ differential accessibility analysis
 html
 </td>
 <td>
-<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/a62518c0d6663fd9593d9020145cb04fa168c991/docs/index.html" target="_blank">a62518c</a>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/a62518c0d6663fd9593d9020145cb04fa168c991/docs/index.html" target="_blank">a62518c</a>
 </td>
 <td>
 Jing Gu
@@ -532,7 +534,7 @@ Build site.
 html
 </td>
 <td>
-<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/75f6c396048de1763f3a95c6e3fea8a69e37b586/docs/index.html" target="_blank">75f6c39</a>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/75f6c396048de1763f3a95c6e3fea8a69e37b586/docs/index.html" target="_blank">75f6c39</a>
 </td>
 <td>
 Jing Gu
@@ -549,7 +551,7 @@ Build site.
 Rmd
 </td>
 <td>
-<a href="https://github.com/j3gu/lung_immune_fine_mapping/blob/1acc8b60c75ea6fcfa3b59e38e1f41c89532b99c/analysis/index.Rmd" target="_blank">1acc8b6</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/1acc8b60c75ea6fcfa3b59e38e1f41c89532b99c/analysis/index.Rmd" target="_blank">1acc8b6</a>
 </td>
 <td>
 Jing Gu
@@ -566,7 +568,7 @@ wflow_publish(c("analysis/index.Rmd"))
 html
 </td>
 <td>
-<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/954cb2adf563ec6a257f219970d6c816efb89182/docs/index.html" target="_blank">954cb2a</a>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/954cb2adf563ec6a257f219970d6c816efb89182/docs/index.html" target="_blank">954cb2a</a>
 </td>
 <td>
 Jing Gu
@@ -583,7 +585,7 @@ perform DE analysis
 html
 </td>
 <td>
-<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/fe8799987a2b1f779459e2a14930009847b37470/docs/index.html" target="_blank">fe87999</a>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/fe8799987a2b1f779459e2a14930009847b37470/docs/index.html" target="_blank">fe87999</a>
 </td>
 <td>
 Jing Gu
@@ -600,7 +602,7 @@ Build site.
 Rmd
 </td>
 <td>
-<a href="https://github.com/j3gu/lung_immune_fine_mapping/blob/2003997c17dadc231f51e6b15c44ad0b80d60e4a/analysis/index.Rmd" target="_blank">2003997</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/2003997c17dadc231f51e6b15c44ad0b80d60e4a/analysis/index.Rmd" target="_blank">2003997</a>
 </td>
 <td>
 Jing Gu
@@ -617,7 +619,7 @@ Publish README.Rmd
 html
 </td>
 <td>
-<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/91173905116d1e4e5e813b27df3ea26d61007fba/docs/index.html" target="_blank">9117390</a>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/91173905116d1e4e5e813b27df3ea26d61007fba/docs/index.html" target="_blank">9117390</a>
 </td>
 <td>
 Jing Gu
@@ -634,7 +636,7 @@ Build site.
 Rmd
 </td>
 <td>
-<a href="https://github.com/j3gu/lung_immune_fine_mapping/blob/e475baf578743f906a0f3453ae8cf4182316c122/analysis/index.Rmd" target="_blank">e475baf</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/e475baf578743f906a0f3453ae8cf4182316c122/analysis/index.Rmd" target="_blank">e475baf</a>
 </td>
 <td>
 Jing Gu
@@ -651,7 +653,7 @@ Publish README.Rmd
 html
 </td>
 <td>
-<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/c864f9ed05b31dead74f237fc8ac2585da443907/docs/index.html" target="_blank">c864f9e</a>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/c864f9ed05b31dead74f237fc8ac2585da443907/docs/index.html" target="_blank">c864f9e</a>
 </td>
 <td>
 Jing Gu
@@ -668,7 +670,7 @@ Build site.
 html
 </td>
 <td>
-<a href="https://rawcdn.githack.com/j3gu/lung_immune_fine_mapping/48e445ac1f4cf075e2290e5ee28f919de365b7d3/docs/index.html" target="_blank">48e445a</a>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/48e445ac1f4cf075e2290e5ee28f919de365b7d3/docs/index.html" target="_blank">48e445a</a>
 </td>
 <td>
 Jing Gu
@@ -685,7 +687,7 @@ Build site.
 Rmd
 </td>
 <td>
-<a href="https://github.com/j3gu/lung_immune_fine_mapping/blob/b89c4aed2c6aafa9f3bfb599ff6fe6a4143ce8c9/analysis/index.Rmd" target="_blank">b89c4ae</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/b89c4aed2c6aafa9f3bfb599ff6fe6a4143ce8c9/analysis/index.Rmd" target="_blank">b89c4ae</a>
 </td>
 <td>
 Jing Gu
@@ -715,25 +717,10 @@ to better understand the genetics of asthma and allergy diseases.</p>
 <div id="literature-reviews" class="section level3">
 <h3>Literature reviews</h3>
 </div>
-<div id="data" class="section level3">
-<h3>Data</h3>
-<p><a
-href="https://uchicago.box.com/s/hw8r09j4rramou5zwa70bzrmwvdeomuw">Click
-here for downloading the PPT and data tables</a></p>
-<ul>
-<li>U19-sc-multiome040623.pptx: slides for our last meeting</li>
-<li>DEG_cross_cell_types.xls: differentially expressed genes cross cell
-types regardless of tissues</li>
-<li>DEG_cross_tissues.xls: differentially expressed genes cross tissues
-for each cell type</li>
-</ul>
-</div>
 <div id="results" class="section level3">
 <h3>Results</h3>
-<p><a href="DEG_analysis.html">identify tissue-specific DEG for each
-cell type</a></p>
-<p><a href="DA_and_motif_analysis_archR.html">identify tissue-specific
-DA for each cell type</a></p>
+<p><a href="corss_tissue_DE_u19_fastTopics.html">cross-tissue comparison
+with topic modeling</a></p>
 </div>
 <div id="notes" class="section level3">
 <h3>Notes</h3>
