@@ -10,8 +10,8 @@ author: 'Jing Gu'
 
 Parameters: 
 
-N_updates = 200
-N_topics = 16
+N_updates = 150
+N_topics = 12
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(Matrix)
@@ -19,12 +19,16 @@ library(fastTopics)
 library(ggplot2)
 library(cowplot)
 library(poolr)
+library(dplyr)
+library(tidyr)
+library(colorRamp2)
+library(ComplexHeatmap)
 set.seed(10)
 
 # load data
-counts<-readRDS("../output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
-fit<-readRDS("../output/fastTopics/fit_model_updates200_k16.RDS")
-metadata<-readRDS("../output/fastTopics/u19_cell_metadata.RDS")
+counts<-readRDS("output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
+fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
+metadata<-readRDS("output/fastTopics/u19_cell_metadata.RDS")
 
 # add sample covariates information
 metadata$donor_id<-metadata$orig.ident
@@ -37,9 +41,9 @@ metadata$batch<-factor(metadata$full.ident, labels = batch_ids)
 ```
 
 
-## Evaluating the model fitting
+## Model evaluation
 ```{r}
-fit<-readRDS("../output/fastTopics/fit_model_updates12_k150.RDS")
+fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
 ```
 
 check the convergence
@@ -72,23 +76,34 @@ ggplot(pdat %>% filter(subpop %in% celltypes),aes(x = loglik,fill = subpop)) +
   labs(y = "number of cells") +
   theme_cowplot(font_size = 10)
 ```
-## Structural plots
-```{r}
+
+## Visualize topics with structural plots
+
+* plot by cell-types
+
+```{r message=F}
 clusters<-factor(metadata$majority_voting)
 structure_plot(fit,topics = 1:12,gap = 25,
-               grouping = clusters) 
+               grouping = clusters,
+               verbose=FALSE) 
 ```
 
-```{r}
+* plot by tissue
+
+```{r message=F}
 structure_plot(fit,topics = 1:12,gap = 25,
-               grouping = metadata$tissue.ident) 
+               grouping = metadata$tissue.ident,
+               verbose=FALSE) 
 ```
-```{r}
+
+* plot by tissue and cell-type
+
+```{r message=F}
 metadata$major<-factor(metadata$majority_voting, 
-                       labels = c("NK cells", "NK cells", "other", "other",
-                                  "other", "Memory B cells", "Naive B cells",
-                                  "other", "Regulatory T cells", "Tcm/Naive helper T cells",
-                                  "Tem/Trm cytotoxic T cells", "Type 17 helper T cells"))
+                       labels = c("NK", "NK", "other", "other",
+                                  "other", "Memory_B", "Naive_B",
+                                  "other", "Treg", "CD4_T",
+                                  "CD8_T", "Th17"))
 tissue_samples<-paste(metadata$tissue.ident, metadata$major, sep="_")
 ordered_tissue_samples<-unlist(
   lapply(unique(metadata$major), function(i){c(paste0("lungs_",  i),
@@ -97,73 +112,77 @@ ordered_tissue_samples<-unlist(
 tissue_samples<-factor(tissue_samples,
                        levels = ordered_tissue_samples)
 structure_plot(fit,topics = 1:12,gap = 25,
-               grouping = tissue_samples
+               grouping = tissue_samples,
+               verbose=FALSE
                ) 
+```
+
+## Validate topics with enrichment test
+```{r eval=F}
+set.seed(10)
+de <- de_analysis(fit,counts,pseudocount = 0.1,
+                  control = list(ns = 1e4,nc = 20))
 ```
 
 
 
-## Identify topics correlated with differences in tissue of origin
+## Identify topics correlated with differences between tissue
+
 1. test whether any topic is associated with transcriptional differences across tissue
 $$
 L  = \beta X_{\text{tissue}} + \text{Covariates} + \epsilon
 $$
 2. perform T-test to see whether topic proportions between two tissues are significantly different
+
+### Density plot for topic proportions between tissue across cell types
+
+X-axis denotes percentage format of topic proportion
 ```{r}
 # convert poisson NMF model to multinational model
 multinom_fit<-poisson2multinom(fit)
-
-# compare by tissue
-lungs<-multinom_fit$L[metadata$tissue.ident == "lungs", ]
-spleens<-multinom_fit$L[metadata$tissue.ident == "spleens", ]
-apply(lungs, 2, hist)
-apply(spleens, 2, hist)
-```
-### Visualize topic proportion across cells
-
-```{r}
 pdat<-data.frame(multinom_fit$L)
 pdat$tissue<-metadata$tissue.ident
 pdat$celltype<-metadata$major
 pdat$donor_id<-metadata$donor_id
-pdat<-pdat %>%
-  pivot_longer(!c(tissue, celltype, donor_id), 
-               names_to = "topic", values_to="proportion")
-ggplot(pdat, aes(factor(topic), proportion)) + 
-  geom_violin(aes(fill=factor(tissue)))
-```
-### Perform t-test while adjusting for confounders
-
-```{r}
-# No adjustment of confounding factors
-out_list<-c()
-
-for (j in unique(pdat$celltype)){
-  pdat_sub<-pdat %>% filter(celltype == j)
-  out<-c()
-  for(k in unique(pdat_sub$topic)){
-    model<-t.test(pdat_sub %>% filter(tissue =="lungs" & topic == k) %>% 
-                    select(proportion),
-                  pdat_sub %>% filter(tissue =="spleens" & topic == k) %>% 
-                    select(proportion))
-    out<-rbind(out, c(k, model$estimate, model$p.value))
-  }
-  out<-data.frame(out)
-  colnames(out)<-c("topic", "mean_lungs", "mean_spleens", "pval")
-  out_list[[j]]<-out
+pdat<-pdat %>% 
+  pivot_longer(
+    !c(tissue, celltype, donor_id),
+    names_to="topic", values_to="proportion")
+# compare by tissue
+#plt_list <- list()
+for (k in unique(pdat$topic)) {
+  print(k)
+  print(
+    ggplot(pdat %>% filter(topic == k),
+         aes(proportion * 100, fill = tissue)) +
+    geom_density(alpha = 0.4) +
+    facet_grid(vars(celltype)) +
+    theme(strip.text =
+            element_text(size = 10)) +
+    xlab("percentage")
+  )
 }
 
 ```
-Test mean difference between tissue one donor at a time and then do meta-analysis
+
+## Perform t-test while adjusting for confounders
+
+
+### Procedure
+
+Test mean difference between tissue one donor at a time and then do meta-analysis with Fisher's method
+
+### Results
+X-axis denotes cell types and y-axis denotes the topics. For major cell types, we saw majority of topics have significant differences in proportions between tissue. 
 
 ```{r}
 celltypes<-setdiff(unique(pdat$celltype),
-                    c("Regulatory T cells", "Type 17 helper T cells")
+                    c("Treg", "Th17")
                     )
 test_meandiff_by_celltype<-function(pdat){
   out_list<-list()
   for (j in setdiff(unique(pdat$celltype),
-                    c("Regulatory T cells", "Type 17 helper T cells")
+                    c("Treg", "Th17")
                     )){
     pdat_sub<-pdat %>% filter(celltype == j)
     out<-c()
@@ -181,6 +200,30 @@ test_meandiff_by_celltype<-function(pdat){
   return(out_list)
 }
   
+ranksum_test_by_celltype<-function(pdat){
+  out_list<-list()
+  for (j in setdiff(unique(pdat$celltype),
+                    c("Treg", "Th17")
+                    )){
+    pdat_sub<-pdat %>% filter(celltype == j)
+    out<-c()
+    for(k in unique(pdat_sub$topic)){
+      model <-
+        wilcox.test(
+          (pdat_sub %>% filter(tissue == "lungs" &
+                                topic == k) %>% select(proportion))$proportion,
+          (pdat_sub %>% filter(tissue == "spleens" &
+                                topic == k) %>% select(proportion))$proportion
+          
+        )
+      out<-rbind(out, c(k, model$p.value))
+    }
+    out<-data.frame(out)
+    colnames(out)<-c("topic", "pval")
+    out_list[[j]]<-out
+  }
+  return(out_list)
+}
 
 donor1<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="1"))
 donor2<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="3"))
@@ -201,13 +244,20 @@ for(i in celltypes){
 }
 
 ```
-Combined p-values 
+
 ```{r}
-
 df<-do.call(rbind, combined_pvals)
-head(df)
-barplot(df[,1])
-
+colnames(df)<-paste0("k", 1:dim(df)[2])
+col_fun_prop = colorRamp2(c(0, 0.05, 1), c("blue", "white", "red"))
+plt <- Heatmap(df, col=col_fun_prop, 
+               cluster_rows=FALSE,
+               cluster_columns=FALSE,
+               heatmap_legend_param = list(
+                 col_fun=col_fun_prop, 
+                 title="combined p-value",
+                 at = c(0, 0.05, 1)
+               ))
+plt
 ```
 
 
