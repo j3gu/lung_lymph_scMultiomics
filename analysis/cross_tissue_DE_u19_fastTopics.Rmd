@@ -135,9 +135,9 @@ enrich_out<-data.frame(enrich_out, row.names = NULL)
 DT::datatable(
   enrich_out %>% 
     filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
-    mutate(p=format(pValue, scientific=TRUE, digits=2),
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
            enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, p)),
+    select(c(k, description, enrichment, FDR)),
    caption=db[3]
   )
 ```
@@ -146,15 +146,18 @@ DT::datatable(
 DT::datatable(
   enrich_out %>% 
     filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
-    mutate(p=format(pValue, scientific=TRUE, digits=2),
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
            enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, p)),
+    select(c(k, description, enrichment, FDR)),
    caption=db[1]
   )
 ```
 
 ### GO enrichemnt test on GoM DE analysis
 
+**Volcano plots for GoM DE results**
+
+The z-scores for posterior mean log-fold change estimates vs. log-fold change
 ```{r}
 de<-readRDS("output/fastTopics/GoM_DE_u19.RDS")
 de_list<-list()
@@ -166,21 +169,27 @@ for(k in 1:12){
   dat <- subset(dat,lfsr < 0.01)
   dat <- dat[order(dat$postmean,decreasing = TRUE),]
   de_list[[k]]<-dat
-  print(volcano_plot(de, k=k,
+  print(volcano_plot(de, k=k, ymax=250,
   plot.title = sprintf("topic:%s", k)))
 }
 ```
+**GO Enrichemnt results for genes with local false sign rates <0.01**
+
+Topic 4,5,6 show strong enrichment for the GO terms of T-cell activation, leukocyte differentiation, positive regulation of cell adhesion, adaptive immune response. 
+
+From volcano plots, we see topic 6 has high LFC in genes such as IL17A, IL22, which are mainly produced by Th17 cells. 
+
+Topic 10-12 show strong enrichment for the GO term of B cell activation.
 
 ```{r}
 enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
-colnames(enrich_out)[1]<-"k"
 enrich_out<-data.frame(enrich_out, row.names = NULL)
 DT::datatable(
   enrich_out %>% 
     filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
-    mutate(p=format(pValue, scientific=TRUE, digits=2),
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
            enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, p)),
+    select(c(k, description, enrichment, FDR)),
    caption=db[3]
   )
 ```
@@ -189,9 +198,9 @@ DT::datatable(
 DT::datatable(
   enrich_out %>% 
     filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
-    mutate(p=format(pValue, scientific=TRUE, digits=2),
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
            enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, p)),
+    select(c(k, description, enrichment, FDR)),
    caption=db[1]
   )
 ```
@@ -201,9 +210,9 @@ DT::datatable(
 DT::datatable(
   enrich_out %>% 
     filter(database==sprintf("geneontology_%s_noRedundant", db[2])) %>%
-    mutate(p=format(pValue, scientific=TRUE, digits=2),
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
            enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, p)),
+    select(c(k, description, enrichment, FDR)),
    caption=db[2]
   )
 ```
@@ -218,12 +227,20 @@ $$
 
 ### Density plot for topic proportions between tissue across cell types
 
-X-axis denotes the percentage format of topic proportion. Throughout all the topics, the memberships of cells mainly come from three topics, which are k7, k8, k9. With the cell type labels, we see the distributions of topic proportion separate between tissue at different extent across cell types. 
+X-axis denotes the percentage format of topic proportion.  
+Y-axis represents the density of cells with respect to topic proportions.
 
-Which cell types show clear separation from visual inspection?
-* k7: NK, Memory B
-* k8: Treg, CD4, Th17
-* k9: NK, other, Treg, CD8T, Th17
+Topic 1 is specific to cell types other than lymphocytes.
+
+Topic 3 is highly represented in NK and $CD8^+$ T cells.
+
+Topic 4-5 are T-cell specific, with clear separation between tissue in $CD8^+$ T for topic 4 and Treg for topic 5.
+
+Topic 6 is specific to Th17 cells and lungs has a longer tail of distribution compared to spleens.
+
+Topic 2,7,8,9 show similar distributions across cell types without clear separation between tissue. 
+
+Topic 10-12 show higher density in B cells. Topic 11 captures tissue difference mainly in Memory B cells, while topic 12 displays some separation between tissue in Naive B cells.  
 
 ```{r}
 # convert poisson NMF model to multinational model
@@ -239,15 +256,15 @@ pdat<-pdat %>%
 # compare by tissue
 #plt_list <- list()
 for (k in unique(pdat$topic)) {
-  print(k)
   print(
     ggplot(pdat %>% filter(topic == k),
-         aes(proportion * 100, fill = tissue)) +
-    geom_density(alpha = 0.4) +
-    facet_grid(vars(celltype)) +
-    theme(strip.text =
-            element_text(size = 10)) +
-    xlab("percentage")
+           aes(proportion * 100, fill = tissue)) +
+      geom_density(alpha = 0.4) +
+      facet_grid(vars(celltype), scales = "free_y") +
+      theme(strip.text =
+              element_text(size = 8)) +
+      xlab("percentage") +
+      ggtitle(paste0("Topic:", k))
   )
 }
 
