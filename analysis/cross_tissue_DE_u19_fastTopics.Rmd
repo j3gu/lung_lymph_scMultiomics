@@ -118,13 +118,95 @@ structure_plot(fit,topics = 1:12,gap = 25,
 ```
 
 ## Validate topics with enrichment test
-```{r eval=F}
-set.seed(10)
-de <- de_analysis(fit,counts,pseudocount = 0.1,
-                  control = list(ns = 1e4,nc = 20))
+
+### GO enrichemnt test on top 500 genes ranked by loadings
+```{r}
+# set.seed(10)
+# de <- de_analysis(fit,counts,pseudocount = 0.1,
+#                   control = list(ns = 1e4,nc = 20))
+# saveRDS(de, "output/fastTopics/GoM_DE_u19.RDS")
+db <- c(#"pathway_KEGG", "disease_GLAD4U", "disease_OMIM",
+                "Biological_Process", 
+                "Cellular_Component",
+                "Molecular_Function")
+
+enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_top500.RDS")
+enrich_out<-data.frame(enrich_out, row.names = NULL)
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
+    mutate(p=format(pValue, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, p)),
+   caption=db[3]
+  )
+```
+
+```{r}
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
+    mutate(p=format(pValue, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, p)),
+   caption=db[1]
+  )
+```
+
+### GO enrichemnt test on GoM DE analysis
+
+```{r}
+de<-readRDS("output/fastTopics/GoM_DE_u19.RDS")
+de_list<-list()
+for(k in 1:12){
+  dat <- data.frame(postmean = de$postmean[,k],
+                  z        = de$z[,k],
+                  lfsr     = de$lfsr[,k])
+  
+  dat <- subset(dat,lfsr < 0.01)
+  dat <- dat[order(dat$postmean,decreasing = TRUE),]
+  de_list[[k]]<-dat
+  print(volcano_plot(de, k=k,
+  plot.title = sprintf("topic:%s", k)))
+}
+```
+
+```{r}
+enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
+colnames(enrich_out)[1]<-"k"
+enrich_out<-data.frame(enrich_out, row.names = NULL)
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
+    mutate(p=format(pValue, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, p)),
+   caption=db[3]
+  )
+```
+
+```{r}
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
+    mutate(p=format(pValue, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, p)),
+   caption=db[1]
+  )
 ```
 
 
+```{r}
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[2])) %>%
+    mutate(p=format(pValue, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, p)),
+   caption=db[2]
+  )
+```
 
 ## Identify topics correlated with differences between tissue
 
@@ -136,7 +218,13 @@ $$
 
 ### Density plot for topic proportions between tissue across cell types
 
-X-axis denotes percentage format of topic proportion
+X-axis denotes the percentage format of topic proportion. Throughout all the topics, the memberships of cells mainly come from three topics, which are k7, k8, k9. With the cell type labels, we see the distributions of topic proportion separate between tissue at different extent across cell types. 
+
+Which cell types show clear separation from visual inspection?
+* k7: NK, Memory B
+* k8: Treg, CD4, Th17
+* k9: NK, other, Treg, CD8T, Th17
+
 ```{r}
 # convert poisson NMF model to multinational model
 multinom_fit<-poisson2multinom(fit)
