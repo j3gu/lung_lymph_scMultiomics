@@ -173,13 +173,15 @@ for(k in 1:12){
   plot.title = sprintf("topic:%s", k)))
 }
 ```
-**GO Enrichemnt results for genes with local false sign rates <0.01**
+**GO Enrichemnt results for upregulated genes with local false sign rates < 0.01**
 
 Topic 4,5,6 show strong enrichment for the GO terms of T-cell activation, leukocyte differentiation, positive regulation of cell adhesion, adaptive immune response. 
 
 From volcano plots, we see topic 6 has high LFC in genes such as IL17A, IL22, which are mainly produced by Th17 cells. 
 
-Topic 10-12 show strong enrichment for the GO term of B cell activation.
+Topic 11 is strongly enriched for GO terms related to regulation of innate or adaptive immune response. 
+
+Topic 12 shows strong enrichment for the GO term of B cell activation.
 
 ```{r}
 enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
