@@ -175,7 +175,7 @@ for(k in 1:12){
 ```
 **GO Enrichemnt results for upregulated genes with local false sign rates < 0.01**
 
-Topic 4,5,6 show strong enrichment for the GO terms of T-cell activation, leukocyte differentiation, positive regulation of cell adhesion, adaptive immune response. 
+Topic 3,4,5,6 show strong enrichment for the GO terms of T-cell activation, leukocyte differentiation, positive regulation of cell adhesion, adaptive immune response. 
 
 From volcano plots, we see topic 6 has high LFC in genes such as IL17A, IL22, which are mainly produced by Th17 cells. 
 
@@ -242,7 +242,7 @@ Topic 6 is specific to Th17 cells and lungs has a longer tail of distribution co
 
 Topic 2,7,8,9 show similar distributions across cell types without clear separation between tissue. 
 
-Topic 10-12 show higher density in B cells. Topic 11 captures tissue difference mainly in Memory B cells, while topic 12 displays some separation between tissue in Naive B cells.  
+Topic 10-12 show higher density in B cells. Topic 11 captures tissue difference mainly in Memory B cells, while topic 12 displays some separation between tissue in Naive B cells.
 
 ```{r}
 # convert poisson NMF model to multinational model
@@ -250,11 +250,11 @@ multinom_fit<-poisson2multinom(fit)
 pdat<-data.frame(multinom_fit$L)
 pdat$tissue<-metadata$tissue.ident
 pdat$celltype<-metadata$major
-pdat$donor_id<-metadata$donor_id
 pdat<-pdat %>% 
   pivot_longer(
-    !c(tissue, celltype, donor_id),
+    !c(tissue, celltype),
     names_to="topic", values_to="proportion")
+
 # compare by tissue
 #plt_list <- list()
 for (k in unique(pdat$topic)) {
@@ -272,6 +272,65 @@ for (k in unique(pdat$topic)) {
 
 ```
 
+### Barplot for topic proportions in cell types
+
+* The topic proportion for k10 is higher in spleens than lungs in both naive B and memory B cells.
+* The topic proportions for k11 is higher in spleens than lungs in memory B cells only.
+* The topic proportions for k4 is higher in spleens than lungs across cell types.
+* The topic proportions for k6 is higher in lungs than spleens across cell types.
+* The topic proportions for k5 is higher in lungs than spleens across T cell subsets.
+
+```{r}
+# cell number by tissue and cell type
+table(metadata$tissue.ident, metadata$major)
+
+# Sum of topic proportion by tissue, cell type and topic
+pdat %>% group_by(tissue, celltype, topic) %>% summarize(topic_prop_sum=sum(proportion))
+
+# Scaled to be added up to be 1
+prop<- pdat %>% group_by(tissue, celltype, topic) %>% summarize(topic_prop=sum(proportion)/n())
+
+prop_sum<- pdat %>% group_by(tissue, celltype, topic) %>% summarize(topic_prop=sum(proportion))
+
+ggplot(prop, aes(x = tissue, y = topic_prop, fill = topic)) +
+  geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) + xlab("") + 
+theme(axis.text.x = element_text(angle = 90)) + ylab("topic proportion")
+
+```
+All k4 terms included in k5.
+```{r}
+# check differences in GO terms between topics
+# k4 vs k5
+go_bp<-enrich_out %>% filter(database=="geneontology_Biological_Process_noRedundant") %>% select(-c(userId))
+go_diff<-setdiff(go_bp %>% filter(k=="k5") %>% select(description),
+                 go_bp %>% filter(k=="k4") %>% select(description))
+go_bp %>% filter(description %in% go_diff$description & k=="k5") %>% select(k, description, FDR)
+```
+
+```{r}
+# k6 vs.k5
+go_diff<-setdiff(go_bp %>% filter(k=="k5") %>% select(description),
+                 go_bp %>% filter(k=="k6") %>% select(description))
+head(go_diff)
+
+# k5 vs. k6
+go_diff<-setdiff(go_bp %>% filter(k=="k6") %>% select(description),
+                 go_bp %>% filter(k=="k5") %>% select(description))
+go_bp %>% filter(description %in% go_diff$description & k=="k6") %>% select(k, description, FDR)
+
+```
+
+All k10 terms included in k11.
+```{r}
+#k11 vs. k10
+go_diff<-setdiff(go_bp %>% filter(k=="k11") %>% select(description),
+                 go_bp %>% filter(k=="k10") %>% select(description))
+go_bp %>% filter(description %in% go_diff$description & k=="k11") %>% select(k, description, FDR)
+
+```
+
+
+
 ## Perform t-test while adjusting for confounders
 
 
@@ -283,6 +342,15 @@ Test mean difference between tissue one donor at a time and then do meta-analysi
 X-axis denotes cell types and y-axis denotes the topics. For major cell types, we saw majority of topics have significant differences in proportions between tissue. 
 
 ```{r}
+pdat<-data.frame(multinom_fit$L)
+pdat$tissue<-metadata$tissue.ident
+pdat$celltype<-metadata$major
+pdat$donor_id<-metadata$donor_id
+pdat<-pdat %>% 
+  pivot_longer(
+    !c(tissue, celltype, donor_id),
+    names_to="topic", values_to="proportion")
+
 celltypes<-setdiff(unique(pdat$celltype),
                     c("Treg", "Th17")
                     )
@@ -335,6 +403,7 @@ ranksum_test_by_celltype<-function(pdat){
 donor1<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="1"))
 donor2<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="3"))
 donor3<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="6"))
+
 
 combined_pvals<-list()
 for(i in celltypes){
