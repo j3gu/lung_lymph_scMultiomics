@@ -1,0 +1,430 @@
+---
+title: "Identify regulatory programs by building GRNs"
+output: html_document
+date: '2024-05-15'
+author: 'Jing Gu'
+---
+# Build gene regulatory networks for lung immune cells
+
+## Procedures for running Dictys pipeline
+
+![Building GRN for each cell cluster](assets/GRN_procedures.png)
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(Matrix)
+library(fastTopics)
+library(ggplot2)
+library(cowplot)
+library(poolr)
+library(dplyr)
+library(tidyr)
+library(colorRamp2)
+library(ComplexHeatmap)
+set.seed(10)
+
+# load data
+counts<-readRDS("output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
+fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
+metadata<-readRDS("output/fastTopics/u19_cell_metadata.RDS")
+
+# add sample covariates information
+metadata$donor_id<-metadata$orig.ident
+metadata$donor_id[metadata$full.ident=="spleens_2"]<-'3'
+metadata$donor_id[metadata$full.ident=="spleens_3"]<-'6'
+batch_ids<-c("batch1", "batch1", "batch2", "batch2", "batch3", "batch3", "batch1", "batch2", "batch3")
+metadata$batch<-factor(metadata$full.ident, labels = batch_ids)
+
+
+```
+
+
+## Model evaluation
+```{r}
+fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
+```
+
+check the convergence
+```{r}
+# check for convergence of model fitting 
+plot_progress(fit,x = "iter",add.point.every = 10,colors = "black") +
+  theme_cowplot(font_size = 10)
+
+summary(fit)
+```
+
+```{r}
+loglik <- loglik_multinom_topic_model(counts,fit)
+pdat <- data.frame(loglik)
+ggplot(pdat,aes(loglik)) +
+  geom_histogram(bins = 64,color = "white",fill = "black", linewidth = 0.25) +
+  labs(y = "number of cells") +
+  theme_cowplot(font_size = 10)
+
+```
+
+```{r}
+pdat <- data.frame(loglik = loglik,subpop = metadata$majority_voting)
+celltypes<-setdiff(unique(pdat$subpop),
+                   c("ILC3", "Epithelial cells", "Plasma cells",
+                     "Classical monocytes"))
+
+ggplot(pdat %>% filter(subpop %in% celltypes),aes(x = loglik,fill = subpop)) +
+  geom_histogram(bins = 64,color = "white",size = 0.25) +
+  labs(y = "number of cells") +
+  theme_cowplot(font_size = 10)
+```
+
+## Visualize topics with structural plots
+
+* plot by cell-types
+
+```{r message=F}
+clusters<-factor(metadata$majority_voting)
+structure_plot(fit,topics = 1:12,gap = 25,
+               grouping = clusters,
+               verbose=FALSE) 
+```
+
+* plot by tissue
+
+```{r message=F}
+structure_plot(fit,topics = 1:12,gap = 25,
+               grouping = metadata$tissue.ident,
+               verbose=FALSE) 
+```
+
+* plot by tissue and cell-type
+
+```{r message=F}
+metadata$major<-factor(metadata$majority_voting, 
+                       labels = c("NK", "NK", "other", "other",
+                                  "other", "Memory_B", "Naive_B",
+                                  "other", "Treg", "CD4_T",
+                                  "CD8_T", "Th17"))
+tissue_samples<-paste(metadata$tissue.ident, metadata$major, sep="_")
+ordered_tissue_samples<-unlist(
+  lapply(unique(metadata$major), function(i){c(paste0("lungs_",  i),
+                                               paste0("spleens_", i)
+                                               )}))
+tissue_samples<-factor(tissue_samples,
+                       levels = ordered_tissue_samples)
+structure_plot(fit,topics = 1:12,gap = 25,
+               grouping = tissue_samples,
+               verbose=FALSE
+               ) 
+```
+
+## Validate topics with enrichment test
+
+### GO enrichemnt test on top 500 genes ranked by loadings
+```{r}
+# set.seed(10)
+# de <- de_analysis(fit,counts,pseudocount = 0.1,
+#                   control = list(ns = 1e4,nc = 20))
+# saveRDS(de, "output/fastTopics/GoM_DE_u19.RDS")
+db <- c(#"pathway_KEGG", "disease_GLAD4U", "disease_OMIM",
+                "Biological_Process", 
+                "Cellular_Component",
+                "Molecular_Function")
+
+enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_top500.RDS")
+enrich_out<-data.frame(enrich_out, row.names = NULL)
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, FDR)),
+   caption=db[3]
+  )
+```
+
+```{r}
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, FDR)),
+   caption=db[1]
+  )
+```
+
+### GO enrichemnt test on GoM DE analysis
+
+**Volcano plots for GoM DE results**
+
+The z-scores for posterior mean log-fold change estimates vs. log-fold change
+```{r}
+de<-readRDS("output/fastTopics/GoM_DE_u19.RDS")
+de_list<-list()
+for(k in 1:12){
+  dat <- data.frame(postmean = de$postmean[,k],
+                  z        = de$z[,k],
+                  lfsr     = de$lfsr[,k])
+  
+  dat <- subset(dat,lfsr < 0.01)
+  dat <- dat[order(dat$postmean,decreasing = TRUE),]
+  de_list[[k]]<-dat
+  print(volcano_plot(de, k=k, ymax=250,
+  plot.title = sprintf("topic:%s", k)))
+}
+```
+**GO Enrichemnt results for upregulated genes with local false sign rates < 0.01**
+
+Topic 3,4,5,6 show strong enrichment for the GO terms of T-cell activation, leukocyte differentiation, positive regulation of cell adhesion, adaptive immune response. 
+
+From volcano plots, we see topic 6 has high LFC in genes such as IL17A, IL22, which are mainly produced by Th17 cells. 
+
+Topic 11 is strongly enriched for GO terms related to regulation of innate or adaptive immune response. 
+
+Topic 12 shows strong enrichment for the GO term of B cell activation.
+
+```{r}
+enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
+enrich_out<-data.frame(enrich_out, row.names = NULL)
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, FDR)),
+   caption=db[3]
+  )
+```
+
+```{r}
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, FDR)),
+   caption=db[1]
+  )
+```
+
+
+```{r}
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[2])) %>%
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, FDR)),
+   caption=db[2]
+  )
+```
+
+## Identify topics correlated with differences between tissue
+
+1. test whether any topic is associated with transcriptional differences across tissue
+$$
+L  = \beta X_{\text{tissue}} + \text{Covariates} + \epsilon
+$$
+2. perform T-test to see whether topic proportions between two tissues are significantly different
+
+### Density plot for topic proportions between tissue across cell types
+
+X-axis denotes the percentage format of topic proportion.  
+Y-axis represents the density of cells with respect to topic proportions.
+
+Topic 1 is specific to cell types other than lymphocytes.
+
+Topic 3 is highly represented in NK and $CD8^+$ T cells.
+
+Topic 4-5 are T-cell specific, with clear separation between tissue in $CD8^+$ T for topic 4 and Treg for topic 5.
+
+Topic 6 is specific to Th17 cells and lungs has a longer tail of distribution compared to spleens.
+
+Topic 2,7,8,9 show similar distributions across cell types without clear separation between tissue. 
+
+Topic 10-12 show higher density in B cells. Topic 11 captures tissue difference mainly in Memory B cells, while topic 12 displays some separation between tissue in Naive B cells.  
+
+```{r}
+# convert poisson NMF model to multinational model
+multinom_fit<-poisson2multinom(fit)
+pdat<-data.frame(multinom_fit$L)
+pdat$tissue<-metadata$tissue.ident
+pdat$celltype<-metadata$major
+pdat$donor_id<-metadata$donor_id
+
+# stats_out<-lapply(split(pdat, pdat$celltype), function(i){
+#   lungs_qt<-apply(subset(i, tissue=="lungs")[, 1:12], 2, quantile)
+#   spleens_qt<-apply(subset(i, tissue=="spleens")[, 1:12], 2, quantile)
+#   out<-format(rbind(lungs_qt, spleens_qt), digits=1)
+#   tissue<- c(rep("lungs", 5),rep("spleens", 5))
+#   cell_type<-unique(as.character(i$celltype))
+#   percentage<-rownames(out)
+#   out<-data.frame(cbind(percentage,cell_type, 
+#                         tissue, out), row.names = NULL)
+#   return(out)
+# })
+# 
+# df<-data.frame(do.call(rbind, stats_out), row.names = NULL)
+# colnames(df)[2]<-"cell_type"
+# DT::datatable(
+#   df, caption="quantile distribution by topic and by tissue"
+#   )
+```
+
+```{r}
+pdat<-data.frame(multinom_fit$L)
+pdat$tissue<-metadata$tissue.ident
+pdat$celltype<-metadata$major
+pdat<-pdat %>% 
+  pivot_longer(
+    !c(tissue, celltype),
+    names_to="topic", values_to="proportion")
+
+# compare by tissue
+#plt_list <- list()
+for (k in unique(pdat$topic)) {
+  print(
+    ggplot(pdat %>% filter(topic == k),
+           aes(proportion * 100, fill = tissue)) +
+      geom_density(alpha = 0.4) +
+      facet_grid(vars(celltype), scales = "free_y") +
+      theme(strip.text =
+              element_text(size = 8)) +
+      xlab("percentage") +
+      ggtitle(paste0("Topic:", k))
+  )
+}
+
+```
+
+### Barplot for topic proportions in cell types
+
+* The topic proportion for k10 is higher in spleens than lungs in both naive B and memory B cells.
+* The topic proportions for k11 is higher in spleens than lungs in memory B cells only.
+* The topic proportions for k4 is higher in spleens than lungs across cell types.
+* The topic proportions for k6 is higher in lungs than spleens across cell types.
+* The topic proportions for k5 is higher in lungs than spleens across T cell subsets.
+
+```{r}
+# cell number by tissue and cell type
+table(metadata$tissue.ident, metadata$major)
+
+# Sum of topic proportion by tissue, cell type and topic
+pdat %>% group_by(tissue, celltype, topic) %>% summarize(topic_prop_sum=sum(proportion))
+
+# Scaled to be added up to be 1
+prop<- pdat %>% group_by(tissue, celltype, topic) %>% summarize(topic_prop=sum(proportion)/n())
+
+prop_sum<- pdat %>% group_by(tissue, celltype, topic) %>% summarize(topic_prop=sum(proportion))
+
+ggplot(prop, aes(x = tissue, y = topic_prop, fill = topic)) +
+  geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) + xlab("") + 
+theme(axis.text.x = element_text(angle = 90)) + ylab("topic proportion")
+
+```
+
+## Perform t-test while adjusting for confounders
+
+
+### Procedure
+
+Test mean difference between tissue one donor at a time and then do meta-analysis with Fisher's method
+
+### Results
+X-axis denotes cell types and y-axis denotes the topics. For major cell types, we saw majority of topics have significant differences in proportions between tissue. 
+
+```{r}
+celltypes<-setdiff(unique(pdat$celltype),
+                    c("Treg", "Th17")
+                    )
+test_meandiff_by_celltype<-function(pdat){
+  out_list<-list()
+  for (j in setdiff(unique(pdat$celltype),
+                    c("Treg", "Th17")
+                    )){
+    pdat_sub<-pdat %>% filter(celltype == j)
+    out<-c()
+    for(k in unique(pdat_sub$topic)){
+      model<-t.test(pdat_sub %>% filter(tissue =="lungs" & topic == k) %>% 
+                      select(proportion),
+                    pdat_sub %>% filter(tissue =="spleens" & topic == k) %>% 
+                      select(proportion))
+      out<-rbind(out, c(k, model$estimate, model$p.value))
+    }
+    out<-data.frame(out)
+    colnames(out)<-c("topic", "mean_lungs", "mean_spleens", "pval")
+    out_list[[j]]<-out
+  }
+  return(out_list)
+}
+  
+ranksum_test_by_celltype<-function(pdat){
+  out_list<-list()
+  for (j in setdiff(unique(pdat$celltype),
+                    c("Treg", "Th17")
+                    )){
+    pdat_sub<-pdat %>% filter(celltype == j)
+    out<-c()
+    for(k in unique(pdat_sub$topic)){
+      model <-
+        wilcox.test(
+          (pdat_sub %>% filter(tissue == "lungs" &
+                                topic == k) %>% select(proportion))$proportion,
+          (pdat_sub %>% filter(tissue == "spleens" &
+                                topic == k) %>% select(proportion))$proportion
+          
+        )
+      out<-rbind(out, c(k, model$p.value))
+    }
+    out<-data.frame(out)
+    colnames(out)<-c("topic", "pval")
+    out_list[[j]]<-out
+  }
+  return(out_list)
+}
+
+donor1<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="1"))
+donor2<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="3"))
+donor3<-test_meandiff_by_celltype(pdat%>%filter(donor_id=="6"))
+
+donor1<-ranksum_test_by_celltype(pdat%>%filter(donor_id=="1"))
+donor2<-ranksum_test_by_celltype(pdat%>%filter(donor_id=="3"))
+donor3<-ranksum_test_by_celltype(pdat%>%filter(donor_id=="6"))
+
+
+
+combined_pvals<-list()
+for(i in celltypes){
+  combined_pvals[[i]]<-c()
+  for(j in 1:length(unique(pdat$topic))){
+    model<-fisher(
+      as.numeric(
+          donor1[[i]][j, "pval"],
+          donor2[[i]][j, "pval"],
+          donor3[[i]][j, "pval"])
+      )
+    combined_pvals[[i]]<-c(combined_pvals[[i]], model$p)
+  }
+}
+
+```
+
+```{r}
+df<-do.call(rbind, combined_pvals)
+colnames(df)<-paste0("k", 1:dim(df)[2])
+col_fun_prop = colorRamp2(c(0, 0.05, 1), c("blue", "white", "red"))
+plt <- Heatmap(df, col=col_fun_prop, 
+               cluster_rows=FALSE,
+               cluster_columns=FALSE,
+               heatmap_legend_param = list(
+                 col_fun=col_fun_prop, 
+                 title="combined p-value",
+                 at = c(0, 0.05, 1)
+               ))
+plt
+```
+
+
+
+
+
+
