@@ -1,7 +1,7 @@
 ---
 title: "cross-tissue DE analysis with fastTopics"
 output: html_document
-date: '2024-04-29'
+date: "`r Sys.Date()`"
 author: 'Jing Gu'
 ---
 # GoM DE analysis on u19 dataset
@@ -280,23 +280,19 @@ for (k in unique(pdat$topic)) {
 * The topic proportions for k6 is higher in lungs than spleens across cell types.
 * The topic proportions for k5 is higher in lungs than spleens across T cell subsets.
 
-```{r}
+```{r message=FALSE}
 # cell number by tissue and cell type
 table(metadata$tissue.ident, metadata$major)
 
-# Sum of topic proportion by tissue, cell type and topic
-pdat %>% group_by(tissue, celltype, topic) %>% summarize(topic_prop_sum=sum(proportion))
-
 # Scaled to be added up to be 1
-prop<- pdat %>% group_by(tissue, celltype, topic) %>% summarize(topic_prop=sum(proportion)/n())
-
-prop_sum<- pdat %>% group_by(tissue, celltype, topic) %>% summarize(topic_prop=sum(proportion))
+prop<- pdat %>% group_by(tissue, celltype, topic) %>% summarise(topic_prop=sum(proportion)/n())
 
 ggplot(prop, aes(x = tissue, y = topic_prop, fill = topic)) +
   geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) + xlab("") + 
 theme(axis.text.x = element_text(angle = 90)) + ylab("topic proportion")
 
 ```
+Comparing GO terms between K4 and K5:  
 All k4 terms included in k5.
 ```{r}
 # check differences in GO terms between topics
@@ -304,32 +300,34 @@ All k4 terms included in k5.
 go_bp<-enrich_out %>% filter(database=="geneontology_Biological_Process_noRedundant") %>% select(-c(userId))
 go_diff<-setdiff(go_bp %>% filter(k=="k5") %>% select(description),
                  go_bp %>% filter(k=="k4") %>% select(description))
-go_bp %>% filter(description %in% go_diff$description & k=="k5") %>% select(k, description, FDR)
+DT::datatable(go_bp %>% 
+                filter(description %in% go_diff$description & k=="k5") %>%
+                mutate(FDR=format(FDR, scientific=TRUE, digits=2)) %>% 
+                         select(k, description, FDR),
+              caption="GO terms enriched for K5 but not K4")
 ```
 
 ```{r}
-# k6 vs.k5
-go_diff<-setdiff(go_bp %>% filter(k=="k5") %>% select(description),
-                 go_bp %>% filter(k=="k6") %>% select(description))
-head(go_diff)
-
 # k5 vs. k6
 go_diff<-setdiff(go_bp %>% filter(k=="k6") %>% select(description),
                  go_bp %>% filter(k=="k5") %>% select(description))
-go_bp %>% filter(description %in% go_diff$description & k=="k6") %>% select(k, description, FDR)
+DT::datatable(go_bp %>% filter(description %in% go_diff$description & k=="k6") %>%
+                mutate(FDR=format(FDR, digits=2)) %>%
+                select(k, description, FDR),
+              caption="GO terms enriched for K6 but not K5")
 
 ```
-
-All k10 terms included in k11.
+Comparing GO terms between K10 and K11:  
+All K10 terms included in K11.
 ```{r}
 #k11 vs. k10
 go_diff<-setdiff(go_bp %>% filter(k=="k11") %>% select(description),
                  go_bp %>% filter(k=="k10") %>% select(description))
-go_bp %>% filter(description %in% go_diff$description & k=="k11") %>% select(k, description, FDR)
-
+DT::datatable(go_bp %>% filter(description %in% go_diff$description & k=="k11") %>% 
+                mutate(FDR = format(FDR, digits=2)) %>%
+                select(k, description, FDR),
+              caption="GO terms enriched for K11 but not K10")
 ```
-
-
 
 ## Perform t-test while adjusting for confounders
 
