@@ -179,6 +179,8 @@ Topic 3,4,5,6 show strong enrichment for the GO terms of T-cell activation, leuk
 
 From volcano plots, we see topic 6 has high LFC in genes such as IL17A, IL22, which are mainly produced by Th17 cells. 
 
+Topic 10 genes do not show enrichment for any GO term.
+
 Topic 11 is strongly enriched for GO terms related to regulation of innate or adaptive immune response. 
 
 Topic 12 shows strong enrichment for the GO term of B cell activation.
@@ -227,23 +229,6 @@ L  = \beta X_{\text{tissue}} + \text{Covariates} + \epsilon
 $$
 2. perform T-test to see whether topic proportions between two tissues are significantly different
 
-### Density plot for topic proportions between tissue across cell types
-
-X-axis denotes the percentage format of topic proportion.  
-Y-axis represents the density of cells with respect to topic proportions.
-
-Topic 1 is specific to cell types other than lymphocytes.
-
-Topic 3 is highly represented in NK and $CD8^+$ T cells.
-
-Topic 4-5 are T-cell specific, with clear separation between tissue in $CD8^+$ T for topic 4 and Treg for topic 5.
-
-Topic 6 is specific to Th17 cells and lungs has a longer tail of distribution compared to spleens.
-
-Topic 2,7,8,9 show similar distributions across cell types without clear separation between tissue. 
-
-Topic 10-12 show higher density in B cells. Topic 11 captures tissue difference mainly in Memory B cells, while topic 12 displays some separation between tissue in Naive B cells.
-
 ```{r}
 # convert poisson NMF model to multinational model
 multinom_fit<-poisson2multinom(fit)
@@ -257,18 +242,18 @@ pdat<-pdat %>%
 
 # compare by tissue
 #plt_list <- list()
-for (k in unique(pdat$topic)) {
-  print(
-    ggplot(pdat %>% filter(topic == k),
-           aes(proportion * 100, fill = tissue)) +
-      geom_density(alpha = 0.4) +
-      facet_grid(vars(celltype), scales = "free_y") +
-      theme(strip.text =
-              element_text(size = 8)) +
-      xlab("percentage") +
-      ggtitle(paste0("Topic:", k))
-  )
-}
+# for (k in unique(pdat$topic)) {
+#   print(
+#     ggplot(pdat %>% filter(topic == k),
+#            aes(proportion * 100, fill = tissue)) +
+#       geom_density(alpha = 0.4) +
+#       facet_grid(vars(celltype), scales = "free_y") +
+#       theme(strip.text =
+#               element_text(size = 8)) +
+#       xlab("percentage") +
+#       ggtitle(paste0("Topic:", k))
+#   )
+# }
 
 ```
 
@@ -433,8 +418,6 @@ plt <- Heatmap(df, col=col_fun_prop,
                ))
 plt
 ```
-
-
 
 
 
