@@ -18,7 +18,9 @@ TBD
 ### Literature reviews 
 
 ### Results
+
 [identify topics with different proportions between tissue](cross_tissue_DE_u19_fastTopics.html)
+
 [test motif enrichment for topic-specific genes](U19_motif_analysis.html)
 
 ### Slides download
