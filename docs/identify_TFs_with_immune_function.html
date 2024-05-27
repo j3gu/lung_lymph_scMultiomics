@@ -7502,47 +7502,6 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2202e994-4958-4a14-8eb3-a89adca4482c">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-r"><pre><span></span>%<span class="n">load_ext</span><span class="w"> </span><span class="n">rpy2.ipython</span>
-<span class="n">import</span><span class="w"> </span><span class="n">numpy</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">np</span>
-<span class="n">import</span><span class="w"> </span><span class="n">matplotlib.pyplot</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">plt</span>
-<span class="n">from</span><span class="w"> </span><span class="n">dictys.plot.static</span><span class="w"> </span><span class="n">import</span><span class="w"> </span><span class="n">compute_spec</span>
-<span class="n">from</span><span class="w"> </span><span class="n">dictys.plot</span><span class="w"> </span><span class="n">import</span><span class="w"> </span><span class="n">dotplot</span>
-<span class="n">from</span><span class="w"> </span><span class="n">dictys.net</span><span class="w"> </span><span class="n">import</span><span class="w"> </span><span class="n">network</span>
-<span class="n">import</span><span class="w"> </span><span class="n">pandas</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">pd</span>
-<span class="n">import</span><span class="w"> </span><span class="n">seaborn</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">sns</span>
-<span class="n">import</span><span class="w"> </span><span class="n">itertools</span>
-<span class="n">from</span><span class="w"> </span><span class="n">adjustText</span><span class="w"> </span><span class="n">import</span><span class="w"> </span><span class="n">adjust_text</span>
-
-<span class="c1">#Load networks</span>
-<span class="n">d0</span><span class="o">=</span><span class="nf">network.from_file</span><span class="p">(</span><span class="s">"/home/jinggu/scratch/projects/dictys/output/static.h5"</span><span class="p">)</span>
-
-<span class="c1">#Rename cell subsets</span>
-<span class="nf">d0.rename</span><span class="p">(</span><span class="s">'s'</span><span class="p">,{</span>
-<span class="w">    </span><span class="s">'Subset1'</span><span class="o">:</span><span class="s">'lungs_Memory_B'</span><span class="p">,</span><span class="s">'Subset2'</span><span class="o">:</span><span class="s">'lungs_Naive_B'</span><span class="p">,</span>
-<span class="w">    </span><span class="s">'Subset3'</span><span class="o">:</span><span class="s">'lungs_Treg'</span><span class="p">,</span><span class="s">'Subset4'</span><span class="o">:</span><span class="s">'lungs_CD4_T'</span><span class="p">,</span><span class="s">'Subset5'</span><span class="o">:</span><span class="s">'lungs_CD8_T'</span><span class="p">,</span>
-<span class="w">    </span><span class="s">'Subset6'</span><span class="o">:</span><span class="s">'lungs_Th17'</span><span class="p">,</span><span class="s">'Subset7'</span><span class="o">:</span><span class="s">'spleens_Memory_B'</span><span class="p">,</span><span class="s">'Subset8'</span><span class="o">:</span><span class="s">'spleens_Naive_B'</span><span class="p">,</span><span class="s">'Subset9'</span><span class="o">:</span><span class="s">'spleens_Treg'</span><span class="p">,</span>
-<span class="w">    </span><span class="s">'Subset10'</span><span class="o">:</span><span class="s">'spleens_CD4_T'</span><span class="p">,</span><span class="w"> </span><span class="s">'Subset11'</span><span class="o">:</span><span class="s">'spleens_CD8_T'</span><span class="p">,</span><span class="w"> </span><span class="s">'Subset12'</span><span class="o">:</span><span class="s">'spleens_Th17'</span><span class="p">})</span>
-
-<span class="n">from</span><span class="w"> </span><span class="n">helper_dictys</span><span class="w"> </span><span class="n">import</span><span class="w"> </span><span class="n">retrieve_edges_GRNs</span>
-
-<span class="n">ct_order</span><span class="o">=</span><span class="p">[</span><span class="s">"Naive_B"</span><span class="p">,</span><span class="w"> </span><span class="s">"Memory_B"</span><span class="p">,</span><span class="w"> </span><span class="s">"CD4_T"</span><span class="p">,</span><span class="w"> </span><span class="s">"CD8_T"</span><span class="p">,</span><span class="w"> </span><span class="s">"Th17"</span><span class="p">,</span><span class="w"> </span><span class="s">"Treg"</span><span class="p">]</span>
-
-<span class="n">for</span><span class="w"> </span><span class="n">ct</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="n">ct_order</span><span class="o">:</span><span class="w"> </span>
-<span class="w">    </span><span class="n">edges</span><span class="o">=</span><span class="nf">retrieve_edges_GRNs</span><span class="p">(</span><span class="n">d0</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="o">=</span><span class="n">f</span><span class="s">"lungs_{ct}"</span><span class="p">,</span><span class="w"> </span><span class="n">sparsity_value</span><span class="o">=</span><span class="m">0.015</span><span class="p">)</span>
-<span class="w">    </span><span class="nf">edges.to_csv</span><span class="p">(</span><span class="n">f</span><span class="s">"../output/lung_GRN_{ct}_edges.txt"</span><span class="p">,</span><span class="w"> </span><span class="n">index</span><span class="o">=</span><span class="n">None</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cdcdfea0-7edd-4c42-a491-d24e60518e2e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
@@ -7551,6 +7510,21 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Test-enrichment-for-Asthma-TF-targets">Test enrichment for Asthma TF targets<a class="anchor-link" href="#Test-enrichment-for-Asthma-TF-targets">¶</a></h2><h3 id="Gene-Ontology-enrichment-results">Gene Ontology enrichment results<a class="anchor-link" href="#Gene-Ontology-enrichment-results">¶</a></h3><p>Three GO categories combined: Biological Process, Cellular Component, and Molecular Function with nonredundant terms</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_remove_input" id="cell-id=df86663c-c2cd-4193-85b4-72d085b4e1ba">
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>[1] "Asthma TFs:"
+[1] "GATA3" "TCF7"  "CEBPA" "SMAD3" "TBX21" "BACH2" "IRF1" 
+</pre>
+</div>
 </div>
 </div>
 </div>
@@ -16722,7 +16696,7 @@ RU5ErkJggg==" width="900"/>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Test-enrichment-for-target-genes-of-T-subset-marker-TFs">Test enrichment for target genes of T subset marker TFs<a class="anchor-link" href="#Test-enrichment-for-target-genes-of-T-subset-marker-TFs">¶</a></h2><p>T subset marker TFs were selected based on the normalized target sizes across cell types.</p>
+<h2 id="Test-enrichment-for-target-genes-of-T-subset-marker-TFs">Test enrichment for target genes of T subset marker TFs<a class="anchor-link" href="#Test-enrichment-for-target-genes-of-T-subset-marker-TFs">¶</a></h2><p>T subset marker TFs were selected based on the top 10 normalized target sizes across cell types.</p>
 </div>
 </div>
 </div>
@@ -16751,8 +16725,8 @@ RU5ErkJggg==" width="900"/>
 <link href="data:text/css;charset-utf-8;base64,LmNvbnRhaW5lci1mbHVpZC5jcm9zc3RhbGstYnNjb2xze21hcmdpbi1sZWZ0Oi0zMHB4O21hcmdpbi1yaWdodDotMzBweDt3aGl0ZS1zcGFjZTpub3JtYWx9Ym9keT4uY29udGFpbmVyLWZsdWlkLmNyb3NzdGFsay1ic2NvbHN7bWFyZ2luLWxlZnQ6YXV0bzttYXJnaW4tcmlnaHQ6YXV0b30uY3Jvc3N0YWxrLWlucHV0LWNoZWNrYm94Z3JvdXAgLmNyb3NzdGFsay1vcHRpb25zLWdyb3VwIC5jcm9zc3RhbGstb3B0aW9ucy1jb2x1bW57ZGlzcGxheTppbmxpbmUtYmxvY2s7cGFkZGluZy1yaWdodDoxMnB4O3ZlcnRpY2FsLWFsaWduOnRvcH1AbWVkaWEgb25seSBzY3JlZW4gYW5kIChtYXgtd2lkdGg6IDQ4MHB4KXsuY3Jvc3N0YWxrLWlucHV0LWNoZWNrYm94Z3JvdXAgLmNyb3NzdGFsay1vcHRpb25zLWdyb3VwIC5jcm9zc3RhbGstb3B0aW9ucy1jb2x1bW57ZGlzcGxheTpibG9jaztwYWRkaW5nLXJpZ2h0OmluaGVyaXR9fS5jcm9zc3RhbGstaW5wdXR7bWFyZ2luLWJvdHRvbToxNXB4fS5jcm9zc3RhbGstaW5wdXQgLmNvbnRyb2wtbGFiZWx7bWFyZ2luLWJvdHRvbTowO3ZlcnRpY2FsLWFsaWduOm1pZGRsZX0uY3Jvc3N0YWxrLWlucHV0IGlucHV0W3R5cGU9ImNoZWNrYm94Il17bWFyZ2luOjRweCAwIDA7bWFyZ2luLXRvcDoxcHg7bGluZS1oZWlnaHQ6bm9ybWFsfS5jcm9zc3RhbGstaW5wdXQgLmNoZWNrYm94e3Bvc2l0aW9uOnJlbGF0aXZlO2Rpc3BsYXk6YmxvY2s7bWFyZ2luLXRvcDoxMHB4O21hcmdpbi1ib3R0b206MTBweH0uY3Jvc3N0YWxrLWlucHV0IC5jaGVja2JveD5sYWJlbHtwYWRkaW5nLWxlZnQ6MjBweDttYXJnaW4tYm90dG9tOjA7Zm9udC13ZWlnaHQ6NDAwO2N1cnNvcjpwb2ludGVyfS5jcm9zc3RhbGstaW5wdXQgLmNoZWNrYm94IGlucHV0W3R5cGU9ImNoZWNrYm94Il0sLmNyb3NzdGFsay1pbnB1dCAuY2hlY2tib3gtaW5saW5lIGlucHV0W3R5cGU9ImNoZWNrYm94Il17cG9zaXRpb246YWJzb2x1dGU7bWFyZ2luLXRvcDoycHg7bWFyZ2luLWxlZnQ6LTIwcHh9LmNyb3NzdGFsay1pbnB1dCAuY2hlY2tib3grLmNoZWNrYm94e21hcmdpbi10b3A6LTVweH0uY3Jvc3N0YWxrLWlucHV0IC5jaGVja2JveC1pbmxpbmV7cG9zaXRpb246cmVsYXRpdmU7ZGlzcGxheTppbmxpbmUtYmxvY2s7cGFkZGluZy1sZWZ0OjIwcHg7bWFyZ2luLWJvdHRvbTowO2ZvbnQtd2VpZ2h0OjQwMDt2ZXJ0aWNhbC1hbGlnbjptaWRkbGU7Y3Vyc29yOnBvaW50ZXJ9LmNyb3NzdGFsay1pbnB1dCAuY2hlY2tib3gtaW5saW5lKy5jaGVja2JveC1pbmxpbmV7bWFyZ2luLXRvcDowO21hcmdpbi1sZWZ0OjEwcHh9Cg==" rel="stylesheet"/>
 </head>
 <body>
-<div class="datatables html-widget html-fill-item" id="htmlwidget-382bbfdfac1ccfda5f46" style="width:100%;height:auto;"></div>
-<script data-for="htmlwidget-382bbfdfac1ccfda5f46" type="application/json">{"x":{"filter":"none","vertical":false,"caption":"<caption>Marker TFs for each T subset<\/caption>","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40"],["lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg"],["GLIS3","TEAD1","EOMES","LEF1","SMAD3","ZNF18","E2F6","HSF4","BRCA1","TCF7","ASCL2","BATF3","CEBPA","CPEB1","E2F1","FOXD1","GLIS1","GLIS2","HESX1","HEY2","ETV1","CEBPD","CEBPG","USF1","SP4","MAF","NFIA","PATZ1","MZF1","ATF4","ETV7","FOXP3","FOSL2","FOSL1","SP2","E2F4","ZFX","E2F3","MXI1","STAT3"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>cell_type<\/th>\n      <th>marker<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"cell_type","targets":1},{"name":"marker","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-bb7c4d3d814e649d7044" style="width:100%;height:auto;"></div>
+<script data-for="htmlwidget-bb7c4d3d814e649d7044" type="application/json">{"x":{"filter":"none","vertical":false,"caption":"<caption>Marker TFs for each T subset<\/caption>","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40"],["lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD4_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_CD8_T","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Th17","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg","lungs_Treg"],["GLIS3","TEAD1","EOMES","LEF1","SMAD3","ZNF18","E2F6","HSF4","BRCA1","TCF7","ASCL2","BATF3","CEBPA","CPEB1","E2F1","FOXD1","GLIS1","GLIS2","HESX1","HEY2","ETV1","CEBPD","CEBPG","USF1","SP4","MAF","NFIA","PATZ1","MZF1","ATF4","ETV7","FOXP3","FOSL2","FOSL1","SP2","E2F4","ZFX","E2F3","MXI1","STAT3"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>cell_type<\/th>\n      <th>marker<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"cell_type","targets":1},{"name":"marker","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </body>
 </html>
 </div>
@@ -20109,7 +20083,7 @@ AHmCAjQAAAAAAAAAIE9QgAYAAAAAAAAA5In/A3tEgN3T+H2PAAAAAElFTkSuQmCC" width="960"/>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p><strong>Pathways and Diseases GO terms</strong></p>
-<p>All other cell-type to marker TF pairs have no significant enrichment except for Treg-E2F4 and Treg-E2F3.</p>
+<p>All other celltype-TF pairs have no significant enrichment except for Treg-E2F4 and Treg-E2F3.</p>
 </div>
 </div>
 </div>
