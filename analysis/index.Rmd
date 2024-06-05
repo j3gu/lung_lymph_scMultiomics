@@ -18,6 +18,7 @@ TBD
 ### Literature reviews 
 
 ### Results
+[test heritability enrichment and identify the relevant cell type or tissue](u19_h2g_enrichment.html)
 
 [identify topics with different proportions between tissue](cross_tissue_DE_u19_fastTopics.html)
 

@@ -1,0 +1,284 @@
+---
+title: "u19_h2g_enrichment_analysis"
+output: html_document
+date: "`r Sys.Date()`"
+author: 'Jing Gu'
+---
+# Outlines 
+1. Evaluate how much additional information we can get from our multi-omics dataset
+* characterize and compare our identified open chromatin peaks with Wang et al.
+* estimate heritability enrichment for annotations derived from our chromatin data across many traits
+  - cell-type based annotations
+  - topic-based annotations
+
+2. Identify relevant cell-types and tissues for Asthma
+* find peaks in our dataset that overlap with enhancers with high ePIPs based on GWAS and other single-cell ATAC-seq data and then get the corresponding cell-type and tissue information
+* compute ePIP using our own data set and then identify relevant cell-types or tissues  
+  - Compute ePIPs by summing up PIPs of causal variants that overlap with each enhancer
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+source("~/projects/funcFinemapping/code/make_plots.R")
+library(dplyr)
+library(GenomicRanges)
+library(data.table)
+library(rtracklayer)
+library(ArchR)
+# reference table for annotations
+# annotID <-c("CD16_neg_NK", "CD16_pos_NK",
+#   "Memory_B", "Naive_B",
+#   "Treg", "CD4_T", "CD8_T", "Th17")
+# annot<-gsub("lungs_", "", annotations[1:8])
+# write.table(data.frame(annot, annotID), "output/annotation_reference.txt",
+#             quote = F, row.names = F, sep='\t')
+reference<-read.table("output/annotation_reference.txt", header = T)
+```
+## Evaluate the contribution of our multi-omics dataset to disease heritability
+```{r eval=FALSE}
+fastAnnoPeaks <- function(
+	peaks = NULL, 
+	BSgenome = NULL, 
+	geneAnnotation = NULL, 
+	promoterRegion = c(2000, 100),
+	logFile = NULL
+	){
+
+	#Validate
+#	peaks <- .validGRanges(peaks)
+	peakSummits <- GenomicRanges::resize(peaks,1,"center")
+#	geneAnnotation$genes <- .validGRanges(geneAnnotation$genes)
+#	geneAnnotation$exons <- .validGRanges(geneAnnotation$exons)
+#	geneAnnotation$TSS <- .validGRanges(geneAnnotation$TSS)
+#	BSgenome <- validBSgenome(BSgenome)
+
+	#First Lets Get Distance to Nearest Gene Start
+#	.logMessage("Annotating Peaks : Nearest Gene", logFile = logFile)
+	distPeaks <- distanceToNearest(peakSummits, GenomicRanges::resize(geneAnnotation$genes, 1, "start"), ignore.strand = TRUE)
+	peaks<-peaks[distPeaks@from]
+	mcols(peaks)$distToGeneStart <- mcols(distPeaks)$distance
+	mcols(peaks)$nearestGene <- mcols(geneAnnotation$genes)$symbol[subjectHits(distPeaks)]
+#	.logMessage("Annotating Peaks : Gene", logFile = logFile)
+	promoters <- extendGR(GenomicRanges::resize(geneAnnotation$genes, 1, "start"), upstream = promoterRegion[1], downstream = promoterRegion[2])
+	op <- overlapsAny(peakSummits, promoters, ignore.strand = TRUE)
+	og <- overlapsAny(peakSummits, geneAnnotation$genes, ignore.strand = TRUE)
+	oe <- overlapsAny(peakSummits, geneAnnotation$exons, ignore.strand = TRUE)
+	type <- rep("Distal", length(peaks))
+	type[which(og & oe)] <- "Exonic"
+	type[which(og & !oe)] <- "Intronic"
+	type[which(op)] <- "Promoter"
+	mcols(peaks)$peakType <- type
+
+	#First Lets Get Distance to Nearest TSS's
+#	.logMessage("Annotating Peaks : TSS", logFile = logFile)
+	distTSS <- distanceToNearest(peakSummits, GenomicRanges::resize(geneAnnotation$TSS, 1, "start"), ignore.strand = TRUE)
+	mcols(peaks)$distToTSS <- mcols(distTSS)$distance
+	if("symbol" %in% colnames(mcols(geneAnnotation$TSS))){
+		mcols(peaks)$nearestTSS <- mcols(geneAnnotation$TSS)$symbol[subjectHits(distTSS)]
+	}else if("tx_name" %in% colnames(mcols(geneAnnotation$TSS))){
+		mcols(peaks)$nearestTSS <- mcols(geneAnnotation$TSS)$tx_name[subjectHits(distTSS)]
+	}
+
+	#Get NucleoTide Content
+#	.logMessage("Annotating Peaks : GC", logFile = logFile)
+# 	nucFreq <- BSgenome::alphabetFrequency(getSeq(BSgenome, peaks))
+#   	mcols(peaks)$GC <- round(rowSums(nucFreq[,c("G","C")]) / rowSums(nucFreq),4)
+#   	mcols(peaks)$N <- round(nucFreq[,c("N")] / rowSums(nucFreq),4)
+  	peaks
+}
+
+```
+
+### Characterize and compare peaks from T cells between two dataset 
+
+A barplot of summarizing peak counts by types show Wang et al. identified more peaks in distal and exonic regions but fewer ones in promoters compared to our dataset. The color indicates whether each query peak in U19 overlaps with the one in Wang et al. We see more than 50% peaks in U19 overlapped with ones in Wang et al., while these overlapped peaks take up less than 50% of peaks in Wang et al.
+```{r}
+#proj<-loadArchRProject("~/cluster/projects/u19_multiomics/analyses/all_sample_DA_cross_tissues/")
+ref.T<-readRDS("data/Wang_2020_T_cell_peaks_metadata.RDS")
+data.T<-readRDS("data/U19_T_cell_peaks_metadata.RDS")
+
+#check peak overlapping
+overlaps<-findOverlaps(data.T, ref.T)
+data.T$overlapped<-FALSE
+data.T$overlapped[overlaps@from]<-TRUE
+ref.T$overlapped<-FALSE
+ref.T$overlapped[overlaps@to]<-TRUE
+
+peak.tbl<-rbind(cbind(data.T$peakType, data.T$overlapped, "U19"),
+                cbind(ref.T$peakType, ref.T$overlapped, "Wang2020"))
+colnames(peak.tbl)<-c("PeakType", "Overlapped", "Dataset")
+
+
+p <- ggplot(data.frame(peak.tbl), 
+            aes(x = PeakType, fill=Overlapped)) + 
+  geom_bar() + facet_wrap(~ Dataset) + labs(fill = "Peaks Overlapped")
+p
+
+```
+
+### Test heritability enrichment through S-LDSC
+
+The union set of peaks from U19 atac-seq data were first lifted over to hg19. The following table shows the change in genome builds only made 1% of peaks have inconsistent width.
+```{r eval=FALSE}
+# prepare inputs for LDSC
+peaks<-readRDS("~/cluster/projects/u19_multiomics/analyses/all_sample_DA_cross_tissues/u19_peaks_by_tissue_with_Tsub.RDS")
+subPeaks<-peaks[grepl("T", names(peaks))|
+                  grepl("B", names(peaks))|
+                  grepl("NK", names(peaks))]
+sumstats<-c()
+for(i in unique(names(subPeaks))){
+  #print(i)
+  cur<-subPeaks[names(subPeaks) == i]
+  seqlevelsStyle(cur) = "UCSC"  # necessary
+  cur19 = unlist(liftOver(cur, ch))
+  percentPeaks<-c(round(sum(data.frame(ranges(cur19))$width != 501)/
+                          length(cur19), 3))
+  sumstats<-rbind(sumstats, 
+                  c(length(cur19)-length(cur),
+                  length(cur19),
+                  percentPeaks))
+
+  #write.table(data.frame(seqnames(cur19), ranges(cur19)), 
+            #  sprintf("/home/jinggu/cluster/data/features/processed/u19_multiomics/GRN_batch/%s.bed", i), quote = F, row.names = FALSE, sep='\t')
+}
+
+colnames(sumstats)<-c("nPeak_difference", "nPeak_hg19", "percentPeak_unequal_width")
+head(data.frame(unique(names(subPeaks)), sumstats, row.names = 1))
+```
+**Test one annotation at a time**
+
+* GWAS: a broad range of triats
+* Baseline annotation: BaselineLD_v2.2
+
+Overall, we observed immune cells in both tissues are significantly enriched for genetic risks of immune diseases but not those of other traits. T cells from both tissues show significant enrichment for risk variants of immune diseases, while only lung B cells show enrichment.
+```{r}
+work.dir<-"~/cluster/projects/ldsc_enrichment"
+traits<-c("LDL", "HDL", "bmi", "height", "scz", "allergy", "aoa_ukb", "coa_ukb")
+files<-list.files(paste0(work.dir, "/LDL/baselineLD_v2.2"), pattern = "_cells.results")
+annotations<-gsub(".results", "", files[grepl("lungs", files)|grepl("spleens", files)])
+
+
+
+ldsc.tbl<-c()
+for(trait in traits){
+  for(annot in rev(annotations)[-2:-1]){
+    
+    f<-read.table(sprintf("~/cluster/projects/ldsc_enrichment/%s/baselineLD_v2.2/%s.results", trait, annot), header = T)
+    ldsc.tbl<-rbind(ldsc.tbl, cbind(trait, annot, f[dim(f)[1], -1]))
+  }
+}
+
+colnames(ldsc.tbl)[2]<-"Category"
+# change annotation labels
+ldsc.tbl$Category<-factor(ldsc.tbl$Category,
+                  labels = c(paste0("lungs_", reference$annotID),
+                             paste0("spleens_", reference$annotID))
+                  )
+
+snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[1:2]), log.based = F, 
+                    label.size = 4, tolabel = "pval") + facet_grid(. ~ trait) 
+snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[3:5]), log.based = F, 
+                    label.size = 4, tolabel = "pval") + facet_grid(. ~ trait) 
+snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[6:8]), log.based = F, 
+                    label.size = 4, tolabel = "pval") + facet_grid(. ~ trait) 
+```
+**Jointly test multiple annotations**
+
+The chromatin accessible peaks from T cells, B cells, and NK cells were jointly tested for each tissue. The results show that lung immune cells explain more disease heritability than spleen immmune cells. Conditional on other lung immune cells, Treg OCRs have the most contribution in Allergy and AOA, followed by B cells and NK cells. For COA, the disease heritability was explained evenly by Treg, CD4+ T and naive B cells. The CD8+ T cells only contributes to COA heritability.
+```{r fig.width=8}
+tissues<-c("lungs", "spleens")
+ldsc.tbl<-c()
+for(trait in traits){
+  for(tissue in tissues){
+    f<-read.table(sprintf("~/cluster/projects/ldsc_enrichment/%s/baselineLD_v2.2/%s_joint.results", trait, tissue), header = T)
+    ldsc.tbl<-rbind(ldsc.tbl, cbind(trait, tissue, f[grepl(tissue, f$Category),]))
+  }
+}
+
+ldsc.tbl$Category<-factor(unlist(lapply(ldsc.tbl$Category, function(i){strsplit(i, "L2")[[1]][1]})),
+                  levels = c(paste0("lungs_", reference$annot),
+                             paste0("spleens_", reference$annot)),
+                  labels = c(paste0("lungs_", reference$annotID),
+                             paste0("spleens_", reference$annotID))
+                  )
+
+
+snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[6:8] & 
+                                          tissue == "lungs"), log.based = F, 
+                    label.size = 4) + facet_grid(. ~ trait) 
+
+snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[6:8] & 
+                                          tissue == "spleens"), log.based = F, 
+                    label.size = 4) + facet_grid(. ~ trait) 
+
+```
+
+## Identify relevant cell-types and tissues for Asthma
+
+Based on the list of enhancers ranked by the causal signals from GWAS and other functional data, I looked for peaks in our dataset that overlapped with high-confident enhancers. For enhancers overlapped by multiple peaks, the peak scores were computed by the average of their significant scores from peak calling. 
+
+**Heatmap for peak scores**
+
+* X-axis denotes enhancer-gene pair, ranked by either AOA ePIP or COA ePIP.
+* Color of heatmap is the log2 value of mean significant scores for peaks that overlap with enhancer of high PIPs. 
+```{r eval=FALSE}
+# load ePIP computed by Ethan
+f<-fread("/project/xinhe/ethan/shared_files/jinggu/CRE_0_summary.txt")
+# load fine-mapped results for Asthma
+# snp<-readRDS("/project/xinhe/ethan/shared_files/jinggu/aoa_gp6_wo_coding_finemapping_result_L5.rds")
+```
+
+```{r}
+gginput<-readRDS("output/lung_immune_atac_peaks_high_ePIPs.RDS")
+gginput[, c("tissue", "annot")]<-t(sapply(gginput$peaks, function(i){
+  tissue = strsplit(i, "_")[[1]][1]
+  annot = paste(strsplit(i, "_")[[1]][-1], collapse = "_")
+  return(c(tissue, annot))
+}))
+
+gginput<-inner_join(gginput, reference, by="annot")
+```
+
+### AOA enhancers ranked by ePIPs
+```{r fig.height=6, fig.width=8}
+gginput$annotID<-factor(gginput$annotID,
+                        levels = reference$annotID)
+gginput$labels<-factor(gginput$labels,
+                       levels = rev(unique(gginput %>% arrange(desc(aoa_epip)) %>%
+                         select(labels))$labels))
+p <- ggplot(gginput %>% filter(aoa_epip >= 0.5),
+            aes(x=annotID ,y=labels,
+                         fill = log2(total_score))) + 
+  geom_bin2d() + xlab("") + ylab("") +
+  labs(
+       #y = "enhancer-gene pairs",
+       fill = "peak score") + 
+theme(axis.text.x=element_text(
+    size=12, angle = 90, vjust=0.4),
+      axis.text.y=element_text(
+          size=12),
+      strip.text.x = element_text(size=12),
+      ) 
+p + facet_grid(. ~ tissue)
+```
+
+### COA enhancers ranked by ePIPs
+```{r fig.height=6, fig.width=8}
+gginput$labels<-factor(gginput$labels,
+                       levels = rev(unique(gginput %>% arrange(desc(coa_epip)) %>%
+                         select(labels))$labels))
+p <- ggplot(gginput %>% filter(coa_epip >= 0.5),
+            aes(x=annotID ,y=labels,
+                         fill = log2(total_score))) + 
+  geom_bin2d() + xlab("") + ylab("") +
+  labs(
+       #y = "enhancer-gene pairs",
+       fill = "peak score") + 
+theme(axis.text.x=element_text(
+    size=12, angle = 90, vjust=0.4),
+      axis.text.y=element_text(
+          size=12),
+      strip.text.x = element_text(size=12),
+      ) 
+p + facet_grid(. ~ tissue)
+```
+
