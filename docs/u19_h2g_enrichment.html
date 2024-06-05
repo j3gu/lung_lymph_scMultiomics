@@ -521,15 +521,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree8e7a5acb456e8a39bdba33f7ddee763b03006d4ctargetblank8e7a5aca">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree32fec27fd554efa4897144c8fa33cd58a0b8f108targetblank32fec27a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/8e7a5acb456e8a39bdba33f7ddee763b03006d4c" target="_blank">8e7a5ac</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/32fec27fd554efa4897144c8fa33cd58a0b8f108" target="_blank">32fec27</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree8e7a5acb456e8a39bdba33f7ddee763b03006d4ctargetblank8e7a5aca"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree32fec27fd554efa4897144c8fa33cd58a0b8f108targetblank32fec27a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +539,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/8e7a5acb456e8a39bdba33f7ddee763b03006d4c" target="_blank">8e7a5ac</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/32fec27fd554efa4897144c8fa33cd58a0b8f108" target="_blank">32fec27</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -556,12 +556,14 @@ were generated:
 Ignored files:
     Ignored:    analysis/.RData
     Ignored:    analysis/.Rhistory
+    Ignored:    analysis/figure/
 
 Untracked files:
     Untracked:  analysis/.ipynb_checkpoints/
     Untracked:  analysis/test_GO_enrichment.ipynb
     Untracked:  analysis/u19_atac_fastTopics.Rmd
     Untracked:  analysis/u19_regulon_enrichment.Rmd
+    Untracked:  data/TF_target_sizes_GRN.txt
     Untracked:  data/U19_T_cell_peaks_metadata.RDS
     Untracked:  data/Wang_2020_T_cell_peaks_metadata.RDS
     Untracked:  data/lung_GRN_CD4_T_edges.txt
@@ -623,6 +625,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/32fec27fd554efa4897144c8fa33cd58a0b8f108/analysis/u19_h2g_enrichment.Rmd" target="_blank">32fec27</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+<td>
+update h2g analysis
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/u19_h2g_enrichment.html" target="_blank">71a11fc</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -693,6 +729,43 @@ query peak in U19 overlaps with the one in Wang et al. We see more than
 50% peaks in U19 overlapped with ones in Wang et al., while these
 overlapped peaks take up less than 50% of peaks in Wang et al.
 <img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-2-1">
+Past versions of unnamed-chunk-2-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-2-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-2-1.png" target="_blank">71a11fc</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="test-heritability-enrichment-through-s-ldsc"
 class="section level3">
@@ -700,6 +773,20 @@ class="section level3">
 <p>The union set of peaks from U19 atac-seq data were first lifted over
 to hg19. The following table shows the change in genome builds only made
 1% of peaks have inconsistent width.</p>
+<pre><code>                                nPeak_difference nPeak_hg19
+lungs_Type_17_helper_T_cells                   0       1208
+lungs_Tem_Trm_cytotoxic_T_cells              -58      10539
+lungs_Tcm_Naive_helper_T_cells               -35      13234
+lungs_Regulatory_T_cells                     -44      12322
+lungs_Naive_B_cells                          -85      18411
+spleens_Regulatory_T_cells                   -16       8348
+                                percentPeak_unequal_width
+lungs_Type_17_helper_T_cells                        0.017
+lungs_Tem_Trm_cytotoxic_T_cells                     0.011
+lungs_Tcm_Naive_helper_T_cells                      0.013
+lungs_Regulatory_T_cells                            0.010
+lungs_Naive_B_cells                                 0.012
+spleens_Regulatory_T_cells                          0.014</code></pre>
 <p><strong>Test one annotation at a time</strong></p>
 <ul>
 <li>GWAS: a broad range of triats</li>
@@ -709,8 +796,121 @@ to hg19. The following table shows the change in genome builds only made
 enriched for genetic risks of immune diseases but not those of other
 traits. T cells from both tissues show significant enrichment for risk
 variants of immune diseases, while only lung B cells show enrichment.
-<img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-3.png" width="672" style="display: block; margin: auto;" />
-<strong>Jointly test multiple annotations</strong></p>
+<img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-1">
+Past versions of unnamed-chunk-4-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-4-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-1.png" target="_blank">71a11fc</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-2">
+Past versions of unnamed-chunk-4-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-4-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-2.png" target="_blank">71a11fc</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-3">
+Past versions of unnamed-chunk-4-3.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-4-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-3.png" target="_blank">71a11fc</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Jointly test multiple annotations</strong></p>
 <p>The chromatin accessible peaks from T cells, B cells, and NK cells
 were jointly tested for each tissue. The results show that lung immune
 cells explain more disease heritability than spleen immmune cells.
@@ -718,7 +918,83 @@ Conditional on other lung immune cells, Treg OCRs have the most
 contribution in Allergy and AOA, followed by B cells and NK cells. For
 COA, the disease heritability was explained evenly by Treg, CD4+ T and
 naive B cells. The CD8+ T cells only contributes to COA heritability.
-<img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-1.png" width="768" style="display: block; margin: auto;" /><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-2.png" width="768" style="display: block; margin: auto;" /></p>
+<img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-5-1">
+Past versions of unnamed-chunk-5-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-5-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-1.png" target="_blank">71a11fc</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-5-2">
+Past versions of unnamed-chunk-5-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-5-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-2.png" target="_blank">71a11fc</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Tissue-specific analyses</strong></p>
 </div>
 </div>
 <div id="identify-relevant-cell-types-and-tissues-for-asthma"
@@ -738,11 +1014,48 @@ peaks that overlap with enhancer of high PIPs.</li>
 </ul>
 <div id="aoa-enhancers-ranked-by-epips" class="section level3">
 <h3>AOA enhancers ranked by ePIPs</h3>
-<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-8-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-9-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-9-1">
+Past versions of unnamed-chunk-9-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-9-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-9-1.png" target="_blank">71a11fc</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="coa-enhancers-ranked-by-epips" class="section level3">
 <h3>COA enhancers ranked by ePIPs</h3>
-<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-9-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-10-1.png" width="768" style="display: block; margin: auto;" /></p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
