@@ -118,9 +118,11 @@ p
 ### Test heritability enrichment through S-LDSC
 
 The union set of peaks from U19 atac-seq data were first lifted over to hg19. The following table shows the change in genome builds only made 1% of peaks have inconsistent width.
-```{r eval=FALSE}
+```{r}
 # prepare inputs for LDSC
 peaks<-readRDS("~/cluster/projects/u19_multiomics/analyses/all_sample_DA_cross_tissues/u19_peaks_by_tissue_with_Tsub.RDS")
+ch = import.chain("~/resources/genomes/chain_files/hg19ToHg38.over.chain")
+
 subPeaks<-peaks[grepl("T", names(peaks))|
                   grepl("B", names(peaks))|
                   grepl("NK", names(peaks))]
@@ -211,6 +213,20 @@ snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[6:8] &
                     label.size = 4) + facet_grid(. ~ trait) 
 
 ```
+**Tissue-specific analyses**
+
+```{r eval=FALSE}
+ldsc.dir<-"/home/jinggu/cluster/projects/ldsc_enrichment/ldscore/u19_multiomics"
+ldscores<-cbind(sprintf("%s/lungs_%s/lungs_%s.", ldsc.dir, reference$annot, reference$annot),
+                sprintf("%s/spleens_%s/spleens_%s.", ldsc.dir, reference$annot, reference$annot))
+ldscores.cols<-apply(ldscores, 1, function(i){paste(i, collapse = ",")})
+u19.ldcts<-cbind(reference$annotID, ldscores.cols)
+write.table(u19.ldcts, paste0(ldsc.dir, "/u19_tissue.ldcts"), 
+            quote = F, row.names = F, sep="\t")
+  
+```
+
+
 
 ## Identify relevant cell-types and tissues for Asthma
 
@@ -222,13 +238,15 @@ Based on the list of enhancers ranked by the causal signals from GWAS and other 
 * Color of heatmap is the log2 value of mean significant scores for peaks that overlap with enhancer of high PIPs. 
 ```{r eval=FALSE}
 # load ePIP computed by Ethan
-f<-fread("/project/xinhe/ethan/shared_files/jinggu/CRE_0_summary.txt")
+#f<-fread("/project/xinhe/ethan/shared_files/jinggu/CRE_0_summary.txt")
+f<-fread("~/projects/lung_immune_fine_mapping/data/enhancer_summary_clean_20230320_annotated.txt")
 # load fine-mapped results for Asthma
 # snp<-readRDS("/project/xinhe/ethan/shared_files/jinggu/aoa_gp6_wo_coding_finemapping_result_L5.rds")
 ```
 
 ```{r}
 gginput<-readRDS("output/lung_immune_atac_peaks_high_ePIPs.RDS")
+gginput$genes<-unlist(lapply(gginput$labels, function(i){rev(strsplit(i, "[_]")[[1]])[1]}))
 gginput[, c("tissue", "annot")]<-t(sapply(gginput$peaks, function(i){
   tissue = strsplit(i, "_")[[1]][1]
   annot = paste(strsplit(i, "_")[[1]][-1], collapse = "_")
@@ -281,4 +299,5 @@ theme(axis.text.x=element_text(
       ) 
 p + facet_grid(. ~ tissue)
 ```
+
 
