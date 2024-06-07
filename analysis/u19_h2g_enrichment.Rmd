@@ -24,7 +24,7 @@ library(GenomicRanges)
 library(data.table)
 library(rtracklayer)
 library(ArchR)
-# reference table for annotations
+# build a reference table for annotations
 # annotID <-c("CD16_neg_NK", "CD16_pos_NK",
 #   "Memory_B", "Naive_B",
 #   "Treg", "CD4_T", "CD8_T", "Th17")
@@ -33,8 +33,10 @@ library(ArchR)
 #             quote = F, row.names = F, sep='\t')
 reference<-read.table("output/annotation_reference.txt", header = T)
 ```
-## Evaluate the contribution of our multi-omics dataset to disease heritability
+# Evaluate the heritability contribution of our multi-omics dataset 
 ```{r eval=FALSE}
+# A function from ArchR to annotate peaks with several features 
+# like GC content, feature type, etc. 
 fastAnnoPeaks <- function(
 	peaks = NULL, 
 	BSgenome = NULL, 
@@ -88,7 +90,7 @@ fastAnnoPeaks <- function(
 
 ```
 
-### Characterize and compare peaks from T cells between two dataset 
+## Characterize and compare peaks from T cells between two dataset 
 
 A barplot of summarizing peak counts by types show Wang et al. identified more peaks in distal and exonic regions but fewer ones in promoters compared to our dataset. The color indicates whether each query peak in U19 overlaps with the one in Wang et al. We see more than 50% peaks in U19 overlapped with ones in Wang et al., while these overlapped peaks take up less than 50% of peaks in Wang et al.
 ```{r}
@@ -96,7 +98,7 @@ A barplot of summarizing peak counts by types show Wang et al. identified more p
 ref.T<-readRDS("data/Wang_2020_T_cell_peaks_metadata.RDS")
 data.T<-readRDS("data/U19_T_cell_peaks_metadata.RDS")
 
-#check peak overlapping
+# check peak overlapping
 overlaps<-findOverlaps(data.T, ref.T)
 data.T$overlapped<-FALSE
 data.T$overlapped[overlaps@from]<-TRUE
@@ -108,14 +110,16 @@ peak.tbl<-rbind(cbind(data.T$peakType, data.T$overlapped, "U19"),
 colnames(peak.tbl)<-c("PeakType", "Overlapped", "Dataset")
 
 
-p <- ggplot(data.frame(peak.tbl), 
-            aes(x = PeakType, fill=Overlapped)) + 
-  geom_bar() + facet_wrap(~ Dataset) + labs(fill = "Peaks Overlapped")
+p <- ggplot(data.frame(peak.tbl),
+            aes(x = PeakType, fill = Overlapped)) +
+  geom_bar() + facet_wrap( ~ Dataset) + labs(fill = "Peaks Overlapped")
 p
 
 ```
 
-### Test heritability enrichment through S-LDSC
+## Identify relevant tissue or cell-type for immune diseases 
+
+METHOD: Test heritability enrichment through S-LDSC
 
 The union set of peaks from U19 atac-seq data were first lifted over to hg19. The following table shows the change in genome builds only made 1% of peaks have inconsistent width.
 ```{r}
@@ -146,74 +150,234 @@ for(i in unique(names(subPeaks))){
 colnames(sumstats)<-c("nPeak_difference", "nPeak_hg19", "percentPeak_unequal_width")
 head(data.frame(unique(names(subPeaks)), sumstats, row.names = 1))
 ```
-**Test one annotation at a time**
+### Test enrichment for individual cell-type of each tissue
 
 * GWAS: a broad range of triats
-* Baseline annotation: BaselineLD_v2.2
+* Baseline annotation: 53 annotations from Finucane et al. 2015 Nat Genet (Baseline v1.2)
+
 
 Overall, we observed immune cells in both tissues are significantly enriched for genetic risks of immune diseases but not those of other traits. T cells from both tissues show significant enrichment for risk variants of immune diseases, while only lung B cells show enrichment.
+
 ```{r}
-work.dir<-"~/cluster/projects/ldsc_enrichment"
-traits<-c("LDL", "HDL", "bmi", "height", "scz", "allergy", "aoa_ukb", "coa_ukb")
-files<-list.files(paste0(work.dir, "/LDL/baselineLD_v2.2"), pattern = "_cells.results")
-annotations<-gsub(".results", "", files[grepl("lungs", files)|grepl("spleens", files)])
-
-
-
-ldsc.tbl<-c()
-for(trait in traits){
-  for(annot in rev(annotations)[-2:-1]){
-    
-    f<-read.table(sprintf("~/cluster/projects/ldsc_enrichment/%s/baselineLD_v2.2/%s.results", trait, annot), header = T)
-    ldsc.tbl<-rbind(ldsc.tbl, cbind(trait, annot, f[dim(f)[1], -1]))
+# make a summary table for LDSC outputs
+make_summary_table <- 
+  function(traits, 
+           referenceTab, 
+           baseline="baselineLD_v2.2"
+           ){
+  
+  output_df<-c()
+  for (trait in traits){
+    for (annot in referenceTab[,1]){
+      f<-read.table(
+        sprintf("output/ldsc_enrichment/%s/%s/%s.results", 
+              trait, baseline, annot), header = T)
+      output_df<-rbind(output_df, cbind(trait, f[!grepl("L2_0", f$Category),]))
+      }
   }
+  
+  # trim off suffix of labels
+  output_df$Category <- unlist(
+      lapply(output_df$Category, function(i){strsplit(i, "L2")[[1]][1]})
+      )
+  # change order and labels
+  output_df$Category <- factor(output_df$Category,
+                      levels = referenceTab[, 1],
+                      labels = referenceTab[, 2])
+    
+  return(output_df) 
 }
-
-colnames(ldsc.tbl)[2]<-"Category"
-# change annotation labels
-ldsc.tbl$Category<-factor(ldsc.tbl$Category,
-                  labels = c(paste0("lungs_", reference$annotID),
-                             paste0("spleens_", reference$annotID))
-                  )
-
-snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[1:2]), log.based = F, 
-                    label.size = 4, tolabel = "pval") + facet_grid(. ~ trait) 
-snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[3:5]), log.based = F, 
-                    label.size = 4, tolabel = "pval") + facet_grid(. ~ trait) 
-snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[6:8]), log.based = F, 
-                    label.size = 4, tolabel = "pval") + facet_grid(. ~ trait) 
+  
 ```
-**Jointly test multiple annotations**
+
+
+```{r}
+trait_list<-c("LDL", "HDL", "bmi", "height", "scz", "allergy", "aoa_ukb", "coa_ukb")
+tissues<-c("lungs", "spleens")
+annotations<-cbind(unlist(lapply(tissues, function(i){paste0(i, "_", reference$annot)})),
+                   unlist(lapply(tissues, function(i){paste0(i, "_", reference$annotID)}))
+)
+
+ldsc_tbl<-make_summary_table(traits = trait_list, 
+                             referenceTab = annotations,
+                             baseline="baselineLD_v2.2")
+
+
+snp_enrichment_plot(ldsc_tbl %>% filter(trait %in% trait_list[1:2]), log.based = F, 
+                    label.size = 3, tolabel = "pval") + facet_grid(. ~ trait) 
+snp_enrichment_plot(ldsc_tbl %>% filter(trait %in% trait_list[3:5]), log.based = F, 
+                    label.size = 3, tolabel = "pval") + facet_grid(. ~ trait) 
+snp_enrichment_plot(ldsc_tbl %>% filter(trait %in% trait_list[6:8]), log.based = F, 
+                    label.size = 3, tolabel = "pval") + facet_grid(. ~ trait) 
+
+DT::datatable(ldsc_tbl %>% filter(trait %in% trait_list[6:8]) %>% 
+                mutate(Prop_SNPs = format(scales::percent(Prop._SNPs)),
+                       Prop_h2 = format(scales::percent(Prop._h2), digits=2),
+                       Enrichment = format(Enrichment, digits=2),
+                       Enrichment_p = format(Enrichment_p, digits=2)) %>%
+                select(trait, Category, Prop_SNPs, Prop_h2, Enrichment, Enrichment_p))
+```
+
+The high standard errors for enrichment estimates are probably due to low proportion of SNPs present in peaks called by each cluster. To make the point that lung tissue is more important than spleen to disease, we can temporarily ignore sub-types but use major immune cell types like T, B and NK cells to improve confidence interval.
+
+### Test individual enrichment for major cell types of each tissue
+
+**A barplot for LDSC enrichment results**. 
+Baseline annotation: baseline v1.2 (53 annotations) recommended for comparing the enrichment p-values across cell types or tissues. 
+Y-axis: annotation(%GWAS SNPs within annotation). 
+X-axis: enrichment fold.     
+Label: enrichment p-value. 
+
+Merging cell types to contain more risk variants does help lower the standard errors. For both tissues, T cells show the strongest enrichment and contain the highest proportion of risk variants. Across cell types, lung immune cells show more significant enrichment compare to spleen immune cells. 
+```{bash eval=FALSE}
+# Merge peaks of T subsets
+## concatenate and sort
+for i in {T,B,NK}
+do
+cat lungs*$i*.bed|sort -k1,1 -k2,2n - > lungs_${i}_cells.bed
+done
+
+## merge bed files
+for i in {T,B,NK}
+do
+bedtools merge -i merge/lungs_${i}_cells.bed > lungs_${i}_cells.bed
+done
+```
+
+```{r}
+major_ref <- data.frame(annot = paste0(c("T", "B", "NK"), "_cells"),
+                        annotID = paste0(c("T", "B", "NK"), "_cells"))
+annotations <- cbind(unlist(lapply(tissues, function(i){paste0(i, "_", major_ref$annot)})),
+                   unlist(lapply(tissues, function(i){paste0(i, "_", major_ref$annotID)}))
+)
+
+ldsc_tbl<-make_summary_table(traits = trait_list, 
+                             referenceTab = annotations)
+
+# baseline="baseline_v1.2"
+snp_enrichment_plot(ldsc_tbl %>% filter(trait %in% trait_list[1:2]), log.based = F, 
+                    label.size = 3, tolabel = "pval") + facet_grid(. ~ trait) 
+snp_enrichment_plot(ldsc_tbl %>% filter(trait %in% trait_list[3:5]), log.based = F, 
+                    label.size = 3, tolabel = "pval") + facet_grid(. ~ trait) 
+snp_enrichment_plot(ldsc_tbl %>% filter(trait %in% trait_list[6:8]), log.based = F, 
+                    label.size = 3, tolabel = "pval") + facet_grid(. ~ trait) 
+
+DT::datatable(ldsc_tbl %>% filter(trait %in% trait_list[6:8]) %>% 
+                mutate(Prop_SNPs = format(scales::percent(Prop._SNPs)),
+                       Prop_h2 = format(scales::percent(Prop._h2), digits=2),
+                       Enrichment = format(Enrichment, digits=2),
+                       Enrichment_p = format(Enrichment_p, digits=2)) %>%
+                select(trait, Category, Prop_SNPs, Prop_h2, Enrichment, Enrichment_p))
+
+```
+**A dotplot for LDSC enrichment results** 
+
+dot size: enrichment fold 
+color: enrichment p-value
+```{r}
+# Todo - make a heatmap in dot plot for visualizing enrichment results 
+ldsc_tbl$trait <- factor(ldsc_tbl$trait,
+                         levels = trait_list)
+ldsc_tbl %>% 
+  ggplot(aes(x = trait, 
+             y = Category,
+             color = Enrichment_p,
+             size = Enrichment)) +
+  xlab("") + ylab("") + 
+  cowplot::theme_cowplot() + 
+  geom_point() + theme_bw() + 
+  scale_color_gradientn(colours = rev(viridis::viridis(20)), oob = scales::squish)
+  
+```
+
+```{r eval=FALSE}
+# prepare inputs for running tissue-specific enrichment test
+ldsc_dir = "/home/jinggu/cluster/projects/ldsc_enrichment/ldscore/u19_multiomics"
+ldsc_dicts<-unlist(
+  lapply(major_ref$annotID, function(i){
+    tissue_annot = paste0(tissues,"_",i)
+    full_annot = 
+      sprintf("%s/%s/%s.",
+              ldsc_dir, tissue_annot, tissue_annot
+              )
+    return(paste(full_annot, collapse = ","))})
+  )
+write.table(data.frame(cbind(major_ref$annotID, ldsc_dicts)),
+            "output/ldsc_enrichment/ldscore/u19_multiomics/u19_tissue_major.ldcts",
+            quote = F, row.names = F, sep="\t")
+```
+
+### Tissue-specific analyses for each major cell type. 
+LDSC operates cell-type specific analyses by taking two sets of LD scores for each test. Here I input one set of LD scores derived from lung and the other set from spleen as control for each major cell type. The resulting p-value tests whether the coefficient is greater than zero, which implies if lung tissue is more significant. To compute tissue-specific effects, I can obtain peaks specific to lung tissue and then repeat this analysis.
+
+**A barplot for tissue-group analysis** 
+X-axis: -log10 p-values for testing the coefficient 
+```{r}
+ldsc_tbl<-
+  lapply(trait_list,
+         function(i){
+           f <- fread(
+             paste0("output/ldsc_enrichment/", i,
+                    "/baseline_v1.2/u19_tissue_major.cell_type_results.txt"))
+           return(data.frame(trait = i, f))
+           })
+ldsc_tbl <- do.call(rbind, ldsc_tbl)
+ldsc_tbl$trait <- factor(
+  ldsc_tbl$trait,
+  levels = trait_list
+)
+ggplot(ldsc_tbl, 
+       aes(x = -log10(Coefficient_P_value),
+           y = Name,
+           fill = Name)) +
+  ylab("") + theme(legend.position="none") + 
+  geom_col() + facet_wrap(~trait)
+
+```
+
+### Jointly test multiple annotations
+
+**A barplot for LDSC enrichment results**
+
+Baseline annotation: BaselineLD_v2.2 (97 annotations) recommended for estimating heritability. 
+Y-axis: annotation(%GWAS SNPs within annotation). 
+X-axis: enrichment fold.     
+Label: heritability 
 
 The chromatin accessible peaks from T cells, B cells, and NK cells were jointly tested for each tissue. The results show that lung immune cells explain more disease heritability than spleen immmune cells. Conditional on other lung immune cells, Treg OCRs have the most contribution in Allergy and AOA, followed by B cells and NK cells. For COA, the disease heritability was explained evenly by Treg, CD4+ T and naive B cells. The CD8+ T cells only contributes to COA heritability.
 ```{r fig.width=8}
+# summarize LDSC output into a table
 tissues<-c("lungs", "spleens")
-ldsc.tbl<-c()
-for(trait in traits){
-  for(tissue in tissues){
-    f<-read.table(sprintf("~/cluster/projects/ldsc_enrichment/%s/baselineLD_v2.2/%s_joint.results", trait, tissue), header = T)
-    ldsc.tbl<-rbind(ldsc.tbl, cbind(trait, tissue, f[grepl(tissue, f$Category),]))
+ldsc_tbl<-list()
+for (tissue in tissues) {
+  for (trait in trait_list) {
+    f <- read.table(sprintf("~/cluster/projects/ldsc_enrichment/%s/baselineLD_v2.2/%s_joint.results", trait, tissue), header = T)
+    f$Category <- unlist(
+      lapply(f$Category, function(i){strsplit(i, "L2")[[1]][1]})
+      )
+    ldsc_tbl[[tissue]] <- 
+      rbind(ldsc_tbl[[tissue]], 
+            cbind(trait, tissue, f[grepl(tissue, f$Category),])
+            )
   }
+  new_order <- factor(ldsc_tbl[[tissue]]$Category,
+                      levels = c(paste0(tissue, "_", reference$annot)),
+                      labels = c(paste0(tissue, "_", reference$annotID))
+  )
+  ldsc_tbl[[tissue]]$Category<-new_order
 }
 
-ldsc.tbl$Category<-factor(unlist(lapply(ldsc.tbl$Category, function(i){strsplit(i, "L2")[[1]][1]})),
-                  levels = c(paste0("lungs_", reference$annot),
-                             paste0("spleens_", reference$annot)),
-                  labels = c(paste0("lungs_", reference$annotID),
-                             paste0("spleens_", reference$annotID))
-                  )
 
+snp_enrichment_plot(
+  ldsc_tbl$lungs %>% filter(trait %in% trait_list[6:8]), 
+  log.based = F, label.size = 4) + 
+  facet_grid(. ~ trait) 
 
-snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[6:8] & 
-                                          tissue == "lungs"), log.based = F, 
-                    label.size = 4) + facet_grid(. ~ trait) 
-
-snp_enrichment_plot(ldsc.tbl %>% filter(trait %in% traits[6:8] & 
-                                          tissue == "spleens"), log.based = F, 
-                    label.size = 4) + facet_grid(. ~ trait) 
-
+snp_enrichment_plot(
+  ldsc_tbl$spleens %>% filter(trait %in% trait_list[6:8]), 
+  log.based = F, label.size = 4) + 
+  facet_grid(. ~ trait)
 ```
-**Tissue-specific analyses**
 
 ```{r eval=FALSE}
 ldsc.dir<-"/home/jinggu/cluster/projects/ldsc_enrichment/ldscore/u19_multiomics"
@@ -225,8 +389,6 @@ write.table(u19.ldcts, paste0(ldsc.dir, "/u19_tissue.ldcts"),
             quote = F, row.names = F, sep="\t")
   
 ```
-
-
 
 ## Identify relevant cell-types and tissues for Asthma
 
