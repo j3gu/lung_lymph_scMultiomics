@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jing Gu" />
 
-<meta name="date" content="2024-06-05" />
+<meta name="date" content="2024-06-07" />
 
 <title>u19_h2g_enrichment_analysis</title>
 
@@ -37,6 +37,15 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/htmltools-fill-0.5.8.1/fill.css" rel="stylesheet" />
+<script src="site_libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<link href="site_libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet" />
+<script src="site_libs/datatables-binding-0.33/datatables.js"></script>
+<link href="site_libs/dt-core-1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="site_libs/dt-core-1.13.6/css/jquery.dataTables.extra.css" rel="stylesheet" />
+<script src="site_libs/dt-core-1.13.6/js/jquery.dataTables.min.js"></script>
+<link href="site_libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet" />
+<script src="site_libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
 <link href="site_libs/font-awesome-6.4.2/css/all.min.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet" />
 
@@ -361,7 +370,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">u19_h2g_enrichment_analysis</h1>
 <h4 class="author">Jing Gu</h4>
-<h4 class="date">2024-06-05</h4>
+<h4 class="date">2024-06-07</h4>
 
 </div>
 
@@ -390,7 +399,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2024-06-05
+<strong>Last updated:</strong> 2024-06-07
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -521,15 +530,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree32fec27fd554efa4897144c8fa33cd58a0b8f108targetblank32fec27a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeede034029a4b012d85c49568c901350db96ca997targetblankede0340a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/32fec27fd554efa4897144c8fa33cd58a0b8f108" target="_blank">32fec27</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/ede034029a4b012d85c49568c901350db96ca997" target="_blank">ede0340</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree32fec27fd554efa4897144c8fa33cd58a0b8f108targetblank32fec27a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeede034029a4b012d85c49568c901350db96ca997targetblankede0340a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +548,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/32fec27fd554efa4897144c8fa33cd58a0b8f108" target="_blank">32fec27</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/ede034029a4b012d85c49568c901350db96ca997" target="_blank">ede0340</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -556,7 +565,6 @@ were generated:
 Ignored files:
     Ignored:    analysis/.RData
     Ignored:    analysis/.Rhistory
-    Ignored:    analysis/figure/
 
 Untracked files:
     Untracked:  analysis/.ipynb_checkpoints/
@@ -572,7 +580,10 @@ Untracked files:
     Untracked:  data/lung_GRN_Treg_edges.txt
     Untracked:  output/annotation_reference.txt
     Untracked:  output/fastTopics
+    Untracked:  output/homer/
+    Untracked:  output/ldsc_enrichment
     Untracked:  output/lung_immune_atac_peaks_high_ePIPs.RDS
+    Untracked:  output/positions.bed
 
 Unstaged changes:
     Modified:   analysis/cross_tissue_DE_u19_fastTopics.Rmd
@@ -625,6 +636,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/ede034029a4b012d85c49568c901350db96ca997/analysis/u19_h2g_enrichment.Rmd" target="_blank">ede0340</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-07
+</td>
+<td>
+added tissue-group analysis
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/ca85982484a362036196c17bf218d91ecaea4872/docs/u19_h2g_enrichment.html" target="_blank">ca85982</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -713,15 +758,16 @@ cell-types or tissues
 with each enhancer</li>
 </ul></li>
 </ul>
+</div>
 <div
-id="evaluate-the-contribution-of-our-multi-omics-dataset-to-disease-heritability"
-class="section level2">
-<h2>Evaluate the contribution of our multi-omics dataset to disease
-heritability</h2>
+id="evaluate-the-heritability-contribution-of-our-multi-omics-dataset"
+class="section level1">
+<h1>Evaluate the heritability contribution of our multi-omics
+dataset</h1>
 <div
 id="characterize-and-compare-peaks-from-t-cells-between-two-dataset"
-class="section level3">
-<h3>Characterize and compare peaks from T cells between two dataset</h3>
+class="section level2">
+<h2>Characterize and compare peaks from T cells between two dataset</h2>
 <p>A barplot of summarizing peak counts by types show Wang et
 al. identified more peaks in distal and exonic regions but fewer ones in
 promoters compared to our dataset. The color indicates whether each
@@ -767,9 +813,10 @@ Jing Gu
 </div>
 </div>
 </div>
-<div id="test-heritability-enrichment-through-s-ldsc"
-class="section level3">
-<h3>Test heritability enrichment through S-LDSC</h3>
+<div id="identify-relevant-tissue-or-cell-type-for-immune-diseases"
+class="section level2">
+<h2>Identify relevant tissue or cell-type for immune diseases</h2>
+<p>METHOD: Test heritability enrichment through S-LDSC</p>
 <p>The union set of peaks from U19 atac-seq data were first lifted over
 to hg19. The following table shows the change in genome builds only made
 1% of peaks have inconsistent width.</p>
@@ -787,138 +834,20 @@ lungs_Tcm_Naive_helper_T_cells                      0.013
 lungs_Regulatory_T_cells                            0.010
 lungs_Naive_B_cells                                 0.012
 spleens_Regulatory_T_cells                          0.014</code></pre>
-<p><strong>Test one annotation at a time</strong></p>
+<div id="test-enrichment-for-individual-cell-type-of-each-tissue"
+class="section level3">
+<h3>Test enrichment for individual cell-type of each tissue</h3>
 <ul>
 <li>GWAS: a broad range of triats</li>
-<li>Baseline annotation: BaselineLD_v2.2</li>
+<li>Baseline annotation: 53 annotations from Finucane et al. 2015 Nat
+Genet (Baseline v1.2)</li>
 </ul>
 <p>Overall, we observed immune cells in both tissues are significantly
 enriched for genetic risks of immune diseases but not those of other
 traits. T cells from both tissues show significant enrichment for risk
-variants of immune diseases, while only lung B cells show enrichment.
-<img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-1">
-Past versions of unnamed-chunk-4-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-4-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-1.png" target="_blank">71a11fc</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-06-05
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-2">
-Past versions of unnamed-chunk-4-2.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-4-2" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-2.png" target="_blank">71a11fc</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-06-05
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-3.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-3">
-Past versions of unnamed-chunk-4-3.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-4-3" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-4-3.png" target="_blank">71a11fc</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-06-05
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p><strong>Jointly test multiple annotations</strong></p>
-<p>The chromatin accessible peaks from T cells, B cells, and NK cells
-were jointly tested for each tissue. The results show that lung immune
-cells explain more disease heritability than spleen immmune cells.
-Conditional on other lung immune cells, Treg OCRs have the most
-contribution in Allergy and AOA, followed by B cells and NK cells. For
-COA, the disease heritability was explained evenly by Treg, CD4+ T and
-naive B cells. The CD8+ T cells only contributes to COA heritability.
-<img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-1.png" width="768" style="display: block; margin: auto;" /></p>
+variants of immune diseases, while only lung B cells show
+enrichment.</p>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-5-1">
 Past versions of unnamed-chunk-5-1.png
@@ -956,7 +885,7 @@ Jing Gu
 </table>
 </div>
 </div>
-<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-2.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-5-2">
 Past versions of unnamed-chunk-5-2.png
@@ -994,7 +923,149 @@ Jing Gu
 </table>
 </div>
 </div>
-<p><strong>Tissue-specific analyses</strong></p>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-5-3.png" width="672" style="display: block; margin: auto;" /></p>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-e3dd2f708ffc37673119" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-e3dd2f708ffc37673119">{"x":{"filter":"none","vertical":false,"data":[["9880","9881","9882","9883","9884","9885","9886","9887","9888","9889","9890","9891","9892","9893","9894","9895","9896","9897","9898","9899","98100","98101","98102","98103","98104","98105","98106","98107","98108","98109","98110","98111","98112","98113","98114","98115","98116","98117","98118","98119","98120","98121","98122","98123","98124","98125","98126","98127"],["allergy","allergy","allergy","allergy","allergy","allergy","allergy","allergy","allergy","allergy","allergy","allergy","allergy","allergy","allergy","allergy","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb"],["lungs_CD16_neg_NK","lungs_CD16_pos_NK","lungs_Memory_B","lungs_Naive_B","lungs_CD4_T","lungs_CD8_T","lungs_Th17","lungs_Treg","spleens_CD16_neg_NK","spleens_CD16_pos_NK","spleens_Memory_B","spleens_Naive_B","spleens_CD4_T","spleens_CD8_T","spleens_Th17","spleens_Treg","lungs_CD16_neg_NK","lungs_CD16_pos_NK","lungs_Memory_B","lungs_Naive_B","lungs_CD4_T","lungs_CD8_T","lungs_Th17","lungs_Treg","spleens_CD16_neg_NK","spleens_CD16_pos_NK","spleens_Memory_B","spleens_Naive_B","spleens_CD4_T","spleens_CD8_T","spleens_Th17","spleens_Treg","lungs_CD16_neg_NK","lungs_CD16_pos_NK","lungs_Memory_B","lungs_Naive_B","lungs_CD4_T","lungs_CD8_T","lungs_Th17","lungs_Treg","spleens_CD16_neg_NK","spleens_CD16_pos_NK","spleens_Memory_B","spleens_Naive_B","spleens_CD4_T","spleens_CD8_T","spleens_Th17","spleens_Treg"],["0.0272%","0.2552%","0.1338%","0.3141%","0.2172%","0.1755%","0.0196%","0.2019%","0.0303%","0.0184%","0.0552%","0.0453%","0.0408%","0.0096%","0.0248%","0.1361%","0.0272%","0.2552%","0.1338%","0.3141%","0.2172%","0.1755%","0.0196%","0.2019%","0.0303%","0.0184%","0.0552%","0.0453%","0.0408%","0.0096%","0.0248%","0.1361%","0.0272%","0.2552%","0.1338%","0.3141%","0.2172%","0.1755%","0.0196%","0.2019%","0.0303%","0.0184%","0.0552%","0.0453%","0.0408%","0.0096%","0.0248%","0.1361%"],["0.6803% ","5.7307% ","4.0035% ","5.3090% ","5.6216% ","2.7747% ","1.1247% ","12.5031%","1.5615% ","-0.1033%","0.1603% ","0.6234% ","3.5402% ","0.2305% ","1.0058% ","4.0892% ","1.7896% ","5.2801% ","3.9277% ","3.9728% ","4.1761% ","1.2228% ","0.1337% ","12.3762%","0.1318% ","0.9894% ","0.8785% ","1.4500% ","1.6014% ","0.1177% ","0.5355% ","5.3974% ","0.8909% ","4.5797% ","3.8501% ","8.5672% ","11.3033%","6.7124% ","2.1844% ","9.5793% ","1.0418% ","0.8818% ","-0.1995%","2.5299% ","1.3860% ","-0.0723%","1.3660% ","7.3497% "],[" 25.0"," 22.5"," 29.9"," 16.9"," 25.9"," 15.8"," 57.4"," 61.9"," 51.5"," -5.6","  2.9"," 13.7"," 86.7"," 23.9"," 40.5"," 30.0"," 65.7"," 20.7"," 29.4"," 12.6"," 19.2","  7.0","  6.8"," 61.3","  4.3"," 53.9"," 15.9"," 32.0"," 39.2"," 12.2"," 21.6"," 39.6"," 32.7"," 17.9"," 28.8"," 27.3"," 52.0"," 38.2","111.6"," 47.4"," 34.4"," 48.0"," -3.6"," 55.8"," 33.9"," -7.5"," 55.0"," 54.0"],["2.4e-01","1.1e-02","9.0e-03","1.1e-01","2.7e-02","1.5e-01","4.9e-02","5.7e-05","3.4e-01","7.9e-01","9.0e-01","4.7e-01","3.7e-02","4.6e-01","2.0e-01","2.5e-02","2.7e-02","6.8e-02","3.8e-02","1.8e-01","1.5e-01","6.0e-01","8.6e-01","1.6e-05","9.0e-01","2.1e-01","4.2e-01","2.1e-01","1.8e-01","7.5e-01","4.4e-01","1.2e-02","2.8e-01","6.7e-02","3.1e-02","1.1e-02","2.2e-02","1.1e-01","2.6e-02","5.4e-03","4.2e-01","2.9e-01","8.1e-01","1.1e-01","1.9e-01","8.5e-01","1.4e-01","2.3e-03"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>trait<\/th>\n      <th>Category<\/th>\n      <th>Prop_SNPs<\/th>\n      <th>Prop_h2<\/th>\n      <th>Enrichment<\/th>\n      <th>Enrichment_p<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"trait","targets":1},{"name":"Category","targets":2},{"name":"Prop_SNPs","targets":3},{"name":"Prop_h2","targets":4},{"name":"Enrichment","targets":5},{"name":"Enrichment_p","targets":6}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<p>The high standard errors for enrichment estimates are probably due to
+low proportion of SNPs present in peaks called by each cluster. To make
+the point that lung tissue is more important than spleen to disease, we
+can temporarily ignore sub-types but use major immune cell types like T,
+B and NK cells to improve confidence interval.</p>
+</div>
+<div id="test-individual-enrichment-for-major-cell-types-of-each-tissue"
+class="section level3">
+<h3>Test individual enrichment for major cell types of each tissue</h3>
+<p><strong>A barplot for LDSC enrichment results</strong>. Baseline
+annotation: baseline v1.2 (53 annotations) recommended for comparing the
+enrichment p-values across cell types or tissues. Y-axis:
+annotation(%GWAS SNPs within annotation). X-axis: enrichment fold.<br />
+Label: enrichment p-value.</p>
+<p>Merging cell types to contain more risk variants does help lower the
+standard errors. For both tissues, T cells show the strongest enrichment
+and contain the highest proportion of risk variants. Across cell types,
+lung immune cells show more significant enrichment compare to spleen
+immune cells.</p>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-7-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-7-3.png" width="672" style="display: block; margin: auto;" /></p>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-9c8a3c9d2f6933833caa" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-9c8a3c9d2f6933833caa">{"x":{"filter":"none","vertical":false,"data":[["9830","9831","9832","9833","9834","9835","9836","9837","9838","9839","9840","9841","9842","9843","9844","9845","9846","9847"],["allergy","allergy","allergy","allergy","allergy","allergy","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","aoa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb","coa_ukb"],["lungs_T_cells","lungs_B_cells","lungs_NK_cells","spleens_T_cells","spleens_B_cells","spleens_NK_cells","lungs_T_cells","lungs_B_cells","lungs_NK_cells","spleens_T_cells","spleens_B_cells","spleens_NK_cells","lungs_T_cells","lungs_B_cells","lungs_NK_cells","spleens_T_cells","spleens_B_cells","spleens_NK_cells"],["0.614%","0.448%","0.282%","0.211%","0.101%","0.049%","0.614%","0.448%","0.282%","0.211%","0.101%","0.049%","0.614%","0.448%","0.282%","0.211%","0.101%","0.049%"],["17.872%","8.407% ","6.129% ","8.179% ","0.758% ","1.421% ","14.730%","6.994% ","6.457% ","7.164% ","2.224% ","1.085% ","24.123%","11.665%","5.196% ","9.509% ","2.160% ","1.873% "],["29.1","18.8","21.7","38.7"," 7.5","29.2","24.0","15.6","22.9","33.9","22.1","22.3","39.3","26.0","18.4","45.0","21.5","38.5"],["4.3e-06","1.9e-02","1.0e-02","1.4e-03","5.7e-01","4.1e-01","9.6e-05","3.5e-02","3.4e-02","6.0e-03","1.4e-01","3.5e-01","3.5e-04","2.2e-03","5.9e-02","1.3e-04","2.2e-01","2.2e-01"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>trait<\/th>\n      <th>Category<\/th>\n      <th>Prop_SNPs<\/th>\n      <th>Prop_h2<\/th>\n      <th>Enrichment<\/th>\n      <th>Enrichment_p<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"trait","targets":1},{"name":"Category","targets":2},{"name":"Prop_SNPs","targets":3},{"name":"Prop_h2","targets":4},{"name":"Enrichment","targets":5},{"name":"Enrichment_p","targets":6}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<p><strong>A dotplot for LDSC enrichment results</strong></p>
+<p>dot size: enrichment fold color: enrichment p-value
+<img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-8-1">
+Past versions of unnamed-chunk-8-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-8-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/ca85982484a362036196c17bf218d91ecaea4872/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-8-1.png" target="_blank">ca85982</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-8-1.png" target="_blank">71a11fc</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="tissue-specific-analyses-for-each-major-cell-type."
+class="section level3">
+<h3>Tissue-specific analyses for each major cell type.</h3>
+<p>LDSC operates cell-type specific analyses by taking two sets of LD
+scores for each test. Here I input one set of LD scores derived from
+lung and the other set from spleen as control for each major cell type.
+The resulting p-value tests whether the coefficient is greater than
+zero, which implies if lung tissue is more significant. To compute
+tissue-specific effects, I can obtain peaks specific to lung tissue and
+then repeat this analysis.</p>
+<p><strong>A barplot for tissue-group analysis</strong> X-axis: -log10
+p-values for testing the coefficient
+<img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-10-1">
+Past versions of unnamed-chunk-10-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-10-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/ca85982484a362036196c17bf218d91ecaea4872/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-10-1.png" target="_blank">ca85982</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-06-05
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="jointly-test-multiple-annotations" class="section level3">
+<h3>Jointly test multiple annotations</h3>
+<p><strong>A barplot for LDSC enrichment results</strong></p>
+<p>Baseline annotation: BaselineLD_v2.2 (97 annotations) recommended for
+estimating heritability. Y-axis: annotation(%GWAS SNPs within
+annotation). X-axis: enrichment fold.<br />
+Label: heritability</p>
+<p>The chromatin accessible peaks from T cells, B cells, and NK cells
+were jointly tested for each tissue. The results show that lung immune
+cells explain more disease heritability than spleen immmune cells.
+Conditional on other lung immune cells, Treg OCRs have the most
+contribution in Allergy and AOA, followed by B cells and NK cells. For
+COA, the disease heritability was explained evenly by Treg, CD4+ T and
+naive B cells. The CD8+ T cells only contributes to COA heritability.
+<img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-11-1.png" width="768" style="display: block; margin: auto;" /><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-11-2.png" width="768" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div id="identify-relevant-cell-types-and-tissues-for-asthma"
@@ -1014,48 +1085,11 @@ peaks that overlap with enhancer of high PIPs.</li>
 </ul>
 <div id="aoa-enhancers-ranked-by-epips" class="section level3">
 <h3>AOA enhancers ranked by ePIPs</h3>
-<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-9-1.png" width="768" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-9-1">
-Past versions of unnamed-chunk-9-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-9-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/figure/u19_h2g_enrichment.Rmd/unnamed-chunk-9-1.png" target="_blank">71a11fc</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-06-05
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-15-1.png" width="768" style="display: block; margin: auto;" /></p>
 </div>
 <div id="coa-enhancers-ranked-by-epips" class="section level3">
 <h3>COA enhancers ranked by ePIPs</h3>
-<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-10-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p><img src="figure/u19_h2g_enrichment.Rmd/unnamed-chunk-16-1.png" width="768" style="display: block; margin: auto;" /></p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1096,29 +1130,31 @@ other attached packages:
 [23] ggplot2_3.4.0               workflowr_1.7.1            
 
 loaded via a namespace (and not attached):
- [1] httr_1.4.7               sass_0.4.9               jsonlite_1.8.8          
- [4] bslib_0.7.0              getPass_0.2-2            highr_0.10              
- [7] GenomeInfoDbData_1.2.9   Rsamtools_2.14.0         yaml_2.3.8              
-[10] pillar_1.9.0             lattice_0.22-5           glue_1.7.0              
-[13] digest_0.6.35            promises_1.3.0           XVector_0.38.0          
-[16] colorspace_2.1-0         htmltools_0.5.8.1        httpuv_1.6.14           
-[19] XML_3.99-0.16.1          pkgconfig_2.0.3          zlibbioc_1.44.0         
-[22] scales_1.3.0             processx_3.8.3           whisker_0.4.1           
-[25] later_1.3.2              BiocParallel_1.32.6      git2r_0.33.0            
-[28] tibble_3.2.1             farver_2.1.1             generics_0.1.3          
-[31] cachem_1.0.8             withr_3.0.0              cli_3.6.2               
-[34] crayon_1.5.2             evaluate_0.23            ps_1.7.6                
-[37] fs_1.6.4                 fansi_1.0.6              tools_4.2.0             
-[40] BiocIO_1.8.0             lifecycle_1.0.4          Rhdf5lib_1.20.0         
-[43] munsell_0.5.1            DelayedArray_0.24.0      callr_3.7.3             
-[46] Biostrings_2.66.0        compiler_4.2.0           jquerylib_0.1.4         
-[49] rlang_1.1.3              RCurl_1.98-1.14          rhdf5filters_1.10.1     
-[52] rstudioapi_0.15.0        rjson_0.2.21             labeling_0.4.3          
-[55] bitops_1.0-7             rmarkdown_2.26           restfulr_0.0.15         
-[58] codetools_0.2-19         R6_2.5.1                 GenomicAlignments_1.34.1
-[61] knitr_1.46               fastmap_1.1.1            utf8_1.2.4              
-[64] rprojroot_2.0.4          stringi_1.7.6            parallel_4.2.0          
-[67] vctrs_0.6.5              tidyselect_1.2.1         xfun_0.43               </code></pre>
+ [1] bitops_1.0-7             fs_1.6.4                 httr_1.4.7              
+ [4] rprojroot_2.0.4          tools_4.2.0              bslib_0.7.0             
+ [7] utf8_1.2.4               R6_2.5.1                 DT_0.33                 
+[10] colorspace_2.1-0         rhdf5filters_1.10.1      withr_3.0.0             
+[13] tidyselect_1.2.1         processx_3.8.3           compiler_4.2.0          
+[16] git2r_0.33.0             cli_3.6.2                DelayedArray_0.24.0     
+[19] labeling_0.4.3           sass_0.4.9               scales_1.3.0            
+[22] callr_3.7.3              digest_0.6.35            Rsamtools_2.14.0        
+[25] rmarkdown_2.26           XVector_0.38.0           pkgconfig_2.0.3         
+[28] htmltools_0.5.8.1        fastmap_1.1.1            highr_0.10              
+[31] htmlwidgets_1.6.4        rlang_1.1.3              rstudioapi_0.15.0       
+[34] jquerylib_0.1.4          BiocIO_1.8.0             generics_0.1.3          
+[37] farver_2.1.1             jsonlite_1.8.8           crosstalk_1.2.1         
+[40] BiocParallel_1.32.6      RCurl_1.98-1.14          GenomeInfoDbData_1.2.9  
+[43] munsell_0.5.1            Rhdf5lib_1.20.0          fansi_1.0.6             
+[46] viridis_0.6.5            lifecycle_1.0.4          stringi_1.7.6           
+[49] whisker_0.4.1            yaml_2.3.8               zlibbioc_1.44.0         
+[52] parallel_4.2.0           promises_1.3.0           crayon_1.5.2            
+[55] lattice_0.22-5           Biostrings_2.66.0        cowplot_1.1.3           
+[58] knitr_1.46               ps_1.7.6                 pillar_1.9.0            
+[61] rjson_0.2.21             codetools_0.2-19         XML_3.99-0.16.1         
+[64] glue_1.7.0               evaluate_0.23            getPass_0.2-2           
+[67] vctrs_0.6.5              httpuv_1.6.14            cachem_1.0.8            
+[70] xfun_0.43                restfulr_0.0.15          later_1.3.2             
+[73] viridisLite_0.4.2        tibble_3.2.1             GenomicAlignments_1.34.1</code></pre>
 </div>
 </div>
 </div>
