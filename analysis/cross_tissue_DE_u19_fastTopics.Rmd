@@ -5,13 +5,6 @@ date: "`r Sys.Date()`"
 author: 'Jing Gu'
 ---
 # GoM DE analysis on u19 dataset
-
-## Model fitting 
-
-Parameters: 
-
-N_updates = 150
-N_topics = 12
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(Matrix)
@@ -36,11 +29,13 @@ metadata$donor_id[metadata$full.ident=="spleens_2"]<-'3'
 metadata$donor_id[metadata$full.ident=="spleens_3"]<-'6'
 batch_ids<-c("batch1", "batch1", "batch2", "batch2", "batch3", "batch3", "batch1", "batch2", "batch3")
 metadata$batch<-factor(metadata$full.ident, labels = batch_ids)
-
-
 ```
+## Model fitting 
 
+Parameters: 
 
+N_updates = 150
+N_topics = 12
 ## Model evaluation
 ```{r}
 fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
@@ -79,47 +74,93 @@ ggplot(pdat %>% filter(subpop %in% celltypes),aes(x = loglik,fill = subpop)) +
 
 ## Visualize topics with structural plots
 
-* plot by cell-types
-
-```{r message=F}
-clusters<-factor(metadata$majority_voting)
-structure_plot(fit,topics = 1:12,gap = 25,
-               grouping = clusters,
-               verbose=FALSE) 
-```
-
 * plot by tissue
-
 ```{r message=F}
 structure_plot(fit,topics = 1:12,gap = 25,
                grouping = metadata$tissue.ident,
                verbose=FALSE) 
 ```
-
 * plot by tissue and cell-type
 
 ```{r message=F}
-metadata$major<-factor(metadata$majority_voting, 
-                       labels = c("NK", "NK", "other", "other",
-                                  "other", "Memory_B", "Naive_B",
-                                  "other", "Treg", "CD4_T",
-                                  "CD8_T", "Th17"))
-tissue_samples<-paste(metadata$tissue.ident, metadata$major, sep="_")
-ordered_tissue_samples<-unlist(
-  lapply(unique(metadata$major), function(i){c(paste0("lungs_",  i),
-                                               paste0("spleens_", i)
-                                               )}))
-tissue_samples<-factor(tissue_samples,
-                       levels = ordered_tissue_samples)
+ct_order <- 
+  c("Naive_B",
+    "Memory_B",
+    "Monocytes",
+    "ILC3",
+    "CD4_T",
+    "CD8_T",
+    "Treg",
+    "Th17",
+    "NK",
+    "Other"
+  )
+metadata$major <- factor(
+  metadata$majority_voting,
+  labels = c(
+    "NK",
+    "NK",
+    "Monocytes",
+    "Other",
+    "ILC3",
+    "Memory_B",
+    "Naive_B",
+    "Other",
+    "Treg",
+    "CD4_T",
+    "CD8_T",
+    "Th17"
+  )
+)
+metadata$major <- factor(
+  metadata$major,
+  levels = ct_order
+)
+tissue_samples <-
+  factor(
+    paste(metadata$tissue.ident, metadata$major, sep = "_"),
+    levels = c(paste("lungs",
+                   ct_order,
+                   sep = "_"),
+               paste("spleens",
+                     ct_order,
+                     sep = "_")
+    )
+  )
+# ordered_tissue_samples<-unlist(
+#   lapply(unique(metadata$major), function(i){c(paste0("lungs_",  i),
+#                                                paste0("spleens_", i)
+#                                                )}))
+# tissue_samples<-factor(tissue_samples,
+#                        levels = ordered_tissue_samples)
 structure_plot(fit,topics = 1:12,gap = 25,
                grouping = tissue_samples,
                verbose=FALSE
                ) 
 ```
 
-## Validate topics with enrichment test
+## Characterize topics with enrichment analysis
 
-### GO enrichemnt test on top 500 genes ranked by loadings
+Two ways to perform enrichment test:
+
+* hypergeometric test (ORA from [WebGestaltR](https://cran.r-project.org/web/packages/WebGestaltR/WebGestaltR.pdf))
+
+A test purely depends on occurrences, asking whether the genes related to a topic occur more frequently in GO term compared to the background genes.
+
+* two-sample T test or regression ([MAGMA](https://cloufield.github.io/GWASTutorial/09_Gene_based_analysis/#annotate-snps))
+
+It tests whether the genes in a set is more associated with **phenotype** than those outside of a set.
+
+### GO enrichment results (ORA method) 
+
+#### Top genes ranked by loadings
+Input:  
+
+- Top 500 loading genes vs. all genes 
+- Database: Biological_Process, Cellular_Component, Molecular_Function
+
+Top loading genes are enriched in large number of GO terms, which have broad functions.
+
 ```{r}
 # set.seed(10)
 # de <- de_analysis(fit,counts,pseudocount = 0.1,
@@ -132,32 +173,42 @@ db <- c(#"pathway_KEGG", "disease_GLAD4U", "disease_OMIM",
 
 enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_top500.RDS")
 enrich_out<-data.frame(enrich_out, row.names = NULL)
+
 DT::datatable(
   enrich_out %>% 
-    filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
-    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
-           enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, FDR)),
-   caption=db[3]
+    mutate(k = factor(k, levels = paste0("k", 1:12))) %>%
+    group_by(k) %>%
+    dplyr::summarise(num_GOterms = n()) %>% 
+    pivot_wider(names_from = k, values_from = num_GOterms),
+  caption = "GO term counts"
+)
+  
+for(i in 1:3){
+  print(
+    DT::datatable(
+    enrich_out %>% 
+      filter(database==sprintf("geneontology_%s_noRedundant", db[i])) %>%
+      mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+             enrichment=format(enrichmentRatio, digits=2)) %>%
+      select(c(k, description, enrichment, FDR)),
+     caption=db[i])
   )
+}
 ```
 
-```{r}
-DT::datatable(
-  enrich_out %>% 
-    filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
-    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
-           enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, FDR)),
-   caption=db[1]
-  )
-```
+#### Topic-specific genes through DE analysis
 
-### GO enrichemnt test on GoM DE analysis
+Input:   
+
+- Up-regulated genes specific to each topic (z > 0 and lfsr < 0.01) vs. all genes 
+- Database: Biological_Process, Cellular_Component, Molecular_Function
 
 **Volcano plots for GoM DE results**
 
-The z-scores for posterior mean log-fold change estimates vs. log-fold change
+Axis: the z-scores for posterior mean log-fold change estimates vs. log-fold change
+
+From volcano plots, we see several genes that encode different types of cytokines are present in topic 6. Chemokine ligands (CCL4, CCL20, etc.) are proteins that signal leukocyte migration, while cytokines (IL17A, IL22) are interleukins that signal immune cells to defend against pathogens.
+
 ```{r}
 de<-readRDS("output/fastTopics/GoM_DE_u19.RDS")
 de_list<-list()
@@ -173,63 +224,120 @@ for(k in 1:12){
   plot.title = sprintf("topic:%s", k)))
 }
 ```
-**GO Enrichemnt results for upregulated genes with local false sign rates < 0.01**
+```{r}
+# count how many DE genes identified in each topic
+tbl<-unlist(lapply(de_list, function(i){sum(i$z >0)}))
+names(tbl)<-paste0("t",1:12)
+print("Number of up-regulated genes in each topic against the rest:")
+tbl
+```
 
-Topic 3,4,5,6 show strong enrichment for the GO terms of T-cell activation, leukocyte differentiation, positive regulation of cell adhesion, adaptive immune response. 
+**GO Enrichment result table**
 
-From volcano plots, we see topic 6 has high LFC in genes such as IL17A, IL22, which are mainly produced by Th17 cells. 
-
-Topic 10 genes do not show enrichment for any GO term.
-
-Topic 11 is strongly enriched for GO terms related to regulation of innate or adaptive immune response. 
-
-Topic 12 shows strong enrichment for the GO term of B cell activation.
+All topics have fewer number of GO terms with enrichment, except for topic 1. 
 
 ```{r}
 enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
 enrich_out<-data.frame(enrich_out, row.names = NULL)
+
 DT::datatable(
   enrich_out %>% 
-    filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
-    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
-           enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, FDR)),
-   caption=db[3]
+    mutate(k = factor(k, levels = paste0("k", 1:12))) %>%
+    group_by(k) %>%
+    dplyr::summarise(num_GOterms = n()) %>% 
+    pivot_wider(names_from = k, values_from = num_GOterms),
+  caption = "GO term counts"
+)
+
+for(i in 1:3){
+  print(
+    DT::datatable(
+    enrich_out %>% 
+      filter(database==sprintf("geneontology_%s_noRedundant", db[i])) %>%
+      mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+             enrichment=format(enrichmentRatio, digits=2)) %>%
+      select(c(k, description, enrichment, FDR)),
+     caption=db[i])
   )
+}
+
 ```
 
-```{r}
-DT::datatable(
+**Visualizing GO enrichments with ComplexHeatmap**
+
+Parameters:
+- -log10(FDR) as value input
+- No clustering due to missing data
+- top 10 GO terms shown for each topic
+
+Legend:
+- Color scale capped by FDR = $10^{-15}$
+
+BP results show k1 enriched for granulocyte activation and neutrophil mediated immunity, as well as cell adhesion and motility. These pathways are highly relevant to Asthma. Due to high number of GO terms over-represented by k1 genes, we may repeat the topic modeling by increasing topic number. Several topics like k2, 6, 7, 9, 10 are strongly enriched with protein localization. Topics k3-6 have genes over-represented in T-cell activation, while k10, 12 in B-cell activation.
+
+MF results show broad enrichment of molecular binding, with k7 highly enriched for cell adhesion molecular binding. 
+
+```{r fig.height = 15}
+library(ComplexHeatmap)
+#enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
+
+input_mat <-
   enrich_out %>% 
-    filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
-    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
-           enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, FDR)),
-   caption=db[1]
+  select(k, description, database, FDR) %>% distinct() %>% 
+  group_by(k, database) %>%
+  mutate(FDR = -log10(FDR)) %>%
+  top_n(10) 
+
+for(i in db){
+  mat <- 
+    input_mat %>% 
+    filter(grepl(i, database)) %>%
+    pivot_wider(names_from = description,
+                values_from = FDR) 
+  terms<-mat$k
+  mat<-as.matrix(mat[,-2:-1])
+  rownames(mat)<-terms
+  
+  col_fun = colorRamp2(c(min(mat, na.rm = TRUE),
+                         max(15, na.rm = TRUE)), 
+                       c("white", "red"))
+  #pdf(sprintf("../output/fastTopics/%s_GO_enrichment_by_topics_heatmap.pdf", i),
+      #height = 15, width = 12)
+  ht <- 
+  Heatmap(
+    t(mat),
+    width=unit(10, "cm"),
+    name = "-log10(FDR)",
+    row_names_side = "left",
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    na_col = "black",
+    col = col_fun,
+    column_title = sprintf("%s", i)
   )
+  draw(ht)
+  #dev.off()
+}
 ```
 
+## Identify topics correlated with tissue difference
 
-```{r}
-DT::datatable(
-  enrich_out %>% 
-    filter(database==sprintf("geneontology_%s_noRedundant", db[2])) %>%
-    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
-           enrichment=format(enrichmentRatio, digits=2)) %>%
-    select(c(k, description, enrichment, FDR)),
-   caption=db[2]
-  )
-```
-
-## Identify topics correlated with differences between tissue
-
-1. test whether any topic is associated with transcriptional differences across tissue
+1. We can test whether topic proportion is correlated with the tissue of origin
 $$
-L  = \beta X_{\text{tissue}} + \text{Covariates} + \epsilon
+F  = \beta X_{\text{tissue}} + \text{Covariates} + \epsilon
 $$
 2. perform T-test to see whether topic proportions between two tissues are significantly different
 
-```{r}
+### Barplot for topic proportions in cell types
+
+* The topic proportion between tissue are similar across T cell subsets.
+* $CD8^+$ T cells have the highest proportion of k3 compared to others, similar as NK cells.
+* The topic k1 dominates lung monocytes, and this topic separates ILC3 cells from other T/NK cells in lungs.
+* The topic proportion that differs the most between tissue occurs in B cells(eg. k4, k10, k12)
+
+```{r fig.width = 12, message=FALSE}
+library(catecolors)
+
 # convert poisson NMF model to multinational model
 multinom_fit<-poisson2multinom(fit)
 pdat<-data.frame(multinom_fit$L)
@@ -240,78 +348,26 @@ pdat<-pdat %>%
     !c(tissue, celltype),
     names_to="topic", values_to="proportion")
 
-# compare by tissue
-#plt_list <- list()
-# for (k in unique(pdat$topic)) {
-#   print(
-#     ggplot(pdat %>% filter(topic == k),
-#            aes(proportion * 100, fill = tissue)) +
-#       geom_density(alpha = 0.4) +
-#       facet_grid(vars(celltype), scales = "free_y") +
-#       theme(strip.text =
-#               element_text(size = 8)) +
-#       xlab("percentage") +
-#       ggtitle(paste0("Topic:", k))
-#   )
-# }
-
-```
-
-### Barplot for topic proportions in cell types
-
-* The topic proportion for k10 is higher in spleens than lungs in both naive B and memory B cells.
-* The topic proportions for k11 is higher in spleens than lungs in memory B cells only.
-* The topic proportions for k4 is higher in spleens than lungs across cell types.
-* The topic proportions for k6 is higher in lungs than spleens across cell types.
-* The topic proportions for k5 is higher in lungs than spleens across T cell subsets.
-
-```{r message=FALSE}
 # cell number by tissue and cell type
 table(metadata$tissue.ident, metadata$major)
 
 # Scaled to be added up to be 1
-prop<- pdat %>% group_by(tissue, celltype, topic) %>% summarise(topic_prop=sum(proportion)/n())
+prop <-
+  pdat %>%
+  mutate(
+    celltype =
+      factor(celltype, levels = ct_order),
+    topic = factor(topic, levels = paste0("k", 1:12))
+  ) %>%
+  group_by(tissue, celltype, topic) %>%
+  dplyr::summarise(topic_prop = sum(proportion) / n())
 
 ggplot(prop, aes(x = tissue, y = topic_prop, fill = topic)) +
-  geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) + xlab("") + 
-theme(axis.text.x = element_text(angle = 90)) + ylab("topic proportion")
+  geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) + 
+  xlab("") +  ylab("topic proportion") + 
+  scale_fill_manual(values = kelly()[-1]) + 
+  theme(axis.text.x = element_text(angle = 90)) 
 
-```
-Comparing GO terms between K4 and K5:  
-All k4 terms included in k5.
-```{r}
-# check differences in GO terms between topics
-# k4 vs k5
-go_bp<-enrich_out %>% filter(database=="geneontology_Biological_Process_noRedundant") %>% select(-c(userId))
-go_diff<-setdiff(go_bp %>% filter(k=="k5") %>% select(description),
-                 go_bp %>% filter(k=="k4") %>% select(description))
-DT::datatable(go_bp %>% 
-                filter(description %in% go_diff$description & k=="k5") %>%
-                mutate(FDR=format(FDR, scientific=TRUE, digits=2)) %>% 
-                         select(k, description, FDR),
-              caption="GO terms enriched for K5 but not K4")
-```
-
-```{r}
-# k5 vs. k6
-go_diff<-setdiff(go_bp %>% filter(k=="k6") %>% select(description),
-                 go_bp %>% filter(k=="k5") %>% select(description))
-DT::datatable(go_bp %>% filter(description %in% go_diff$description & k=="k6") %>%
-                mutate(FDR=format(FDR, digits=2)) %>%
-                select(k, description, FDR),
-              caption="GO terms enriched for K6 but not K5")
-
-```
-Comparing GO terms between K10 and K11:  
-All K10 terms included in K11.
-```{r}
-#k11 vs. k10
-go_diff<-setdiff(go_bp %>% filter(k=="k11") %>% select(description),
-                 go_bp %>% filter(k=="k10") %>% select(description))
-DT::datatable(go_bp %>% filter(description %in% go_diff$description & k=="k11") %>% 
-                mutate(FDR = format(FDR, digits=2)) %>%
-                select(k, description, FDR),
-              caption="GO terms enriched for K11 but not K10")
 ```
 
 ## Perform t-test while adjusting for confounders
@@ -418,7 +474,33 @@ plt <- Heatmap(df, col=col_fun_prop,
                ))
 plt
 ```
+### Find evidence for the function of TFs with motif enrichment in genes loaded on topic 5 
+```{r}
+check_tfs<-strsplit("JUND,FOS,JUNB,FOSL2,FOSL1,SMARCC1,RUNX1,JDP2,UNX2,STAT5A,LEF1,BACH1",",")[[1]]
+topic5_genes<-de_list[[5]] %>% filter(z >0 & lfsr < 0.01)
+grn<-list()
+for(c in c("Treg", "CD8_T","CD4_T", "Th17")){
+  f<-read.table(sprintf("data/lung_GRN_%s_edges.txt", c), 
+                       sep=",", header =TRUE)
+  tfs_in_grn<-f %>% filter(Regulator %in% check_tfs & Strength>0) %>% 
+    select(Target)
+  topic5_genes[, c]<-rownames(topic5_genes) %in% tfs_in_grn$Target
+}
 
+topic_in_grn<-topic5_genes %>% select(Treg, CD8_T, CD4_T, Th17) %>%
+  pivot_longer(c(Treg, CD8_T, CD4_T, Th17), names_to="overlapped_set", values_to="count")
+
+ggplot(topic_in_grn, aes(count, fill=overlapped_set)) + 
+  stat_count(position="dodge") + 
+  geom_text(aes(label=..count..), stat='count', vjust=0.2) + 
+  facet_wrap(~overlapped_set)
+```
+```{r}
+DT::datatable(topic5_genes %>% mutate(z=format(z, digits=2),
+                                      lfsr=format(lfsr, digits=2)) %>%
+                select(-postmean) %>%
+                filter(Treg==TRUE|CD8_T==TRUE|CD4_T==TRUE|Th17==TRUE))
+```
 
 
 
