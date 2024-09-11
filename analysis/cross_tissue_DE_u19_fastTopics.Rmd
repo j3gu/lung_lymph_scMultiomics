@@ -4,7 +4,7 @@ output: html_document
 date: "`r Sys.Date()`"
 author: 'Jing Gu'
 ---
-# GoM DE analysis on u19 dataset
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(Matrix)
@@ -30,13 +30,14 @@ metadata$donor_id[metadata$full.ident=="spleens_3"]<-'6'
 batch_ids<-c("batch1", "batch1", "batch2", "batch2", "batch3", "batch3", "batch1", "batch2", "batch3")
 metadata$batch<-factor(metadata$full.ident, labels = batch_ids)
 ```
-## Model fitting 
+# Model fitting 
 
 Parameters: 
 
 N_updates = 150
 N_topics = 12
-## Model evaluation
+
+# Model evaluation
 ```{r}
 fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
 ```
@@ -72,7 +73,7 @@ ggplot(pdat %>% filter(subpop %in% celltypes),aes(x = loglik,fill = subpop)) +
   theme_cowplot(font_size = 10)
 ```
 
-## Visualize topics with structural plots
+# Visualize topics with structural plots
 
 * plot by tissue
 ```{r message=F}
@@ -139,7 +140,7 @@ structure_plot(fit,topics = 1:12,gap = 25,
                ) 
 ```
 
-## Characterize topics with enrichment analysis
+# Characterize topics with enrichment analysis
 
 Two ways to perform enrichment test:
 
@@ -151,9 +152,9 @@ A test purely depends on occurrences, asking whether the genes related to a topi
 
 It tests whether the genes in a set is more associated with **phenotype** than those outside of a set.
 
-### GO enrichment results (ORA method) 
+## GO enrichment results (ORA method) 
 
-#### Top genes ranked by loadings
+### Top genes ranked by loadings
 Input:  
 
 - Top 500 loading genes vs. all genes 
@@ -203,11 +204,11 @@ DT::datatable(
      caption=db[3])
 ```
 
-#### Topic-specific genes through DE analysis
+### Topic-specific genes through DE analysis
 
 Input:   
 
-- Up-regulated genes specific to each topic (z > 0 and lfsr < 0.01) vs. all genes 
+- Up-regulated genes specific to each topic (z > 0 and lfsr < 0.01) vs. all genes
 - Database: Biological_Process, Cellular_Component, Molecular_Function
 
 **Volcano plots for GoM DE results**
@@ -281,11 +282,13 @@ DT::datatable(
 **Visualizing GO enrichments with ComplexHeatmap**
 
 Parameters:
+
 - -log10(FDR) as value input
 - No clustering due to missing data
 - top 10 GO terms shown for each topic
 
 Legend:
+
 - Color scale capped by FDR = $10^{-15}$
 
 BP results show k1 enriched for granulocyte activation and neutrophil mediated immunity, as well as cell adhesion and motility. These pathways are highly relevant to Asthma. Due to high number of GO terms over-represented by k1 genes, we may repeat the topic modeling by increasing topic number. Several topics like k2, 6, 7, 9, 10 are strongly enriched with protein localization. Topics k3-6 have genes over-represented in T-cell activation, while k10, 12 in B-cell activation.
@@ -335,7 +338,7 @@ for(i in db){
 }
 ```
 
-## Identify topics correlated with tissue difference
+# Identify topics correlated with tissue difference
 
 1. We can test whether topic proportion is correlated with the tissue of origin
 $$
@@ -343,7 +346,7 @@ F  = \beta X_{\text{tissue}} + \text{Covariates} + \epsilon
 $$
 2. perform T-test to see whether topic proportions between two tissues are significantly different
 
-### Barplot for topic proportions in cell types
+## Barplot for topic proportions in cell types
 
 * The topic proportion between tissue are similar across T cell subsets.
 * $CD8^+$ T cells have the highest proportion of k3 compared to others, similar as NK cells.
