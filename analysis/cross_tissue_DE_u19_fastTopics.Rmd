@@ -182,18 +182,25 @@ DT::datatable(
     pivot_wider(names_from = k, values_from = num_GOterms),
   caption = "GO term counts"
 )
-  
-for(i in 1:3){
-  print(
-    DT::datatable(
+```
+```{r}
+DT::datatable(
     enrich_out %>% 
-      filter(database==sprintf("geneontology_%s_noRedundant", db[i])) %>%
+      filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
       mutate(FDR=format(FDR, scientific=TRUE, digits=2),
              enrichment=format(enrichmentRatio, digits=2)) %>%
       select(c(k, description, enrichment, FDR)),
-     caption=db[i])
-  )
-}
+     caption=db[1])
+```
+
+```{r}
+DT::datatable(
+    enrich_out %>% 
+      filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
+      mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+             enrichment=format(enrichmentRatio, digits=2)) %>%
+      select(c(k, description, enrichment, FDR)),
+     caption=db[3])
 ```
 
 #### Topic-specific genes through DE analysis
@@ -237,6 +244,7 @@ tbl
 All topics have fewer number of GO terms with enrichment, except for topic 1. 
 
 ```{r}
+library(htmltools)
 enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
 enrich_out<-data.frame(enrich_out, row.names = NULL)
 
@@ -248,19 +256,26 @@ DT::datatable(
     pivot_wider(names_from = k, values_from = num_GOterms),
   caption = "GO term counts"
 )
+```
 
-for(i in 1:3){
-  print(
-    DT::datatable(
+```{r}
+DT::datatable(
     enrich_out %>% 
-      filter(database==sprintf("geneontology_%s_noRedundant", db[i])) %>%
+      filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
       mutate(FDR=format(FDR, scientific=TRUE, digits=2),
              enrichment=format(enrichmentRatio, digits=2)) %>%
       select(c(k, description, enrichment, FDR)),
-     caption=db[i])
-  )
-}
+     caption=db[1])
+```
 
+```{r}
+DT::datatable(
+    enrich_out %>% 
+      filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
+      mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+             enrichment=format(enrichmentRatio, digits=2)) %>%
+      select(c(k, description, enrichment, FDR)),
+     caption=db[3])
 ```
 
 **Visualizing GO enrichments with ComplexHeatmap**
@@ -277,7 +292,7 @@ BP results show k1 enriched for granulocyte activation and neutrophil mediated i
 
 MF results show broad enrichment of molecular binding, with k7 highly enriched for cell adhesion molecular binding. 
 
-```{r fig.height = 15}
+```{r fig.height = 12, fig.width = 10}
 library(ComplexHeatmap)
 #enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
 
