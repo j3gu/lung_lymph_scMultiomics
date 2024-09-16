@@ -1,0 +1,191 @@
+---
+title: "A testrun for MAGMA"
+output: html_document
+date: '`r Sys.Date()`'
+author: 'Jing Gu'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(data.table)
+workdir <- "/home/jinggu/cluster/data/MAGMA/testrun"
+```
+
+# MAGMA
+
+**Gene analysis**
+A linear principal component regression model that estimates whether there is genetic effect of gene g on the phenotype Y, conditional on all covariates. The model first projects genotype matrix for a gene g onto its PCs, pruning away PCs with very small eigenvalues. Then it performs F test in the regression of Y on SNP matrix and covariates to estimate genetic effect.
+
+$$
+  Y = \alpha_{0g}\vec 1 + X_g^*\alpha_g  + W\beta_g + \epsilon_g
+$$
+When inividual geneotype matrix not available, MAGMA performs gene test with mean $X^2$ statistics and a gene p-value is then obtained by using a known approximation of the sampling distribution. Please refer to the following paper for details of approximation for the distribution of the weighted combination of p-values. This model requires summary statistics and reference LD panel.
+
+> Hou C (2005) A simple approximation for the distribution of the weighted combination of non-independent or independent probabilities. Stat Probabil Lett 73: 179–187.
+
+**Competitive gene-set analysis**
+
+One-sided Two-sample T test or linear regression in equivalence is applied to test whether the genes in a gene set are more strongly associated with Y or not. 
+
+Let Z denote the association z-score. 
+Let $\S_s$ be an indicator variable with element $s_g = 1$ defined as for gene g in gene set s and 0 otherwise. The goal is to test whether $\beta_s$ is greater than zero, which represents the difference in association between genes in the gene set and genes outside the gene set.
+
+$$
+Z = \beta_{0s}\vec 1 + S_s\beta_s + \epsilon
+$$
+This also be tested by unpaired two sample T-test, while two samples can have unequal variances and sample sizes. 
+
+## Testrun
+
+Procedure: 
+
+1. annotate SNPs and genes
+2. gene-based analysis
+3. gene-set analysis
+```{bash, eval = FALSE}
+#zcat BBJ_HDLC.txt.gz | awk 'NR>1 && $2==3 {print $1,$2,$3}' > HDLC_chr3.magma.input.snp.chr.pos.txt
+#zcat BBJ_HDLC.txt.gz | awk 'NR>1 && $2==3 {print $1,10^(-$11)}' >  HDLC_chr3.magma.input.p.txt
+cd /home/jinggu/cluster/data/MAGMA/testrun
+traitID="ukb-a-446"
+module load bcftools
+# extract SNPs and p-values
+bcftools query -f'%ID %CHROM %POS\n' /project/xinhe/shared/IEU_vcf/$traitID.vcf.gz > ./${traitID}_snploc.txt
+bcftools query -f'%ID [%LP]\n' /project/xinhe/shared/IEU_vcf/$traitID.vcf.gz > ./${traitID}_pval.txt
+```
+
+```{r eval = FALSE}
+# convert p-values to absolute value
+f <- fread(paste0(workdir, "/ukb-a-446_pval.txt"))
+f$V2 <- 10^(-f$V2)
+fwrite(f, paste0(workdir, "/ukb-a-446_input_p.txt"), 
+       sep = " ", col.names = FALSE)
+# subset coding genes to be the input genes for topic modeling
+fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
+allGenes <- fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+subGenes <- allGenes[allGenes$V6 %in% rownames(fit$F), ]
+write.table(subGenes, "/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc",
+            quote = F, row.names = F, sep = "\t")
+```
+
+```{bash eval = FALSE}
+cd /home/jinggu/cluster/data/MAGMA/testrun
+traitID="ukb-a-446"
+ncbi37=/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc
+source ~/.bashrc
+# annotate SNPs
+snploc=${traitID}_snploc.txt
+magma --annotate \
+      --snp-loc $snploc \
+      --gene-loc $ncbi37 \
+      --out $traitID
+      
+# gene-based analysis
+ref=/home/jinggu/cluster/data/MAGMA/reference_data/g1000_eur
+magma \
+    --bfile $ref \
+    --pval ${traitID}_input_p.txt N=336782 \
+    --gene-annot $traitID.genes.annot \
+    --out $traitID
+    
+# gene-set analysis
+
+```
+
+```{r eval = FALSE}
+de_list<-readRDS("output/fastTopics/GoM_topDE_gene_list.RDS")
+names(de_list) <- paste0("k", 1:12)
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+for(i in 1:length(de_list)){
+  gene_set <- matrix(c(names(de_list)[i], ncbi37$V1[ncbi37$V6 %in% rownames(de_list[[i]])]),
+                     nrow = 1)
+  write.table(gene_set,
+              sprintf("%s/%s_geneset.txt", workdir, names(de_list)[i]), 
+              quote = F, row.names = F, sep=" ", col.names = F)
+}
+  
+
+```
+
+```{bash eval = FALSE}
+source ~/.bashrc
+traitID="ukb-a-446"
+geneset=top100_geneset.txt
+magma \
+    --gene-results $traitID.genes.raw \
+    --set-annot ${geneset} \
+    --out ${traitID}_top100
+
+```
+## Results
+```{r}
+f <- read.table(paste0(workdir, "/all_genes/ukb-a-446.gsa.out"), skip = 3, header = T)
+#DT::datatable(f)
+```
+When corrected for multiple testing, tests will be significant if p-value lower than ~0.005. Around half of the tests show significant p-values, which makes us wonder if p-values are inflated. Then we try using the input genes for topic modeling rather than all genes as background so that they are more comparable. 
+
+* Total number of genes reduced from to 18K to ~16K
+* P values for the reduced background genes are very similar to the full ones.
+```{r}
+f_reduced <- read.table(paste0(workdir, "/ukb-a-446_topics.gsa.out"), skip = 3, header = T)
+DT::datatable(f_reduced)
+
+plot(y = -log10(f_reduced$P), 
+     x = -log10(f$P),
+     ylab = "-log10(P) for input genes for topic modeling (~16K)",
+     xlab = "-log10(P) for all genes (~18K)")
+abline(a = 0, b = 1, col = "red")
+```
+
+### Test enrichment using top 100 genes from each topic
+
+The supplementary table from MAGMA paper shows the mean type 1 error rates are well controlled for a set of size 100. The [MSigDB canonical pathways](https://www.gsea-msigdb.org/gsea/msigdb/human/genesets.jsp?collection=CP) contains 1320 gene sets from a number of different databases. I can look into the average size of the gene sets.
+![MAGMA controlling for type 1 error rates for gene-set analysis ](https://github.com/user-attachments/assets/e4ea0389-c993-46a1-bc6b-c2a69630addf)
+
+```{r eval = FALSE}
+de_list<-readRDS("output/fastTopics/GoM_topDE_gene_list.RDS")
+names(de_list) <- paste0("k", 1:12)
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+for(i in 1:length(de_list)){
+  top100 <- de_list[[i]] %>% arrange(desc(z)) %>% slice_head(n=100)
+  gene_set <- matrix(c(names(de_list)[i], 
+                       ncbi37$V1[ncbi37$V6 %in% rownames(top100)]),
+                     nrow = 1)
+  write.table(gene_set,
+              sprintf("%s/%s_top100_geneset.txt", workdir, names(de_list)[i]), 
+              quote = F, row.names = F, sep=" ", col.names = F)
+}
+```
+
+Instead of all DE genes, I used top 100 up-regulated genes ranked by z scores to test the enrichment for each topic. Now we see only k3, k4, k5 and k12 (4/12) topics show significant enrichment after multiple testing correction.
+```{r}
+f_top <- read.table(paste0(workdir, "/ukb-a-446_top100.gsa.out"), 
+                     skip = 3, header = T)
+DT::datatable(f_top)
+```
+
+
+```{r eval = FALSE}
+### Perform permutation to obtain null p-values
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc")
+B = 5000
+for(i in 1:B){
+  gene_set = sample(ncbi37$V1, 700, replace = FALSE)
+  write.table(matrix(c(paste0("set", i), gene_set), nrow = 1),
+              sprintf("%s/set%s_geneset.txt", workdir, i), 
+              quote = F, row.names = F, sep=" ", col.names = F)
+}
+```
+
+```{r eval = FALSE}
+f_null <- read.table(paste0(workdir, "/ukb-a-446_permutated700.gsa.out"), 
+                     skip = 3, header = T)
+
+f_perm <- unlist(lapply(f_reduced$BETA, function(i){sum(f_null$BETA >= i)/5000}))
+  
+plot(y = -log10(f_reduced$P), 
+     x = -log10(f_perm), 
+     xlab = "-log10(P) after permutation",
+     ylab = "-log10(P) before permutation")
+abline(a = 0, b = 1, col = "red")
+```
+

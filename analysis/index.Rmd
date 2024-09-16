@@ -8,22 +8,28 @@ editor_options:
   chunk_output_type: console
 ---
 
-## Welcome to the project website. 
+# Welcome to the project website. 
 
 This project is about using functional profiling of lung immune cells to better understand the genetics of asthma and allergy diseases.
 
 ## Introduction
 TBD
 
-### Literature reviews 
+## Literature reviews 
 
-### Results
+## Results
+
+### Heritability enrichment
 [test heritability enrichment and identify the relevant cell type or tissue](u19_h2g_enrichment.html)
 
-[identify topics with different proportions between tissue](cross_tissue_DE_u19_fastTopics.html)
 
+### Topic analysis
+[identify topics with different proportions between tissue](cross_tissue_DE_u19_fastTopics.html)
+[test topic enrichment for genetic risks using MAGMA](test_magma.html)
 [test motif enrichment for topic-specific genes](U19_motif_analysis.html)
 
+
+### GRN analysis
 [test motif enrichment for TF targets from GRN](identify_TFs_with_immune_function.html)
 
 ### Slides download
