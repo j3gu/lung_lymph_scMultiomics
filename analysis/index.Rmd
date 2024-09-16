@@ -25,9 +25,9 @@ TBD
 
 ### Topic analysis
 
-[identify topics with different proportions between tissue](cross_tissue_DE_u19_fastTopics.html). 
-[test topic enrichment for genetic risks using MAGMA](test_magma.html). 
-[test motif enrichment for topic-specific genes](U19_motif_analysis.html)  
+- [identify topics with different proportions between tissue](cross_tissue_DE_u19_fastTopics.html)
+- [test topic enrichment for genetic risks using MAGMA](test_magma.html) 
+- [test motif enrichment for topic-specific genes](U19_motif_analysis.html)  
 
 
 ### GRN analysis
