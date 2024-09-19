@@ -8,6 +8,7 @@ author: 'Jing Gu'
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(data.table)
+library(dplyr)
 workdir <- "/home/jinggu/cluster/data/MAGMA/testrun"
 ```
 
@@ -162,6 +163,28 @@ f_top <- read.table(paste0(workdir, "/ukb-a-446_top100.gsa.out"),
                      skip = 3, header = T)
 DT::datatable(f_top)
 ```
+## Check the top genes contributing to topic 5 that have high MAGMA Z-scores
+
+Genes with high Z-scores (p < 0.05) are found to show enrichment in the following gene sets:
+
+* Regulation of signal transduction (adj.P = 0.01) from GO
+  - RORA, GATA3, CDC42SE2, SREBF2
+* Interleukin-2 signaling pathway (adj.P = 0.003) from BioPlanet
+  - CD247, RORA, GATA3, TAB2, FOXO1,IL21R, YARS (overlapping genes)
+* Th17 Cell Differentiation (adj.P = 0.0002) and IBD (adj.P = 0.001) from KEGG
+  - CD247, RORA, GATA3,IL21R
+
+```{r}
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc")
+
+f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k5.genes.out"),
+                header = TRUE)
+geneInfo <- ncbi37[, c(1, 6)]
+colnames(geneInfo) <- c("GENE", "SYMBOL")
+f <- left_join(f, geneInfo)
+f  %>% arrange(P)
+```
+
 
 
 ```{r eval = FALSE}

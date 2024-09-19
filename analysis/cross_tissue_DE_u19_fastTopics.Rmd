@@ -279,7 +279,7 @@ DT::datatable(
      caption=db[3])
 ```
 
-**Visualizing GO enrichments with ComplexHeatmap**
+**Visualizing GO enrichment with ComplexHeatmap**
 
 Parameters:
 
@@ -369,7 +369,7 @@ pdat<-pdat %>%
 # cell number by tissue and cell type
 table(metadata$tissue.ident, metadata$major)
 
-# Scaled to be added up to be 1
+# original scale
 prop <-
   pdat %>%
   mutate(
@@ -378,15 +378,38 @@ prop <-
     topic = factor(topic, levels = paste0("k", 1:12))
   ) %>%
   group_by(tissue, celltype, topic) %>%
-  dplyr::summarise(topic_prop = sum(proportion) / n())
+  dplyr::summarise(topicProp = sum(proportion))
 
-ggplot(prop, aes(x = tissue, y = topic_prop, fill = topic)) +
+ggplot(prop, aes(x = tissue, y = topicProp, fill = topic)) +
+  geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) +
+  xlab("") +  ylab("Sum of topic proportions") +
+  scale_fill_manual(values = kelly()[-1]) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("")
+
+
+# Normalized scale
+prop <-
+  pdat %>%
+  mutate(
+    celltype =
+      factor(celltype, levels = ct_order),
+    topic = factor(topic, levels = paste0("k", 1:12))
+  ) %>%
+  group_by(tissue, celltype, topic) %>%
+  dplyr::summarise(topicProp = sum(proportion) / n())
+
+ggplot(prop, aes(x = tissue, y = topicProp, fill = topic)) +
   geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) + 
-  xlab("") +  ylab("topic proportion") + 
+  xlab("") +  ylab("Normalized topic proportion") + 
   scale_fill_manual(values = kelly()[-1]) + 
   theme(axis.text.x = element_text(angle = 90)) 
 
 ```
+
+
+
+
 
 ## Perform t-test while adjusting for confounders
 
