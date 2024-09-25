@@ -22,7 +22,7 @@ $$
 $$
 When inividual geneotype matrix not available, MAGMA performs gene test with mean $X^2$ statistics and a gene p-value is then obtained by using a known approximation of the sampling distribution. Please refer to the following paper for details of approximation for the distribution of the weighted combination of p-values. This model requires summary statistics and reference LD panel.
 
-> Hou C (2005) A simple approximation for the distribution of the weighted combination of non-independent or independent probabilities. Stat Probabil Lett 73: 179–187.
+Ref: Hou C (2005) A simple approximation for the distribution of the weighted combination of non-independent or independent probabilities. Stat Probabil Lett 73: 179–187.
 
 **Competitive gene-set analysis**
 
@@ -117,7 +117,8 @@ magma \
     --out ${traitID}_top100
 
 ```
-## Results
+## Gene-set associations for topic marker genes that are up-regulated
+
 ```{r}
 f <- read.table(paste0(workdir, "/all_genes/ukb-a-446.gsa.out"), skip = 3, header = T)
 #DT::datatable(f)
@@ -159,11 +160,11 @@ for(i in 1:length(de_list)){
 
 Instead of all DE genes, I used top 100 up-regulated genes ranked by z scores to test the enrichment for each topic. Now we see only k3, k4, k5 and k12 (4/12) topics show significant enrichment after multiple testing correction.
 ```{r}
-f_top <- read.table(paste0(workdir, "/ukb-a-446_top100.gsa.out"), 
+df_top <- read.table(paste0(workdir, "/ukb-a-446_top100.gsa.out"), 
                      skip = 3, header = T)
-DT::datatable(f_top)
+DT::datatable(df_top)
 ```
-## Check the top genes contributing to topic 5 that have high MAGMA Z-scores
+### Check the top genes contributing to topic 5 that have high MAGMA Z-scores
 
 Genes with high Z-scores (p < 0.05) are found to show enrichment in the following gene sets:
 
@@ -182,10 +183,100 @@ f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k5.genes.out"),
 geneInfo <- ncbi37[, c(1, 6)]
 colnames(geneInfo) <- c("GENE", "SYMBOL")
 f <- left_join(f, geneInfo)
-f  %>% arrange(P)
+DT::datatable(
+  f  %>% arrange(P) %>%
+    mutate(P =format(P, format = "e", digits = 3)) %>%
+    select(SYMBOL, CHR, START, STOP, ZSTAT, P) 
+)
+```
+### Check the top genes contributing to topic 3 that have high MAGMA Z-scores
+
+Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms:
+
+1	Alpha-Beta T Cell Activation (GO:0046631)	0.00007389	0.007163	204.61	1946.45. 
+2	Regulation Of Natural Killer Cell Activation (GO:0032814)	0.0001340	0.007163	146.12	1303.03.  
+3	Regulation Of Lymphocyte Activation (GO:0051249)	0.0001706	0.007163	127.84	1109.13. 
+4	Stimulatory C-type Lectin Receptor Signaling Pathway (GO:0002223)	0.0001906	0.007163	120.31	1030.52. 
+5	Cellular Response To Lectin (GO:1990858)	0.0001906	0.007163	120.31	1030.52. 
+6	Antigen Receptor-Mediated Signaling Pathway (GO:0050851)	0.0002146	0.007163	30.59	258.42. 
+7	Positive Regulation Of Natural Killer Cell Mediated Cytotoxicity (GO:0045954)	0.0002337	0.007163	107.63	899.96. 
+8	Natural Killer Cell Mediated Immunity (GO:0002228)	0.0002570	0.007163	102.25	845.24. 
+9	Positive Regulation Of Natural Killer Cell Mediated Immunity (GO:0002717)	0.0003066	0.007597	92.94	751.89. 
+10	Innate Immune Response Activating Cell Surface Receptor Signaling Pathway (GO:0002220)	0.0003892	0.008678	81.77	642.05. 
+```{r}
+f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k3.genes.out"),
+                header = TRUE)
+geneInfo <- ncbi37[, c(1, 6)]
+colnames(geneInfo) <- c("GENE", "SYMBOL")
+f <- left_join(f, geneInfo)
+DT::datatable(
+  f  %>% arrange(P) %>%
+    mutate(P =format(P, format = "e", digits = 3)) %>%
+    select(SYMBOL, CHR, START, STOP, ZSTAT, P) 
+)
+
+# write.table(data.frame(f %>% filter(P < 0.05) %>% pull(SYMBOL)),
+#             "../output/fastTopics/k4_asthma_gsa_signif_genes.txt",
+#             row.names = F, col.names = F, quote = F)
+```
+### Check the top genes contributing to topic 4 that have high MAGMA Z-scores
+
+Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms:
+
+1	Regulation Of Blood Vessel Endothelial Cell Migration (GO:0043535) | 0.0006701 | AKT3, PRKCA, TNF, ETS1. 
+2	Antigen Receptor-Mediated Signaling Pathway (GO:0050851)	| 0.006130 | CD28, BCL2, BTN3A3, SKAP1. 
+3	Positive Regulation Of Leukocyte Cell-Cell Adhesion (GO:1903039)|	0.006130 | TNF, ETS1, SKAP1. 
+
+```{r}
+f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k4.genes.out"),
+                header = TRUE)
+geneInfo <- ncbi37[, c(1, 6)]
+colnames(geneInfo) <- c("GENE", "SYMBOL")
+f <- left_join(f, geneInfo)
+DT::datatable(
+  f  %>% arrange(P) %>%
+    mutate(P =format(P, format = "e", digits = 3)) %>%
+    select(SYMBOL, CHR, START, STOP, ZSTAT, P) 
+)
+
+# write.table(data.frame(f %>% filter(P < 0.05) %>% pull(SYMBOL)),
+#             "../output/fastTopics/k4_asthma_gsa_signif_genes.txt",
+#             row.names = F, col.names = F, quote = F)
 ```
 
 
+## Gene-set associations for known immune cell markers
+
+Most immune cell markers were obtained from Gene ontology. The tissue-resident genes were from the single-cell lung paper and ChatGPT. After multiple correction, tissue-resident markers do not show significance for the gene-set association with Asthma. Neither do the genes involved in cell-cell adhesion or cell migration. The gene sets that are significantly enriched for higher association with Asthma risks are activation of T/B cells and differentiation of T cell lineage differentiation.
+```{bash eval = FALSE}
+cd /home/jinggu/cluster/data/MAGMA/testrun
+source ~/.bashrc
+traitID="ukb-a-446"
+geneset=gene_sets/GO_gene_sets_MAGMA.txt
+magma \
+    --gene-results $traitID.genes.raw \
+    --set-annot ${geneset} \
+    --out ${traitID}_GO_enriched
+
+```
+
+```{r}
+df_enriched <- read.table(paste0(workdir, "/ukb-a-446_GO_enriched.gsa.out"),
+                    skip = 4, header = TRUE)
+tbl <-
+  rbind(
+    df_top %>%
+      filter(NGENES > 10 & P < 0.05/12) %>% # correct for multiple testing
+      select(VARIABLE, NGENES, BETA, SE, P),
+    df_enriched %>% mutate(VARIABLE = FULL_NAME) %>%
+      filter(NGENES > 10) %>% #& P < 0.05/33) %>% # correct for multiple testing 0.05/33 = 0.002
+      select(VARIABLE, NGENES, BETA, SE, P) %>% 
+      arrange(P) %>% mutate(P = format(P, scientific = TRUE, digits = 2))
+  )
+DT::datatable(tbl)
+#write.table(tbl, "../output/fastTopics/top100_topic_GO_immune.gsa.txt", 
+            #quote = F, row.names = F, sep = "\t")
+```
 
 ```{r eval = FALSE}
 ### Perform permutation to obtain null p-values
