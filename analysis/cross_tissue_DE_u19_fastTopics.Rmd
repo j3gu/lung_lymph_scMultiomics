@@ -197,12 +197,25 @@ DT::datatable(
 ```{r}
 DT::datatable(
     enrich_out %>% 
-      filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
+      filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
       mutate(FDR=format(FDR, scientific=TRUE, digits=2),
              enrichment=format(enrichmentRatio, digits=2)) %>%
       select(c(k, description, enrichment, FDR)),
      caption=db[3])
 ```
+
+## GO enrichment for association with traits (MAGMA method) 
+
+gene-set inputs: top 100 genes from each topic + immune cell markers 
+GWAS: ukb-a-446
+```{r}
+enrich_out <- read.table("output/fastTopics/top100_topic_GO_immune.gsa.txt",
+                         header = TRUE)
+DT::datatable(
+  enrich_out %>% mutate(P = format(P, scientific = TRUE, digits = 2))
+)
+```
+
 
 ### Topic-specific genes through DE analysis
 
@@ -272,7 +285,7 @@ DT::datatable(
 ```{r}
 DT::datatable(
     enrich_out %>% 
-      filter(database==sprintf("geneontology_%s_noRedundant", db[1])) %>%
+      filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
       mutate(FDR=format(FDR, scientific=TRUE, digits=2),
              enrichment=format(enrichmentRatio, digits=2)) %>%
       select(c(k, description, enrichment, FDR)),
