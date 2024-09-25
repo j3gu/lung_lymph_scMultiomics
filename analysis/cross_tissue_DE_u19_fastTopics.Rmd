@@ -204,18 +204,6 @@ DT::datatable(
      caption=db[3])
 ```
 
-## GO enrichment for association with traits (MAGMA method) 
-
-gene-set inputs: top 100 genes from each topic + immune cell markers 
-GWAS: ukb-a-446
-```{r}
-enrich_out <- read.table("output/fastTopics/top100_topic_GO_immune.gsa.txt",
-                         header = TRUE)
-DT::datatable(
-  enrich_out %>% mutate(P = format(P, scientific = TRUE, digits = 2))
-)
-```
-
 
 ### Topic-specific genes through DE analysis
 
@@ -351,6 +339,18 @@ for(i in db){
 }
 ```
 
+## GO enrichment for association with traits (MAGMA method) 
+
+gene-set inputs: top 100 genes from each topic + immune cell markers 
+GWAS: ukb-a-446
+```{r}
+enrich_out <- read.table("output/fastTopics/top100_topic_GO_immune.gsa.txt",
+                         header = TRUE)
+DT::datatable(
+  enrich_out %>% mutate(P = format(P, scientific = TRUE, digits = 2))
+)
+```
+
 # Identify topics correlated with tissue difference
 
 1. We can test whether topic proportion is correlated with the tissue of origin
@@ -420,10 +420,32 @@ ggplot(prop, aes(x = tissue, y = topicProp, fill = topic)) +
 
 ```
 
+## Visualize the estimated topic proportions
+```{r fig.height = 10, fig.width=10}
+library(Ternary)
+library(Rtsne)
+par0 <- par(mar = c(0,0,0,0))
+pdat<-data.frame(multinom_fit$L)
+TernaryPlot(alab="k10", blab = "k11", clab = "k12",
+            grid.col = "skyblue", grid.minor.lines = 0)
+TernaryPoints(pdat[metadata$tissue.ident == "lungs", 10:12], cex = 0.1, col = "red")
+TernaryPoints(pdat[metadata$tissue.ident == "spleens", 10:12], cex = 0.1, col = "green")
 
+```
+```{r fig.height = 10, fig.width=10}
+TernaryPlot(alab="k3", blab = "k5", clab = "k12",
+            grid.col = "skyblue", grid.minor.lines = 0)
+TernaryPoints(pdat[metadata$tissue.ident == "lungs", c(3,5,12)], cex = 0.1, col = "red")
+TernaryPoints(pdat[metadata$tissue.ident == "spleens", c(3,5,12)], cex = 0.1, col = "green")
 
+```
+```{r fig.height = 10, fig.width=10}
+TernaryPlot(alab="k7", blab = "k8", clab = "k9",
+            grid.col = "skyblue", grid.minor.lines = 0)
+TernaryPoints(pdat[metadata$tissue.ident == "lungs", 7:9], cex = 0.1, col = "red")
+TernaryPoints(pdat[metadata$tissue.ident == "spleens", 7:9], cex = 0.1, col = "green")
 
-
+```
 ## Perform t-test while adjusting for confounders
 
 
