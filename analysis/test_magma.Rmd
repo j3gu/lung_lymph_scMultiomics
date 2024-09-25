@@ -193,16 +193,16 @@ DT::datatable(
 
 Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms:
 
-1	Alpha-Beta T Cell Activation (GO:0046631)	0.00007389	0.007163	204.61	1946.45. 
-2	Regulation Of Natural Killer Cell Activation (GO:0032814)	0.0001340	0.007163	146.12	1303.03.  
-3	Regulation Of Lymphocyte Activation (GO:0051249)	0.0001706	0.007163	127.84	1109.13. 
-4	Stimulatory C-type Lectin Receptor Signaling Pathway (GO:0002223)	0.0001906	0.007163	120.31	1030.52. 
-5	Cellular Response To Lectin (GO:1990858)	0.0001906	0.007163	120.31	1030.52. 
-6	Antigen Receptor-Mediated Signaling Pathway (GO:0050851)	0.0002146	0.007163	30.59	258.42. 
-7	Positive Regulation Of Natural Killer Cell Mediated Cytotoxicity (GO:0045954)	0.0002337	0.007163	107.63	899.96. 
-8	Natural Killer Cell Mediated Immunity (GO:0002228)	0.0002570	0.007163	102.25	845.24. 
-9	Positive Regulation Of Natural Killer Cell Mediated Immunity (GO:0002717)	0.0003066	0.007597	92.94	751.89. 
-10	Innate Immune Response Activating Cell Surface Receptor Signaling Pathway (GO:0002220)	0.0003892	0.008678	81.77	642.05. 
+1	Alpha-Beta T Cell Activation (GO:0046631)	0.00007389	0.007163	204.61	1946.45.
+2	Regulation Of Natural Killer Cell Activation (GO:0032814)	0.0001340	0.007163	146.12	1303.03.   
+3	Regulation Of Lymphocyte Activation (GO:0051249)	0.0001706	0.007163	127.84	1109.13.    
+4	Stimulatory C-type Lectin Receptor Signaling Pathway (GO:0002223)	0.0001906	0.007163	120.31	1030.52.    
+5	Cellular Response To Lectin (GO:1990858)	0.0001906	0.007163	120.31	1030.52.     
+6	Antigen Receptor-Mediated Signaling Pathway (GO:0050851)	0.0002146	0.007163	30.59	258.42.     
+7	Positive Regulation Of Natural Killer Cell Mediated Cytotoxicity (GO:0045954)	0.0002337	0.007163	107.63	899.96.    
+8	Natural Killer Cell Mediated Immunity (GO:0002228)	0.0002570	0.007163	102.25	845.24.      
+9	Positive Regulation Of Natural Killer Cell Mediated Immunity (GO:0002717)	0.0003066	0.007597	92.94	751.89.     
+10	Innate Immune Response Activating Cell Surface Receptor Signaling Pathway (GO:0002220)	0.0003892	0.008678	81.77	642.05.      
 ```{r}
 f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k3.genes.out"),
                 header = TRUE)
@@ -223,9 +223,9 @@ DT::datatable(
 
 Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms:
 
-1	Regulation Of Blood Vessel Endothelial Cell Migration (GO:0043535) | 0.0006701 | AKT3, PRKCA, TNF, ETS1. 
-2	Antigen Receptor-Mediated Signaling Pathway (GO:0050851)	| 0.006130 | CD28, BCL2, BTN3A3, SKAP1. 
-3	Positive Regulation Of Leukocyte Cell-Cell Adhesion (GO:1903039)|	0.006130 | TNF, ETS1, SKAP1. 
+1	Regulation Of Blood Vessel Endothelial Cell Migration (GO:0043535) | 0.0006701 | AKT3, PRKCA, TNF, ETS1.       
+2	Antigen Receptor-Mediated Signaling Pathway (GO:0050851)	| 0.006130 | CD28, BCL2, BTN3A3, SKAP1.        
+3	Positive Regulation Of Leukocyte Cell-Cell Adhesion (GO:1903039)|	0.006130 | TNF, ETS1, SKAP1.       
 
 ```{r}
 f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k4.genes.out"),
