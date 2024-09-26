@@ -270,6 +270,80 @@ DT::datatable(
 * Topic 5: Th17 differentiation
 * Topic 12: B cell activation
 
+### Assess topic enrichment for immune marker genes
+
+```{r}
+# get topic specific genes
+de<-readRDS("output/fastTopics/GoM_DE_u19.RDS")
+de_list<-list()
+for(k in 1:12){
+  dat <- data.frame(postmean = de$postmean[,k],
+                  z        = de$z[,k],
+                  lfsr     = de$lfsr[,k])
+  
+  dat <- subset(dat,lfsr < 0.01)
+  dat <- dat[order(dat$postmean,decreasing = TRUE),]
+  de_list[[k]]<-dat
+}
+```
+
+```{r}
+files <- c(list.files(paste0(workdir, "/gene_sets"), pattern = "CELL_DIFFERENTIATION"),
+           list.files(paste0(workdir, "/gene_sets"), pattern = 
+                        "T_HELPER_2_CELL_CYTOKINE_PRODUCTION")
+)
+genesets <- list()
+for(i in files){
+  f <- read.table(sprintf("%s/gene_sets/%s", workdir, i))
+  genes <- ncbi37[ncbi37$V1 %in% as.character(f[, -1]), ]$V6
+  if("TNFSF4" %in% genes){ #check the GO term that includes ligand of TNFRSF4 receptor
+    genesets[[i]] <- gsub("TNFSF4", "TNFRSF4", genes)
+  }else{
+    genesets[[i]] <- genes
+  }
+}
+
+genesets$GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION_geneset.txt <-
+  c(genesets$GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION_geneset.txt,
+    "IL25", "IL5", "IL6", "IL9", "IL13")
+
+totalGenes <- read.table("output/fastTopics/GO_background_genes.txt")
+
+
+enrichTest <-
+  sapply(1:length(genesets), function(i) {
+    overlaps <- intersect(rownames(de_list[[5]]), genesets[[i]])
+    numOverlaps <- sum(rownames(de_list[[5]]) %in% genesets[[i]])
+    if (!is.null(numOverlaps)) {
+      X = matrix(
+        c(
+          numOverlaps,
+          length(genesets[[i]]) - numOverlaps,
+          length(rownames(de_list[[5]])) - numOverlaps,
+          length(totalGenes$V1) - (length(genesets[[i]]) - numOverlaps)
+        ),
+        byrow = TRUE,
+        ncol = 2
+      )
+      lm <- fisher.test(X)
+      return(c(
+        gsub("_geneset.txt", "", names(genesets)[i]),
+        paste(overlaps, collapse = ","),
+        lm$p.value,
+        lm$estimate
+      ))
+    }
+  })
+enrich_out <- data.frame(t(enrichTest))
+colnames(enrich_out) <- c("GOTerm", "GenesInSet","P", "OR")
+DT::datatable(
+  enrich_out %>% mutate(P = round(as.numeric(P), 4),
+                        OR = round(as.numeric(OR), 4))
+)
+```
+
+
+
 ## Gene-set associations for known immune cell markers
 
 Most immune cell markers were obtained from Gene ontology. The tissue-resident genes were from the single-cell lung paper and ChatGPT. After multiple correction (adj.P < 0.002), tissue-resident markers do not show significance for the gene-set association with Asthma. Neither do the genes involved in cell-cell adhesion or cell migration. The gene sets that are significantly enriched for higher association with Asthma risks are activation of T/B cells and T cell lineage differentiation.
