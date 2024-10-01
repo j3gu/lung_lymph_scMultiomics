@@ -9,7 +9,8 @@ author: 'Jing Gu'
 knitr::opts_chunk$set(echo = FALSE)
 library(data.table)
 library(dplyr)
-workdir <- "/home/jinggu/cluster/data/MAGMA/testrun"
+library(tidyr)
+workdir <- "/home/jinggu/cluster/data/MAGMA"
 ```
 
 # MAGMA
@@ -46,31 +47,48 @@ Procedure:
 ```{bash, eval = FALSE}
 #zcat BBJ_HDLC.txt.gz | awk 'NR>1 && $2==3 {print $1,$2,$3}' > HDLC_chr3.magma.input.snp.chr.pos.txt
 #zcat BBJ_HDLC.txt.gz | awk 'NR>1 && $2==3 {print $1,10^(-$11)}' >  HDLC_chr3.magma.input.p.txt
-cd /home/jinggu/cluster/data/MAGMA/testrun
-traitID="ukb-a-446"
+cd /home/jinggu/cluster/data/MAGMA/results
+#traitID=ukb-a-446
 module load bcftools
 # extract SNPs and p-values
-bcftools query -f'%ID %CHROM %POS\n' /project/xinhe/shared/IEU_vcf/$traitID.vcf.gz > ./${traitID}_snploc.txt
-bcftools query -f'%ID [%LP]\n' /project/xinhe/shared/IEU_vcf/$traitID.vcf.gz > ./${traitID}_pval.txt
+for i in {ukb-d-PNEUMONIA,} #ukb-a-446,ukb-b-20464,ukb-a-447}
+do
+echo $i
+bcftools query -f'%ID %CHROM %POS\n' /project/xinhe/shared/IEU_vcf/$i.vcf.gz > ./$i/${i}_snploc.txt
+bcftools query -f'%ID [%LP]\n' /project/xinhe/shared/IEU_vcf/$i.vcf.gz > ./$i/${i}_pval.txt
+bcftools query -f'[%SS]\n' /project/xinhe/shared/IEU_vcf/$i.vcf.gz |uniq > ./$i/${i}_ss.txt
+done
 ```
 
 ```{r eval = FALSE}
-# convert p-values to absolute value
-f <- fread(paste0(workdir, "/ukb-a-446_pval.txt"))
-f$V2 <- 10^(-f$V2)
-fwrite(f, paste0(workdir, "/ukb-a-446_input_p.txt"), 
-       sep = " ", col.names = FALSE)
+workdir="/home/jinggu/cluster/data/MAGMA"
+for(i in c("ukb-b-20464", "ukb-a-447", "ukb-d-PNEUMONIA")) {
+  # convert p-values to absolute value
+  f <- fread(paste0(workdir, sprintf("/results//%s/%s_pval.txt", i, i)))
+  f$V2 <- 10 ^ (-f$V2)
+  fwrite(f,
+         paste0(workdir, sprintf("/results/%s/%s_input_p.txt", i, i)),
+         sep = " ",
+         col.names = FALSE)
+}
 # subset coding genes to be the input genes for topic modeling
-fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
-allGenes <- fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
-subGenes <- allGenes[allGenes$V6 %in% rownames(fit$F), ]
-write.table(subGenes, "/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc",
-            quote = F, row.names = F, sep = "\t")
+fit <- readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
+allGenes <-
+  fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+subGenes <- allGenes[allGenes$V6 %in% rownames(fit$F),]
+write.table(
+  subGenes,
+  "/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc",
+  quote = F,
+  row.names = F,
+  sep = "\t"
+)
+
 ```
 
 ```{bash eval = FALSE}
-cd /home/jinggu/cluster/data/MAGMA/testrun
-traitID="ukb-a-446"
+traitID="ukb-d-PNEUMONIA"
+cd /home/jinggu/cluster/data/MAGMA/results/$traitID
 ncbi37=/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc
 source ~/.bashrc
 # annotate SNPs
@@ -84,7 +102,7 @@ magma --annotate \
 ref=/home/jinggu/cluster/data/MAGMA/reference_data/g1000_eur
 magma \
     --bfile $ref \
-    --pval ${traitID}_input_p.txt N=336782 \
+    --pval ${traitID}_input_p.txt N=361194 \
     --gene-annot $traitID.genes.annot \
     --out $traitID
     
@@ -109,26 +127,28 @@ for(i in 1:length(de_list)){
 
 ```{bash eval = FALSE}
 source ~/.bashrc
+cd /home/jinggu/cluster/data/MAGMA
 traitID="ukb-a-446"
-geneset=top100_geneset.txt
+geneset=/home/jinggu/cluster/data/MAGMA/testrun/gene_sets/top100_geneset.txt
+for i in {ukb-d-PNEUMONIA,} #ukb-a-447,ukb-b-20464}
+do
 magma \
-    --gene-results $traitID.genes.raw \
+    --gene-results results/$i/$i.genes.raw \
     --set-annot ${geneset} \
-    --out ${traitID}_top100
-
+    --out results/$i/${i}_top100
+done
 ```
-## Gene-set associations for topic marker genes that are up-regulated
+## Gene-set associations with risks for immune diseases
 
-```{r}
-f <- read.table(paste0(workdir, "/all_genes/ukb-a-446.gsa.out"), skip = 3, header = T)
-#DT::datatable(f)
-```
+### Testing on all marker genes 
+
 When corrected for multiple testing, tests will be significant if p-value lower than ~0.005. Around half of the tests show significant p-values, which makes us wonder if p-values are inflated. Then we try using the input genes for topic modeling rather than all genes as background so that they are more comparable. 
 
 * Total number of genes reduced from to 18K to ~16K
 * P values for the reduced background genes are very similar to the full ones.
 ```{r}
-f_reduced <- read.table(paste0(workdir, "/ukb-a-446_topics.gsa.out"), skip = 3, header = T)
+f <- read.table(paste0(workdir, "/results/ukb-a-446/all_genes/ukb-a-446.gsa.out"), skip = 3, header = T)
+f_reduced <- read.table(paste0(workdir, "/results/ukb-a-446/ukb-a-446_topics.gsa.out"), skip = 3, header = T)
 DT::datatable(f_reduced)
 
 plot(y = -log10(f_reduced$P), 
@@ -138,7 +158,7 @@ plot(y = -log10(f_reduced$P),
 abline(a = 0, b = 1, col = "red")
 ```
 
-### Test enrichment using top 100 genes from each topic
+### Testing on top 100 genes from each topic
 
 The supplementary table from MAGMA paper shows the mean type 1 error rates are well controlled for a set of size 100. The [MSigDB canonical pathways](https://www.gsea-msigdb.org/gsea/msigdb/human/genesets.jsp?collection=CP) contains 1320 gene sets from a number of different databases. I can look into the average size of the gene sets.
 ![MAGMA controlling for type 1 error rates for gene-set analysis ](https://github.com/user-attachments/assets/e4ea0389-c993-46a1-bc6b-c2a69630addf)
@@ -157,124 +177,205 @@ for(i in 1:length(de_list)){
               quote = F, row.names = F, sep=" ", col.names = F)
 }
 ```
+### Summarizing enrichment results by traits
 
-Instead of all DE genes, I used top 100 up-regulated genes ranked by z scores to test the enrichment for each topic. Now we see only k3, k4, k5 and k12 (4/12) topics show significant enrichment after multiple testing correction.
+Instead of all DE genes, I used top 100 up-regulated genes ranked by z scores to test the enrichment for each topic across immune traits. For Asthma, now we see only k3, k4, k5 and k12 (4 out of 12) topics show significant enrichment after multiple testing correction. For other immune diseases, allergy displays very strong enrichment for k4, k5 and k12, but none of the others have enrichment signal. 
+
 ```{r}
-df_top <- read.table(paste0(workdir, "/ukb-a-446_top100.gsa.out"), 
-                     skip = 3, header = T)
-DT::datatable(df_top)
+# A function to plot heatmap
+library(ComplexHeatmap)
+library(colorRamp2)
+#enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
+
+plot_heatmap <- 
+  function(input_tbl, 
+           cluster_by_rows=FALSE, 
+           cluster_by_cols=FALSE,
+           max_colour_value=NULL){
+    if(is.null(max_colour_value)){
+      max_colour_value = max(input_mat, na.rm = TRUE)
+    }
+  col_fun = 
+    colorRamp2(c(
+      min(input_mat, na.rm = TRUE),
+      max_colour_value), 
+      c("white", "red"))
+  ht <- 
+  Heatmap(
+    t(input_tbl),
+    width=unit(10, "cm"),
+    name = "-log10(P)",
+    row_names_side = "left",
+    cluster_rows = cluster_by_rows,
+    cluster_columns = cluster_by_cols,
+    na_col = "black",
+    col = col_fun,
+    #column_title = sprintf("%s", i)
+  )
+  draw(ht)
+}
 ```
-### Check the top genes contributing to topic 5 that have high MAGMA Z-scores
-
-Genes with high Z-scores (p < 0.05) are found to show enrichment in the following gene sets:
-
-* Regulation of signal transduction (adj.P = 0.01) from GO
-  - RORA, GATA3, CDC42SE2, SREBF2
-* Interleukin-2 signaling pathway (adj.P = 0.003) from BioPlanet
-  - CD247, RORA, GATA3, TAB2, FOXO1,IL21R, YARS (overlapping genes)
-* Th17 Cell Differentiation (adj.P = 0.0002) and IBD (adj.P = 0.001) from KEGG
-  - CD247, RORA, GATA3,IL21R
-
-![image](https://github.com/user-attachments/assets/8516bf22-cffa-490e-837b-1624e381ebd4)
 
 ```{r}
-ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc")
-
-f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k5.genes.out"),
-                header = TRUE)
-geneInfo <- ncbi37[, c(1, 6)]
-colnames(geneInfo) <- c("GENE", "SYMBOL")
-f <- left_join(f, geneInfo)
+traits <- c("Asthma", "Allergy", "COPD", "Asthma/COPD")
+traitIDs <- c("ukb-a-446", "ukb-a-447", "ukb-b-20464", "ukb-d-PNEUMONIA")
+tbl <- c()
+for(trait in traitIDs) {
+  df_top <- read.table(
+    paste0(workdir, "/results/", 
+           trait,"/",
+           trait, "_top100.gsa.out"),
+    skip = 3,
+    header = T
+  )
+  tbl <- rbind(
+    tbl,
+    df_top %>% 
+      mutate(TRAIT = trait) %>%
+      select(-c(TYPE, NGENES))
+  )
+}
 DT::datatable(
-  f  %>% arrange(P) %>%
-    mutate(P =format(P, format = "e", digits = 3)) %>%
-    select(SYMBOL, CHR, START, STOP, ZSTAT, P) 
-)
-```
-### Check the top genes contributing to topic 3 that have high MAGMA Z-scores
+  tbl %>%  
+    mutate(TRAIT = factor(TRAIT, labels = traits)) %>%
+    select(TRAIT, VARIABLE, SE, P)
+  )
 
-Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms:
+input_mat <-
+  data.frame(
+    tbl %>%
+      mutate(P = -log10(P),
+             TRAIT = factor(TRAIT,
+                            labels = traits)) %>%
+      select(c(VARIABLE, TRAIT, P)) %>%
+      pivot_wider(names_from = TRAIT,
+                  values_from = P),
+    row.names = 1
+  )
 
-![image](https://github.com/user-attachments/assets/b5c0dd96-211b-4b78-9851-17a39fa294bf)
-
-```{r}
-f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k3.genes.out"),
-                header = TRUE)
-geneInfo <- ncbi37[, c(1, 6)]
-colnames(geneInfo) <- c("GENE", "SYMBOL")
-f <- left_join(f, geneInfo)
-DT::datatable(
-  f  %>% arrange(P) %>%
-    mutate(P =format(P, format = "e", digits = 3)) %>%
-    select(SYMBOL, CHR, START, STOP, ZSTAT, P) 
-)
-
-# write.table(data.frame(f %>% filter(P < 0.05) %>% pull(SYMBOL)),
-#             "../output/fastTopics/k3_asthma_gsa_signif_genes.txt",
-#             row.names = F, col.names = F, quote = F)
-```
-### Check the top genes contributing to topic 4 that have high MAGMA Z-scores
-
-Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms:
-
-1	Regulation Of Blood Vessel Endothelial Cell Migration (GO:0043535) | 0.0006701 | AKT3, PRKCA, TNF, ETS1.       
-2	Antigen Receptor-Mediated Signaling Pathway (GO:0050851)	| 0.006130 | CD28, BCL2, BTN3A3, SKAP1.        
-3	Positive Regulation Of Leukocyte Cell-Cell Adhesion (GO:1903039)|	0.006130 | TNF, ETS1, SKAP1.   
-
-4 Regulation Of Cytokine Production (GO:0001817) | 0.013 | TNF, CD28, CCR7, BTN3A3
-
-![image](https://github.com/user-attachments/assets/e9d707f2-1325-45d5-948b-f0ceccb3ab20)
-
-```{r}
-f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k4.genes.out"),
-                header = TRUE)
-geneInfo <- ncbi37[, c(1, 6)]
-colnames(geneInfo) <- c("GENE", "SYMBOL")
-f <- left_join(f, geneInfo)
-DT::datatable(
-  f  %>% arrange(P) %>%
-    mutate(P =format(P, format = "e", digits = 3)) %>%
-    select(SYMBOL, CHR, START, STOP, ZSTAT, P) 
-)
-
-# write.table(data.frame(f %>% filter(P < 0.05) %>% pull(SYMBOL)),
-#             "../output/fastTopics/k4_asthma_gsa_signif_genes.txt",
-#             row.names = F, col.names = F, quote = F)
+plot_heatmap(
+  input_mat, 
+  cluster_by_rows = TRUE,
+  cluster_by_cols = TRUE)
 ```
 
-### Check the top genes contributing to topic 12 that have high MAGMA Z-scores
 
-Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms:
-![image](https://github.com/user-attachments/assets/8b067355-0abf-4eb6-8a69-8f5917a42b21)
-```{r}
-f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k12.genes.out"),
-                header = TRUE)
-geneInfo <- ncbi37[, c(1, 6)]
-colnames(geneInfo) <- c("GENE", "SYMBOL")
-f <- left_join(f, geneInfo)
-DT::datatable(
-  f  %>% arrange(P) %>%
-    mutate(P =format(P, format = "e", digits = 3)) %>%
-    select(SYMBOL, CHR, START, STOP, ZSTAT, P) 
-)
 
-# write.table(data.frame(f %>% filter(P < 0.05) %>% pull(SYMBOL)),
-#             "../output/fastTopics/k12_asthma_gsa_signif_genes.txt",
-#             row.names = F, col.names = F, quote = F)
-```
 
-**Topic annotations based on the functional enrichment for genes with high MAGMA Z scores**
+<!-- Genes with high Z-scores (p < 0.05) are found to show enrichment in the following gene sets: -->
 
-* Topic 3: NK/CD8+T cell activation
-* Topic 4: FOXP3-regulation (FOPX3 ChIP-Seq shows enrichment for topic 4 genes with high Z scores)
-* Topic 5: Th17 differentiation
-* Topic 12: B cell activation
+<!-- * Regulation of signal transduction (adj.P = 0.01) from GO -->
+<!--   - RORA, GATA3, CDC42SE2, SREBF2 -->
+<!-- * Interleukin-2 signaling pathway (adj.P = 0.003) from BioPlanet -->
+<!--   - CD247, RORA, GATA3, TAB2, FOXO1,IL21R, YARS (overlapping genes) -->
+<!-- * Th17 Cell Differentiation (adj.P = 0.0002) and IBD (adj.P = 0.001) from KEGG -->
+<!--   - CD247, RORA, GATA3,IL21R -->
 
-### Assess topic enrichment for immune marker genes
+<!-- ![image](https://github.com/user-attachments/assets/8516bf22-cffa-490e-837b-1624e381ebd4) -->
+
+<!-- ```{r} -->
+<!-- ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc") -->
+
+<!-- f <- read.table(paste0(workdir, "/results/ukb-a-446/ukb-a-446_top100.gsa.k5.genes.out"), -->
+<!--                 header = TRUE) -->
+<!-- geneInfo <- ncbi37[, c(1, 6)] -->
+<!-- colnames(geneInfo) <- c("GENE", "SYMBOL") -->
+<!-- f <- left_join(f, geneInfo) -->
+<!-- DT::datatable( -->
+<!--   f  %>% arrange(P) %>% -->
+<!--     mutate(P =format(P, format = "e", digits = 3)) %>% -->
+<!--     select(SYMBOL, CHR, START, STOP, ZSTAT, P)  -->
+<!-- ) -->
+<!-- ``` -->
+<!-- ### Check the top genes contributing to topic 3 that have high MAGMA Z-scores -->
+
+<!-- Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms: -->
+
+<!-- ![image](https://github.com/user-attachments/assets/b5c0dd96-211b-4b78-9851-17a39fa294bf) -->
+
+<!-- ```{r} -->
+<!-- f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k3.genes.out"), -->
+<!--                 header = TRUE) -->
+<!-- geneInfo <- ncbi37[, c(1, 6)] -->
+<!-- colnames(geneInfo) <- c("GENE", "SYMBOL") -->
+<!-- f <- left_join(f, geneInfo) -->
+<!-- DT::datatable( -->
+<!--   f  %>% arrange(P) %>% -->
+<!--     mutate(P =format(P, format = "e", digits = 3)) %>% -->
+<!--     select(SYMBOL, CHR, START, STOP, ZSTAT, P)  -->
+<!-- ) -->
+
+<!-- # write.table(data.frame(f %>% filter(P < 0.05) %>% pull(SYMBOL)), -->
+<!-- #             "../output/fastTopics/k3_asthma_gsa_signif_genes.txt", -->
+<!-- #             row.names = F, col.names = F, quote = F) -->
+<!-- ``` -->
+<!-- ### Check the top genes contributing to topic 4 that have high MAGMA Z-scores -->
+
+<!-- Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms: -->
+
+<!-- 1	Regulation Of Blood Vessel Endothelial Cell Migration (GO:0043535) | 0.0006701 | AKT3, PRKCA, TNF, ETS1.        -->
+<!-- 2	Antigen Receptor-Mediated Signaling Pathway (GO:0050851)	| 0.006130 | CD28, BCL2, BTN3A3, SKAP1.         -->
+<!-- 3	Positive Regulation Of Leukocyte Cell-Cell Adhesion (GO:1903039)|	0.006130 | TNF, ETS1, SKAP1.    -->
+
+<!-- 4 Regulation Of Cytokine Production (GO:0001817) | 0.013 | TNF, CD28, CCR7, BTN3A3 -->
+
+<!-- ![image](https://github.com/user-attachments/assets/e9d707f2-1325-45d5-948b-f0ceccb3ab20) -->
+
+<!-- ```{r} -->
+<!-- f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k4.genes.out"), -->
+<!--                 header = TRUE) -->
+<!-- geneInfo <- ncbi37[, c(1, 6)] -->
+<!-- colnames(geneInfo) <- c("GENE", "SYMBOL") -->
+<!-- f <- left_join(f, geneInfo) -->
+<!-- DT::datatable( -->
+<!--   f  %>% arrange(P) %>% -->
+<!--     mutate(P =format(P, format = "e", digits = 3)) %>% -->
+<!--     select(SYMBOL, CHR, START, STOP, ZSTAT, P)  -->
+<!-- ) -->
+
+<!-- # write.table(data.frame(f %>% filter(P < 0.05) %>% pull(SYMBOL)), -->
+<!-- #             "../output/fastTopics/k4_asthma_gsa_signif_genes.txt", -->
+<!-- #             row.names = F, col.names = F, quote = F) -->
+<!-- ``` -->
+
+<!-- ### Check the top genes contributing to topic 12 that have high MAGMA Z-scores -->
+
+<!-- Genes with high Z-scores (p < 0.05) are found to show enrichment in the following GO terms: -->
+<!-- ![image](https://github.com/user-attachments/assets/8b067355-0abf-4eb6-8a69-8f5917a42b21) -->
+<!-- ```{r} -->
+<!-- f <- read.table(paste0(workdir, "/ukb-a-446_top100_gsa.k12.genes.out"), -->
+<!--                 header = TRUE) -->
+<!-- geneInfo <- ncbi37[, c(1, 6)] -->
+<!-- colnames(geneInfo) <- c("GENE", "SYMBOL") -->
+<!-- f <- left_join(f, geneInfo) -->
+<!-- DT::datatable( -->
+<!--   f  %>% arrange(P) %>% -->
+<!--     mutate(P =format(P, format = "e", digits = 3)) %>% -->
+<!--     select(SYMBOL, CHR, START, STOP, ZSTAT, P)  -->
+<!-- ) -->
+
+<!-- # write.table(data.frame(f %>% filter(P < 0.05) %>% pull(SYMBOL)), -->
+<!-- #             "../output/fastTopics/k12_asthma_gsa_signif_genes.txt", -->
+<!-- #             row.names = F, col.names = F, quote = F) -->
+<!-- ``` -->
+## Assess topic enrichment for immune marker gene sets
+
+Only K5 satisfies the following criteria: 
+
+1. higher proportion in lungs than spleens  
+2. significant MAGMA Z scores
+
+Immune marker gene sets:
+
+1. GO terms for T helper cell differentiation, immune response (Th2, Th17, Treg)     
+2. ChatGPT: Th2 response genes, tissue-resident cell markers for lung lymphocytes     
+3. Tissue-resident lymphocyte markers: S1PR1, LMNA, SELL, RGS1, KLRG1, CD69, DUSP6, RGCC, SOCS1, ITGAE, CCR7, CTLA4, PDCD1, IL2RB, ITGA1, CXCR3
+
 
 ```{r}
 # get topic specific genes
 de<-readRDS("output/fastTopics/GoM_DE_u19.RDS")
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc")
 de_list<-list()
 for(k in 1:12){
   dat <- data.frame(postmean = de$postmean[,k],
@@ -285,63 +386,162 @@ for(k in 1:12){
   dat <- dat[order(dat$postmean,decreasing = TRUE),]
   de_list[[k]]<-dat
 }
+topic5 <- de_list[[5]]
 ```
 
+### Testing on all up-regulated topic marker genes
+
+Enrichment test: Fisher's exact test
+
+Topic 5 specific genes are enriched for tissue-resident genes, Treg/Th17 differentiation, and Th17 immune response.
+
 ```{r}
-files <- c(list.files(paste0(workdir, "/gene_sets"), pattern = "CELL_DIFFERENTIATION"),
-           list.files(paste0(workdir, "/gene_sets"), pattern = 
-                        "T_HELPER_2_CELL_CYTOKINE_PRODUCTION")
+test_topic_enrichment <-
+  function(topic_genes,
+           gene_sets, 
+           bkg_genes) {
+    enrichTest <-
+      sapply(1:length(gene_sets), function(i) {
+        overlaps <- intersect(topic_genes, gene_sets[[i]])
+        numOverlaps <- sum(topic_genes %in% gene_sets[[i]])
+        # make a contingency table
+        if (!is.null(numOverlaps)) {
+          X = matrix(
+            c(
+              numOverlaps,
+              length(gene_sets[[i]]) - numOverlaps,
+              length(topic_genes) - numOverlaps,
+              length(bkg_genes$V1) - (length(gene_sets[[i]]) - numOverlaps)
+            ),
+            byrow = TRUE,
+            ncol = 2
+          )
+          lm <- fisher.test(X) 
+          # summarize results
+          return(c(
+            gsub("_geneset.txt", "", names(gene_sets)[i]),
+            paste(overlaps, collapse = ","),
+            lm$p.value,
+            lm$estimate
+          ))
+        }
+      })
+    enrichTest <- data.frame(t(enrichTest))
+    colnames(enrichTest) <- c("GOTerm", "GenesInSet","P", "OR")
+    return(enrichTest)
+  }
+```
+
+
+```{r}
+files <- c(
+  list.files(paste0(workdir, "/gene_sets"),
+             pattern = "CELL_DIFFERENTIATION"),
+  list.files(paste0(workdir, "/gene_sets"), pattern =
+               "T_HELPER_2_CELL_CYTOKINE_PRODUCTION"),
+  list.files(paste0(workdir, "/gene_sets"), pattern =
+               "IMMUNE_RESPONSE_geneset"),
+  "Tissue_resident_lymphocytes_geneset.txt"
 )
+
 genesets <- list()
 for(i in files){
   f <- read.table(sprintf("%s/gene_sets/%s", workdir, i))
   genes <- ncbi37[ncbi37$V1 %in% as.character(f[, -1]), ]$V6
-  if("TNFSF4" %in% genes){ #check the GO term that includes ligand of TNFRSF4 receptor
-    genesets[[i]] <- gsub("TNFSF4", "TNFRSF4", genes)
-  }else{
-    genesets[[i]] <- genes
-  }
+  genesets[[i]] <- genes
 }
 
 genesets$GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION_geneset.txt <-
   c(genesets$GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION_geneset.txt,
     "IL25", "IL5", "IL6", "IL9", "IL13")
 
+
+topic5 <- de_list[[5]]
 totalGenes <- read.table("output/fastTopics/GO_background_genes.txt")
+# replace TNFRSF4 with its ligand 
+rownames(topic5) <- gsub("TNFRSF4", "TNFSF4", rownames(topic5))
 
 
-enrichTest <-
-  sapply(1:length(genesets), function(i) {
-    overlaps <- intersect(rownames(de_list[[5]]), genesets[[i]])
-    numOverlaps <- sum(rownames(de_list[[5]]) %in% genesets[[i]])
-    if (!is.null(numOverlaps)) {
-      X = matrix(
-        c(
-          numOverlaps,
-          length(genesets[[i]]) - numOverlaps,
-          length(rownames(de_list[[5]])) - numOverlaps,
-          length(totalGenes$V1) - (length(genesets[[i]]) - numOverlaps)
-        ),
-        byrow = TRUE,
-        ncol = 2
-      )
-      lm <- fisher.test(X)
-      return(c(
-        gsub("_geneset.txt", "", names(genesets)[i]),
-        paste(overlaps, collapse = ","),
-        lm$p.value,
-        lm$estimate
-      ))
-    }
-  })
-enrich_out <- data.frame(t(enrichTest))
-colnames(enrich_out) <- c("GOTerm", "GenesInSet","P", "OR")
+enrich_out <- 
+  test_topic_enrichment(
+    topic_genes = rownames(topic5),
+    gene_sets = genesets,
+    bkg_genes = totalGenes
+  )
+
+
 DT::datatable(
-  enrich_out %>% mutate(P = round(as.numeric(P), 4),
-                        OR = round(as.numeric(OR), 4))
+  enrich_out %>% 
+    mutate(P = round(as.numeric(P), 4),
+           OR = round(as.numeric(OR), 4)) %>%
+    arrange(P)
+)
+
+```
+### Testing on genes having high Asthma MAGMA Z scores
+
+Input: Topic 5 genes with MAGMA Z score >= 1.64, background genes for topic modeling (~17K)
+Enrichment test: Fisher's exact test
+
+Topic 5 specific genes with high Asthma z scores are enriched for tissue-resident genes, Treg/Th17/Th2 differentiation, and Th17 immune response.
+```{r}
+f_zscores <- fread(paste0(workdir, "/results/ukb-a-446/ukb-a-446_top100.gsa.genes.out"))
+topic5_ids <- ncbi37$V1[ncbi37$V6 %in% rownames(topic5)]
+topic5_topZ <-
+  f_zscores %>% 
+  filter(GENE %in% topic5_ids) %>%
+  arrange(desc(ZSTAT))
+
+topic5_topZ$SYMBOL <- 
+  unlist(lapply(topic5_topZ$GENE, function(i){ncbi37$V6[ncbi37$V1 == i]}))
+
+enrich_out <- 
+  test_topic_enrichment(
+    topic_genes = topic5_topZ$SYMBOL[topic5_topZ$ZSTAT >= 1.64],
+    gene_sets = genesets,
+    bkg_genes = totalGenes
+  )
+
+
+DT::datatable(
+  enrich_out %>% 
+    mutate(P = round(as.numeric(P), 4),
+           OR = round(as.numeric(OR), 4)) %>%
+    arrange(P)
 )
 ```
+### Testing on genes having high Allergy MAGMA Z scores
 
+Input: Topic 5 genes with MAGMA Z score >= 1.64, background genes for topic modeling (~17K)
+Enrichment test: Fisher's exact test
+
+Topic 5 specific genes with high allergy z scores are enriched for T cell activation involved in immune response.
+
+```{r}
+f_zscores <- fread(paste0(workdir, "/results/ukb-a-447/ukb-a-447_top100.gsa.genes.out"))
+topic5_ids <- ncbi37$V1[ncbi37$V6 %in% rownames(topic5)]
+topic5_topZ <-
+  f_zscores %>% 
+  filter(GENE %in% topic5_ids) %>%
+  arrange(desc(ZSTAT))
+
+topic5_topZ$SYMBOL <- 
+  unlist(lapply(topic5_topZ$GENE, function(i){ncbi37$V6[ncbi37$V1 == i]}))
+
+enrich_out <- 
+  test_topic_enrichment(
+    topic_genes = topic5_topZ$SYMBOL[topic5_topZ$ZSTAT >= 1.64],
+    gene_sets = genesets,
+    bkg_genes = totalGenes
+  )
+
+DT::datatable(
+  enrich_out %>% 
+    mutate(P = round(as.numeric(P), 4),
+           OR = round(as.numeric(OR), 4)) %>%
+    arrange(P)
+)
+```
 
 
 ## Gene-set associations for known immune cell markers
@@ -360,7 +560,7 @@ magma \
 ```
 
 ```{r}
-df_enriched <- read.table(paste0(workdir, "/ukb-a-446_GO_enriched.gsa.out"),
+df_enriched <- read.table(paste0(workdir, "/results/ukb-a-446/ukb-a-446_GO_enriched.gsa.out"),
                     skip = 4, header = TRUE)
 tbl <-
   rbind(
