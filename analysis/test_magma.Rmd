@@ -366,10 +366,10 @@ plot_heatmap(
 <!-- ``` -->
 ## Assess topic enrichment for immune marker gene sets
 
-Only K5 satisfies the following criteria: 
+K5 and K6 satisfy the following criteria:
 
 1. higher proportion in lungs than spleens  
-2. significant MAGMA Z scores
+2. significant MAGMA Z scores (K6 is at the boundary of threshold for allergy)
 
 Immune marker gene sets:
 
@@ -549,6 +549,40 @@ DT::datatable(
     arrange(P)
 )
 ```
+
+Input: Topic 6 genes with MAGMA Z score >= 1.64, background genes for topic modeling (~17K)
+Enrichment test: Fisher's exact test
+
+Topic 6 specific genes with high Asthma z scores are exclusively enriched for Th17 differentiation, activation, and immune response.
+
+```{r}
+f_zscores <- fread(paste0(workdir, "/results/ukb-a-447/ukb-a-447_top100.gsa.genes.out"))
+topic6 <- de_list[[6]]
+topic6_ids <- ncbi37$V1[ncbi37$V6 %in% rownames(topic6)]
+topic6_topZ <-
+  f_zscores %>% 
+  filter(GENE %in% topic6_ids) %>%
+  arrange(desc(ZSTAT))
+
+topic6_topZ$SYMBOL <- 
+  unlist(lapply(topic6_topZ$GENE, function(i){ncbi37$V6[ncbi37$V1 == i]}))
+
+enrich_out <- 
+  test_topic_enrichment(
+    topic_genes = topic6_topZ$SYMBOL[topic6_topZ$ZSTAT >= 1.64],
+    gene_sets = genesets,
+    bkg_genes = totalGenes
+  )
+
+DT::datatable(
+  enrich_out %>% 
+    mutate(P = round(as.numeric(P), 4),
+           OR = round(as.numeric(OR), 4)) %>%
+    arrange(P)
+)
+```
+
+
 <!-- ## Gene-set associations for known immune cell markers -->
 
 <!-- Most immune cell markers were obtained from Gene ontology. The tissue-resident genes were from the single-cell lung paper and ChatGPT. After multiple correction (adj.P < 0.002), tissue-resident markers do not show significance for the gene-set association with Asthma. Neither do the genes involved in cell-cell adhesion or cell migration. The gene sets that are significantly enriched for higher association with Asthma risks are activation of T/B cells and T cell lineage differentiation. -->
