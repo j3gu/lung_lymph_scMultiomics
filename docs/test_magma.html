@@ -530,15 +530,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree9d263ca6f60d18e69ca9bf764b2b4f3f1138818btargetblank9d263caa">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree65d1db6fe42abc8220f6df463da6d6635510c2e0targetblank65d1db6a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/9d263ca6f60d18e69ca9bf764b2b4f3f1138818b" target="_blank">9d263ca</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/65d1db6fe42abc8220f6df463da6d6635510c2e0" target="_blank">65d1db6</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree9d263ca6f60d18e69ca9bf764b2b4f3f1138818btargetblank9d263caa"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree65d1db6fe42abc8220f6df463da6d6635510c2e0targetblank65d1db6a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -548,7 +548,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/9d263ca6f60d18e69ca9bf764b2b4f3f1138818b" target="_blank">9d263ca</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/65d1db6fe42abc8220f6df463da6d6635510c2e0" target="_blank">65d1db6</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -658,6 +658,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/65d1db6fe42abc8220f6df463da6d6635510c2e0/analysis/test_magma.Rmd" target="_blank">65d1db6</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-10-02
+</td>
+<td>
+Added enrichment results for k6
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/53ae875b93748e6bdbac807970fda30ffe9a479b/docs/test_magma.html" target="_blank">53ae875</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-10-02
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1108,6 +1142,17 @@ Date
 <tbody>
 <tr>
 <td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/53ae875b93748e6bdbac807970fda30ffe9a479b/docs/figure/test_magma.Rmd/unnamed-chunk-9-2.png" target="_blank">53ae875</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-10-02
+</td>
+</tr>
+<tr>
+<td>
 <a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/378411892c2e6b0296d3f407b98e3b98b171e62c/docs/figure/test_magma.Rmd/unnamed-chunk-9-2.png" target="_blank">3784118</a>
 </td>
 <td>
@@ -1205,11 +1250,12 @@ Jing Gu
 <div id="assess-topic-enrichment-for-immune-marker-gene-sets"
 class="section level2">
 <h2>Assess topic enrichment for immune marker gene sets</h2>
-<p>Only K5 satisfies the following criteria:</p>
+<p>K5 and K6 satisfy the following criteria:</p>
 <ol style="list-style-type: decimal">
 <li>higher proportion in lungs than spleens<br />
 </li>
-<li>significant MAGMA Z scores</li>
+<li>significant MAGMA Z scores (K6 is at the boundary of threshold for
+allergy)</li>
 </ol>
 <p>Immune marker gene sets:</p>
 <ol style="list-style-type: decimal">
@@ -1253,6 +1299,12 @@ for topic modeling (~17K) Enrichment test: Fisher’s exact test</p>
 for T cell activation.</p>
 <div class="datatables html-widget html-fill-item" id="htmlwidget-3872b756936758f43822" style="width:100%;height:auto;"></div>
 <script type="application/json" data-for="htmlwidget-3872b756936758f43822">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"],["GOBP_T_CELL_ACTIVATION_INVOLVED_IN_IMMUNE_RESPONSE","Tissue_resident_lymphocytes","GOBP_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_T_HELPER_17_CELL_DIFFERENTIATION","GOBP_NEGATIVE_REGULATION_OF_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_POSITIVE_REGULATION_OF_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_2_CELL_CYTOKINE_PRODUCTION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_17_CELL_DIFFERENTIATION","GOBP_REGULATION_OF_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_REGULATION_OF_T_HELPER_17_CELL_DIFFERENTIATION","GOBP_REGULATION_OF_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_B_CELL_ACTIVATION_INVOLVED_IN_IMMUNE_RESPONSE","GOBP_NEGATIVE_REGULATION_OF_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_POSITIVE_REGULATION_OF_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_REGULATION_OF_CD4_POSITIVE_CD25_POSITIVE_ALPHA_BETA_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_NEGATIVE_REGULATION_OF_T_HELPER_17_TYPE_IMMUNE_RESPONSE"],["IL4R,RORA,GATA3,EP300,SEMA4A","PDCD1,CTLA4","IL4R,GATA3","RORA,EP300","CTLA4","RORA,EP300","IL4R","GATA3","EP300","IL4R","GATA3","EP300","EP300","EP300","CTLA4","DOCK10","","","",""],[0.0009,0.0049,0.0062,0.0212,0.0326,0.0402,0.0454,0.058,0.0704,0.0766,0.1127,0.1185,0.1417,0.1969,0.2231,0.4243,1,1,1,1],[7.2189,21.7854,19.0627,9.531000000000001,37.833,6.6242,25.1905,18.9068,15.1296,13.7583,8.898099999999999,8.4034,6.8736,4.7239,4.0846,1.8386,0,0,0,0]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>GOTerm<\/th>\n      <th>GenesInSet<\/th>\n      <th>P<\/th>\n      <th>OR<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[3,4]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"GOTerm","targets":1},{"name":"GenesInSet","targets":2},{"name":"P","targets":3},{"name":"OR","targets":4}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<p>Input: Topic 6 genes with MAGMA Z score &gt;= 1.64, background genes
+for topic modeling (~17K) Enrichment test: Fisher’s exact test</p>
+<p>Topic 6 specific genes with high Asthma z scores are exclusively
+enriched for Th17 differentiation, activation, and immune response.</p>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-c22a6cbbe2221dfaf03f" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-c22a6cbbe2221dfaf03f">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"],["GOBP_T_HELPER_17_CELL_DIFFERENTIATION","GOBP_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_REGULATION_OF_T_HELPER_17_CELL_DIFFERENTIATION","GOBP_T_CELL_ACTIVATION_INVOLVED_IN_IMMUNE_RESPONSE","GOBP_REGULATION_OF_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_POSITIVE_REGULATION_OF_T_HELPER_17_CELL_DIFFERENTIATION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_NEGATIVE_REGULATION_OF_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_B_CELL_ACTIVATION_INVOLVED_IN_IMMUNE_RESPONSE","Tissue_resident_lymphocytes","GOBP_POSITIVE_REGULATION_OF_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_NEGATIVE_REGULATION_OF_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_NEGATIVE_REGULATION_OF_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_REGULATION_OF_CD4_POSITIVE_CD25_POSITIVE_ALPHA_BETA_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_REGULATION_OF_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_2_CELL_CYTOKINE_PRODUCTION","GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION"],["IL2,RORA,IL23R,NFKBIZ","IL2,RORA,PHB,IL23R,NFKBIZ","IL2,IL23R,NFKBIZ","IL2,RORA,FCER1G,IL23R,NFKBIZ","IL2,IL23R,NFKBIZ","IL23R,NFKBIZ","IL23R,NFKBIZ","IL2","IL2,NFKBIZ","PDCD1","IL2","IL2","","","","","","","",""],[0,0,0.0002,0.0002,0.0005999999999999999,0.0013,0.004,0.0533,0.0641,0.0766,0.1083,0.1726,1,1,1,1,1,1,1,1],[27.909,24.6312,31.0297,9.769600000000001,20.6738,45.44,24.0758,20.2338,5.0356,13.478,9.192600000000001,5.4623,0,0,0,0,0,0,0,0]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>GOTerm<\/th>\n      <th>GenesInSet<\/th>\n      <th>P<\/th>\n      <th>OR<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[3,4]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"GOTerm","targets":1},{"name":"GenesInSet","targets":2},{"name":"P","targets":3},{"name":"OR","targets":4}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 <!-- ## Gene-set associations for known immune cell markers -->
 <!-- Most immune cell markers were obtained from Gene ontology. The tissue-resident genes were from the single-cell lung paper and ChatGPT. After multiple correction (adj.P < 0.002), tissue-resident markers do not show significance for the gene-set association with Asthma. Neither do the genes involved in cell-cell adhesion or cell migration. The gene sets that are significantly enriched for higher association with Asthma risks are activation of T/B cells and T cell lineage differentiation. -->
 <!-- ```{bash eval = FALSE} -->
