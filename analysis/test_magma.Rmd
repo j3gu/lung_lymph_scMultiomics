@@ -181,7 +181,9 @@ for(i in 1:length(de_list)){
 ```
 ### Summarizing enrichment results by traits
 
-Lung related immune diseases: Blood clot, DVT, emphysema (chronic bronchitis), asthma, rhinitis eczema/allergy diagnosed by doctor.  
+Lung related immune diseases from UK Biobank: 
+Blood clot, DVT, emphysema (chronic bronchitis), asthma, rhinitis eczema/allergy diagnosed by doctor
+
 Sample size: 336,782. 
 
 Instead of all DE genes, I used top 100 up-regulated genes ranked by z scores to test the enrichment for each topic across immune traits. For Asthma, now we see only k3, k4, k5 and k12 (4 out of 12) topics show significant enrichment after multiple testing correction. For other immune diseases, allergy displays very strong enrichment for k4, k5 and k12, but none of the others have enrichment signal. 
