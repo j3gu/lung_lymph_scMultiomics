@@ -447,6 +447,8 @@ files <- c(
                "T_HELPER_2_CELL_CYTOKINE_PRODUCTION"),
   list.files(paste0(workdir, "/gene_sets"), pattern =
                "IMMUNE_RESPONSE_geneset"),
+   list.files(paste0(workdir, "/gene_sets"), pattern =
+               "CHEMOKINE"),
   "Tissue_resident_lymphocytes_geneset.txt"
 )
 
@@ -481,10 +483,36 @@ DT::datatable(
   enrich_out %>% 
     mutate(P = round(as.numeric(P), 4),
            OR = round(as.numeric(OR), 4)) %>%
-    arrange(P)
+    arrange(P),
+  caption = "Topic 5"
 )
 
 ```
+
+Enrichment test: Fisher's exact test
+
+Topic 6 specific genes are enriched for tissue-resident genes, Treg/Th17 differentiation, and response to chemokines.
+```{r}
+topic6 <- de_list[[6]]
+
+enrich_out <- 
+  test_topic_enrichment(
+    topic_genes = rownames(topic6),
+    gene_sets = genesets,
+    bkg_genes = totalGenes
+  )
+
+
+DT::datatable(
+  enrich_out %>% 
+    mutate(P = round(as.numeric(P), 4),
+           OR = round(as.numeric(OR), 4)) %>%
+    arrange(P),
+  caption = "Topic 6"
+)
+```
+
+
 ### Testing on genes having high Asthma MAGMA Z scores
 
 Input: Topic 5 genes with MAGMA Z score >= 1.64, background genes for topic modeling (~17K)
