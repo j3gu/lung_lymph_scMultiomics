@@ -51,9 +51,10 @@ cd /home/jinggu/cluster/data/MAGMA/results
 #traitID=ukb-a-446
 module load bcftools
 # extract SNPs and p-values
-for i in {ukb-d-PNEUMONIA,} #ukb-a-446,ukb-b-20464,ukb-a-447}
+for i in {ukb-b-17241,} #ukb-b-20296,,ukb-b-16207,ukb-b-13704}
 do
 echo $i
+mkdir $i
 bcftools query -f'%ID %CHROM %POS\n' /project/xinhe/shared/IEU_vcf/$i.vcf.gz > ./$i/${i}_snploc.txt
 bcftools query -f'%ID [%LP]\n' /project/xinhe/shared/IEU_vcf/$i.vcf.gz > ./$i/${i}_pval.txt
 bcftools query -f'[%SS]\n' /project/xinhe/shared/IEU_vcf/$i.vcf.gz |uniq > ./$i/${i}_ss.txt
@@ -62,10 +63,11 @@ done
 
 ```{r eval = FALSE}
 workdir="/home/jinggu/cluster/data/MAGMA"
-for(i in c("ukb-b-20464", "ukb-a-447", "ukb-d-PNEUMONIA")) {
+for(i in c("ukb-b-20296","ukb-b-17241","ukb-b-16207","ukb-b-13704")) {
   # convert p-values to absolute value
   f <- fread(paste0(workdir, sprintf("/results//%s/%s_pval.txt", i, i)))
-  f$V2 <- 10 ^ (-f$V2)
+  f <- f[f$V2 != ".",]
+  f$V2 <- 10 ^ (-as.numeric(f$V2))
   fwrite(f,
          paste0(workdir, sprintf("/results/%s/%s_input_p.txt", i, i)),
          sep = " ",
@@ -102,7 +104,7 @@ magma --annotate \
 ref=/home/jinggu/cluster/data/MAGMA/reference_data/g1000_eur
 magma \
     --bfile $ref \
-    --pval ${traitID}_input_p.txt N=361194 \
+    --pval ${traitID}_input_p.txt N=462013 \
     --gene-annot $traitID.genes.annot \
     --out $traitID
     
@@ -129,8 +131,8 @@ for(i in 1:length(de_list)){
 source ~/.bashrc
 cd /home/jinggu/cluster/data/MAGMA
 traitID="ukb-a-446"
-geneset=/home/jinggu/cluster/data/MAGMA/testrun/gene_sets/top100_geneset.txt
-for i in {ukb-d-PNEUMONIA,} #ukb-a-447,ukb-b-20464}
+geneset=/home/jinggu/cluster/data/MAGMA/gene_sets/top100_geneset.txt
+for i in {ukb-b-20296,}
 do
 magma \
     --gene-results results/$i/$i.genes.raw \
@@ -179,6 +181,9 @@ for(i in 1:length(de_list)){
 ```
 ### Summarizing enrichment results by traits
 
+Lung related immune diseases: Blood clot, DVT, emphysema (chronic bronchitis), asthma, rhinitis eczema/allergy diagnosed by doctor.  
+Sample size: 336,782. 
+
 Instead of all DE genes, I used top 100 up-regulated genes ranked by z scores to test the enrichment for each topic across immune traits. For Asthma, now we see only k3, k4, k5 and k12 (4 out of 12) topics show significant enrichment after multiple testing correction. For other immune diseases, allergy displays very strong enrichment for k4, k5 and k12, but none of the others have enrichment signal. 
 
 ```{r}
@@ -217,8 +222,8 @@ plot_heatmap <-
 ```
 
 ```{r}
-traits <- c("Asthma", "Allergy", "COPD", "Asthma/COPD")
-traitIDs <- c("ukb-a-446", "ukb-a-447", "ukb-b-20464", "ukb-d-PNEUMONIA")
+traits <- c("Asthma", "Allergy", "Chronic_bronchitis", "Blood_clot", "Asthma/COPD")
+traitIDs <- c("ukb-a-446","ukb-a-447","ukb-b-16207","ukb-b-13704", "ukb-d-PNEUMONIA")
 tbl <- c()
 for(trait in traitIDs) {
   df_top <- read.table(
@@ -246,6 +251,7 @@ input_mat <-
     tbl %>%
       mutate(P = -log10(P),
              TRAIT = factor(TRAIT,
+                            levels = traitIDs,
                             labels = traits)) %>%
       select(c(VARIABLE, TRAIT, P)) %>%
       pivot_wider(names_from = TRAIT,
@@ -256,11 +262,9 @@ input_mat <-
 plot_heatmap(
   input_mat, 
   cluster_by_rows = TRUE,
-  cluster_by_cols = TRUE)
+  cluster_by_cols = TRUE,
+  max_colour_value = 6)
 ```
-
-
-
 
 <!-- Genes with high Z-scores (p < 0.05) are found to show enrichment in the following gene sets: -->
 
@@ -457,9 +461,10 @@ genesets$GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION_geneset.txt <-
 
 
 topic5 <- de_list[[5]]
+
 totalGenes <- read.table("output/fastTopics/GO_background_genes.txt")
 # replace TNFRSF4 with its ligand 
-rownames(topic5) <- gsub("TNFRSF4", "TNFSF4", rownames(topic5))
+#rownames(topic5) <- gsub("TNFRSF4", "TNFSF4", rownames(topic5))
 
 
 enrich_out <- 
@@ -483,7 +488,7 @@ DT::datatable(
 Input: Topic 5 genes with MAGMA Z score >= 1.64, background genes for topic modeling (~17K)
 Enrichment test: Fisher's exact test
 
-Topic 5 specific genes with high Asthma z scores are enriched for tissue-resident genes, Treg/Th17/Th2 differentiation, and Th17 immune response.
+Topic 5 specific genes with high Asthma z scores are enriched for tissue-resident genes, Treg/Th17 differentiation, and T-cell activation involved in immune response. If the ligand of TNFRSF4 receptor included in the test set, Th2 differentiation would also pass the threshold.
 ```{r}
 f_zscores <- fread(paste0(workdir, "/results/ukb-a-446/ukb-a-446_top100.gsa.genes.out"))
 topic5_ids <- ncbi37$V1[ncbi37$V6 %in% rownames(topic5)]
@@ -515,7 +520,7 @@ DT::datatable(
 Input: Topic 5 genes with MAGMA Z score >= 1.64, background genes for topic modeling (~17K)
 Enrichment test: Fisher's exact test
 
-Topic 5 specific genes with high allergy z scores are enriched for T cell activation involved in immune response.
+Topic 5 specific genes with high allergy z scores are mainly enriched for T cell activation.
 
 ```{r}
 f_zscores <- fread(paste0(workdir, "/results/ukb-a-447/ukb-a-447_top100.gsa.genes.out"))
@@ -542,63 +547,61 @@ DT::datatable(
     arrange(P)
 )
 ```
+<!-- ## Gene-set associations for known immune cell markers -->
 
+<!-- Most immune cell markers were obtained from Gene ontology. The tissue-resident genes were from the single-cell lung paper and ChatGPT. After multiple correction (adj.P < 0.002), tissue-resident markers do not show significance for the gene-set association with Asthma. Neither do the genes involved in cell-cell adhesion or cell migration. The gene sets that are significantly enriched for higher association with Asthma risks are activation of T/B cells and T cell lineage differentiation. -->
+<!-- ```{bash eval = FALSE} -->
+<!-- cd /home/jinggu/cluster/data/MAGMA/testrun -->
+<!-- source ~/.bashrc -->
+<!-- traitID="ukb-a-446" -->
+<!-- geneset=gene_sets/GO_gene_sets_MAGMA.txt -->
+<!-- magma \ -->
+<!--     --gene-results $traitID.genes.raw \ -->
+<!--     --set-annot ${geneset} \ -->
+<!--     --out ${traitID}_GO_enriched -->
 
-## Gene-set associations for known immune cell markers
+<!-- ``` -->
 
-Most immune cell markers were obtained from Gene ontology. The tissue-resident genes were from the single-cell lung paper and ChatGPT. After multiple correction (adj.P < 0.002), tissue-resident markers do not show significance for the gene-set association with Asthma. Neither do the genes involved in cell-cell adhesion or cell migration. The gene sets that are significantly enriched for higher association with Asthma risks are activation of T/B cells and T cell lineage differentiation.
-```{bash eval = FALSE}
-cd /home/jinggu/cluster/data/MAGMA/testrun
-source ~/.bashrc
-traitID="ukb-a-446"
-geneset=gene_sets/GO_gene_sets_MAGMA.txt
-magma \
-    --gene-results $traitID.genes.raw \
-    --set-annot ${geneset} \
-    --out ${traitID}_GO_enriched
+<!-- ```{r} -->
+<!-- df_enriched <- read.table(paste0(workdir, "/results/ukb-a-446/ukb-a-446_GO_enriched.gsa.out"), -->
+<!--                     skip = 4, header = TRUE) -->
+<!-- tbl <- -->
+<!--   rbind( -->
+<!--     df_top %>% -->
+<!--       filter(NGENES > 10 & P < 0.05/12) %>% # correct for multiple testing -->
+<!--       select(VARIABLE, NGENES, BETA, SE, P), -->
+<!--     df_enriched %>% mutate(VARIABLE = FULL_NAME) %>% -->
+<!--       filter(NGENES > 10) %>% #& P < 0.05/33) %>% # correct for multiple testing 0.05/33 = 0.002 -->
+<!--       select(VARIABLE, NGENES, BETA, SE, P) %>%  -->
+<!--       arrange(P) %>% mutate(P = format(P, scientific = TRUE, digits = 2)) -->
+<!--   ) -->
+<!-- DT::datatable(tbl) -->
+<!-- #write.table(tbl, "../output/fastTopics/top100_topic_GO_immune.gsa.txt",  -->
+<!--             #quote = F, row.names = F, sep = "\t") -->
+<!-- ``` -->
 
-```
+<!-- ```{r eval = FALSE} -->
+<!-- ### Perform permutation to obtain null p-values -->
+<!-- ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc") -->
+<!-- B = 5000 -->
+<!-- for(i in 1:B){ -->
+<!--   gene_set = sample(ncbi37$V1, 700, replace = FALSE) -->
+<!--   write.table(matrix(c(paste0("set", i), gene_set), nrow = 1), -->
+<!--               sprintf("%s/set%s_geneset.txt", workdir, i),  -->
+<!--               quote = F, row.names = F, sep=" ", col.names = F) -->
+<!-- } -->
+<!-- ``` -->
 
-```{r}
-df_enriched <- read.table(paste0(workdir, "/results/ukb-a-446/ukb-a-446_GO_enriched.gsa.out"),
-                    skip = 4, header = TRUE)
-tbl <-
-  rbind(
-    df_top %>%
-      filter(NGENES > 10 & P < 0.05/12) %>% # correct for multiple testing
-      select(VARIABLE, NGENES, BETA, SE, P),
-    df_enriched %>% mutate(VARIABLE = FULL_NAME) %>%
-      filter(NGENES > 10) %>% #& P < 0.05/33) %>% # correct for multiple testing 0.05/33 = 0.002
-      select(VARIABLE, NGENES, BETA, SE, P) %>% 
-      arrange(P) %>% mutate(P = format(P, scientific = TRUE, digits = 2))
-  )
-DT::datatable(tbl)
-#write.table(tbl, "../output/fastTopics/top100_topic_GO_immune.gsa.txt", 
-            #quote = F, row.names = F, sep = "\t")
-```
+<!-- ```{r eval = FALSE} -->
+<!-- f_null <- read.table(paste0(workdir, "/ukb-a-446_permutated700.gsa.out"),  -->
+<!--                      skip = 3, header = T) -->
 
-```{r eval = FALSE}
-### Perform permutation to obtain null p-values
-ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc")
-B = 5000
-for(i in 1:B){
-  gene_set = sample(ncbi37$V1, 700, replace = FALSE)
-  write.table(matrix(c(paste0("set", i), gene_set), nrow = 1),
-              sprintf("%s/set%s_geneset.txt", workdir, i), 
-              quote = F, row.names = F, sep=" ", col.names = F)
-}
-```
+<!-- f_perm <- unlist(lapply(f_reduced$BETA, function(i){sum(f_null$BETA >= i)/5000})) -->
 
-```{r eval = FALSE}
-f_null <- read.table(paste0(workdir, "/ukb-a-446_permutated700.gsa.out"), 
-                     skip = 3, header = T)
-
-f_perm <- unlist(lapply(f_reduced$BETA, function(i){sum(f_null$BETA >= i)/5000}))
-  
-plot(y = -log10(f_reduced$P), 
-     x = -log10(f_perm), 
-     xlab = "-log10(P) after permutation",
-     ylab = "-log10(P) before permutation")
-abline(a = 0, b = 1, col = "red")
-```
+<!-- plot(y = -log10(f_reduced$P),  -->
+<!--      x = -log10(f_perm),  -->
+<!--      xlab = "-log10(P) after permutation", -->
+<!--      ylab = "-log10(P) before permutation") -->
+<!-- abline(a = 0, b = 1, col = "red") -->
+<!-- ``` -->
 
