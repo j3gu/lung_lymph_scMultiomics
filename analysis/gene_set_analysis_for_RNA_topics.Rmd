@@ -279,6 +279,7 @@ plot_heatmap(
   cluster_by_cols = TRUE,
   max_colour_value = 6)
 ```
+
 ## GSA Joint association 
 
 We evaluated all sets of topic DE genes jointly to accounted for the overlapping genes between topics. 
@@ -326,9 +327,7 @@ plot_heatmap(
   max_colour_value = 6)
 ```
 
-
-
-## Topic 4/5 DE genes with Asthma MAGMA Z scores
+## Topic DE genes with Asthma MAGMA Z scores
 
 Input: 
 1. Topic specific genes overlapped with MAGMA risk genes (FDR < 0.05)
