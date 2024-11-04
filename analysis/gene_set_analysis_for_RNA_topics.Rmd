@@ -327,9 +327,12 @@ plot_heatmap(
   max_colour_value = 6)
 ```
 
-## Topic DE genes with Asthma MAGMA Z scores
+## Topic DE genes overlapped with disease risk genes
+
+### Testing on genes having high asthma MAGMA Z scores
 
 Input: 
+
 1. Topic specific genes overlapped with MAGMA risk genes (FDR < 0.05)
 2. background genes for topic modeling (~17K)
 
@@ -453,6 +456,7 @@ output_enrichment_table(f_zscores, 6)
 ### Testing on genes having high Allergy MAGMA Z scores
 
 Input: 
+
 1. Topic specific genes overlapped with MAGMA risk genes (FDR < 0.05)
 2. background genes for topic modeling (~17K)
 
