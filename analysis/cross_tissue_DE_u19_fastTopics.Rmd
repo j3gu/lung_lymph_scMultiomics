@@ -16,6 +16,7 @@ library(dplyr)
 library(tidyr)
 library(colorRamp2)
 library(ComplexHeatmap)
+library(data.table)
 set.seed(10)
 
 # load data
@@ -29,18 +30,13 @@ metadata$donor_id[metadata$full.ident=="spleens_2"]<-'3'
 metadata$donor_id[metadata$full.ident=="spleens_3"]<-'6'
 batch_ids<-c("batch1", "batch1", "batch2", "batch2", "batch3", "batch3", "batch1", "batch2", "batch3")
 metadata$batch<-factor(metadata$full.ident, labels = batch_ids)
+metadata$tissue_batch <- paste0(metadata$tissue.ident, "_", metadata$batch)
 ```
-# Model fitting 
-
+# Model fitting and evaluation
 Parameters: 
 
 N_updates = 150
 N_topics = 12
-
-# Model evaluation
-```{r}
-fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
-```
 
 check the convergence
 ```{r}
@@ -73,27 +69,27 @@ ggplot(pdat %>% filter(subpop %in% celltypes),aes(x = loglik,fill = subpop)) +
   theme_cowplot(font_size = 10)
 ```
 
-# Visualize topics with structural plots
+# Visualize topics 
+
+## Structural plots
 
 * plot by tissue
-```{r message=F}
+```{r message=F, fig.height=4, fig.width = 8}
 structure_plot(fit,topics = 1:12,gap = 25,
                grouping = metadata$tissue.ident,
-               verbose=FALSE) 
+               verbose=FALSE) + theme_cowplot(font_size = 16)
 ```
-* plot by tissue and cell-type
+* plot by cell-type
 
-```{r message=F}
+```{r message=F, fig.height=4, fig.width = 8}
 ct_order <- 
   c("Naive_B",
     "Memory_B",
-    "Monocytes",
-    "ILC3",
-    "CD4_T",
+    "NK",
     "CD8_T",
+    "CD4_T",
     "Treg",
     "Th17",
-    "NK",
     "Other"
   )
 metadata$major <- factor(
@@ -101,9 +97,9 @@ metadata$major <- factor(
   labels = c(
     "NK",
     "NK",
-    "Monocytes",
     "Other",
-    "ILC3",
+    "Other",
+    "Other",
     "Memory_B",
     "Naive_B",
     "Other",
@@ -128,20 +124,189 @@ tissue_samples <-
                      sep = "_")
     )
   )
-# ordered_tissue_samples<-unlist(
-#   lapply(unique(metadata$major), function(i){c(paste0("lungs_",  i),
-#                                                paste0("spleens_", i)
-#                                                )}))
-# tissue_samples<-factor(tissue_samples,
-#                        levels = ordered_tissue_samples)
+ordered_tissue_samples<-unlist(
+  lapply(unique(metadata$major), function(i){c(paste0("lungs_",  i),
+                                               paste0("spleens_", i)
+                                               )}))
+tissue_samples<-factor(tissue_samples,
+                       levels = ordered_tissue_samples)
 structure_plot(fit,topics = 1:12,gap = 25,
-               grouping = tissue_samples,
+               grouping = metadata$major,
                verbose=FALSE
-               ) 
+               ) + theme_cowplot() + 
+theme(axis.text.x = element_text(size = 14, angle=45, vjust = 0.6),
+                         axis.text.y = element_text(size = 16),
+                         axis.title.y = element_text(size = 16))
+```
+By batch
+```{r, fig.width = 12}
+plots<-list()
+for(i in unique(metadata$batch)){
+  plots[[i]] <-
+  structure_plot(
+    fit,
+    topics = 1:12,
+    gap = 30,
+    grouping = metadata$major,
+    loadings_order = rownames(fit$L[metadata$batch == i, ]),
+    verbose=FALSE) + 
+    theme_cowplot() + ylab("") + 
+    theme(axis.text.x = element_text(size = 8, angle=45, vjust = 0.6),
+          legend.position = "none") + ggtitle(i)
+}
+library(ggpubr)
+ggarrange(plots$batch1,
+          plots$batch2,
+          plots$batch3,
+          nrow = 3)
 ```
 
-# Characterize topics with enrichment analysis
+# Quality control
 
+## Are specific topics correlated with MT or ribosomal RNAs?
+
+Yes, topic 2, 9, 7 are highly correlated with the total expression of heatshock protein genes, 
+mitochondrial genes, and ribosomal RNAs. 
+```{r}
+check_topic_correlation <- function(keywords, ylabel){
+  query_genes <- unlist(lapply(keywords, function(i){
+    colnames(counts)[startsWith(colnames(counts), i)]}))
+  topic_corr <- apply(fit$L, 2, function(i){
+    #norm_counts <- counts[, query_genes]/rowSums(counts)
+    round(cor(i, rowSums(counts[, query_genes])), 2)
+    })
+  print(sprintf("%s:", ylabel))
+  print(topic_corr)
+  selected_topic <- which(topic_corr == max(topic_corr))
+  plot(fit$L[, selected_topic], rowSums(counts[, query_genes]), 
+     ylab = paste0("Total GE for ", ylabel),
+     xlab = paste0("Topic proportion for k",  selected_topic),
+     main = paste0("Correlation: ", max(topic_corr))) 
+}
+```
+
+```{r, fig.height = 10}
+lung_specific<-strsplit("PHLDA1, RBPJ, DOCK5, GOLIM4, CD101, ATP10D, XCL1, KRT81, FAM167A, RTKN2", ", ")[[1]]
+lung_TRM_genes <- c(lung_specific,
+                    "ITGA1", "ITGAE", "CXCR6", "PDCD1", 
+                    "DUSP6", "CRTAM", "IL17A", "IL2", "IFNG")
+Treg_ImmunoRepress <- c("FOXP3", "IL2RA", "CTLA4", "IL10", "LAG3")
+par(mfrow = c(2,2))
+check_topic_correlation("HSP", "heatshock genes")
+check_topic_correlation(c("MT-","MTRNR"), "mitochrondrial genes")
+check_topic_correlation(c("RPL", "RPS", "MRP"), "ribosomal genes")
+check_topic_correlation(lung_TRM_genes, "TRM genes")
+#check_topic_correlation(Treg_ImmunoRepress, "Treg immunorepressive genes")
+```
+## Identifying topics that capture batch or donor effects
+
+Each of the three spleen samples are in separate batches. K11 has high proportion of batch 3, which is probably driven by spleen 3. For K3-6 with a high proportion in lungs, I did not see a clear trend of batch/donor effects, which is reassuring.
+
+```{r fig.width = 10}
+print(table(metadata$full.ident, metadata$batch))
+
+# convert poisson NMF model to multinational model
+multinom_fit<-poisson2multinom(fit)
+pdat<-data.frame(multinom_fit$L)
+boxplots_for_topics <- function(){
+ 
+  
+}
+
+gginput<-
+  data.frame(pdat, 
+             metadata[, c("full.ident", "tissue.ident", "batch")]) %>%
+  pivot_longer(cols = !c(full.ident, tissue.ident, batch), 
+               names_to = "topic", values_to = "proportion") %>%
+  mutate(topic = factor(topic, levels = paste0("k", 1:12)))
+
+
+p1<-
+  ggplot(gginput,
+       aes(x = topic,
+           y = proportion)) +
+  geom_boxplot(outlier.shape = NA,
+               aes(colour = tissue.ident)) +
+  # stat_summary(fun="mean", aes(colour = tissue.ident)) +
+  theme_cowplot(font_size = 16)
+
+p2<-
+  ggplot(gginput,
+       aes(x = topic,
+           y = proportion)) +
+  geom_boxplot(outlier.shape = NA,
+               aes(colour = batch)) +
+  theme_cowplot(font_size = 16)
+
+
+
+p_donors <-
+  lapply(unique(gginput$full.ident), function(i) {
+    ggplot(gginput,
+           aes(x = topic,
+               y = proportion)) +
+      geom_boxplot(outlier.shape = NA,
+                   aes(colour = full.ident!=i)) +
+      theme_cowplot(font_size = 16) + 
+      theme(legend.position = "none") + 
+      ggtitle(i)
+  })
+library(gridExtra)
+marrangeGrob(list(p1, p2), nrow=2, ncol =1)
+marrangeGrob(p_donors, nrow=3, ncol=3)
+```
+Topic 3-6 show consistent topic proportion across batches.
+```{r}
+p_batch <-
+  lapply(3:6, function(i){
+    ggplot(gginput %>% filter(topic == paste0("k", i)),
+         aes(x = batch,
+             y = proportion)) +
+      geom_boxplot(outlier.shape = NA,
+                   aes(colour = tissue.ident)) +
+      theme_cowplot(font_size = 16) + 
+      theme(legend.position = "none") + 
+      ggtitle(paste0("k", i)) + ylim(c(0, 0.8))
+})
+
+marrangeGrob(p_batch, nrow=2, ncol=2)
+```
+
+
+# Characterize topics 
+
+## Topic differential expression analysis
+
+### Volcano plots for GoM DE results
+
+Axis: the z-scores for posterior mean log-fold change estimates vs. log-fold change
+
+From volcano plots, we see several genes that encode different types of cytokines are present in topic 6. Chemokine ligands (CCL4, CCL20, etc.) are proteins that signal leukocyte migration, while cytokines (IL17A, IL22) are interleukins that signal immune cells to defend against pathogens.
+
+```{r}
+de<-readRDS("output/fastTopics/GoM_DE_u19.RDS")
+de_list<-list()
+for(k in 1:12){
+  dat <- data.frame(postmean = de$postmean[,k],
+                  z        = de$z[,k],
+                  lfsr     = de$lfsr[,k])
+  
+  dat <- subset(dat,lfsr < 0.01)
+  dat <- dat[order(dat$postmean,decreasing = TRUE),]
+  de_list[[k]]<-dat
+  #print(volcano_plot(de, k=k, ymax=250,
+  #plot.title = sprintf("topic:%s", k)))
+}
+```
+```{r}
+# count how many DE genes identified in each topic
+tbl<-unlist(lapply(de_list, function(i){sum(i$z >0)}))
+names(tbl)<-paste0("t",1:12)
+print("Number of up-regulated genes in each topic against the rest:")
+tbl
+```
+
+## GO enrichment results (ORA method) 
 Two ways to perform enrichment test:
 
 * hypergeometric test (ORA from [WebGestaltR](https://cran.r-project.org/web/packages/WebGestaltR/WebGestaltR.pdf))
@@ -152,12 +317,11 @@ A test purely depends on occurrences, asking whether the genes related to a topi
 
 It tests whether the genes in a set is more associated with **phenotype** than those outside of a set.
 
-## GO enrichment results (ORA method) 
-
 ### Top genes ranked by loadings
 Input:  
 
 - Top 500 loading genes vs. all genes 
+  * high loading genes may have low expression
 - Database: Biological_Process, Cellular_Component, Molecular_Function
 
 Top loading genes are enriched in large number of GO terms, which have broad functions.
@@ -210,36 +374,9 @@ DT::datatable(
 Input:   
 
 - Up-regulated genes specific to each topic (z > 0 and lfsr < 0.01) vs. all genes
+  * posterior z score reflects total expression
+  * LFC quantifies the relative expression between two topics
 - Database: Biological_Process, Cellular_Component, Molecular_Function
-
-**Volcano plots for GoM DE results**
-
-Axis: the z-scores for posterior mean log-fold change estimates vs. log-fold change
-
-From volcano plots, we see several genes that encode different types of cytokines are present in topic 6. Chemokine ligands (CCL4, CCL20, etc.) are proteins that signal leukocyte migration, while cytokines (IL17A, IL22) are interleukins that signal immune cells to defend against pathogens.
-
-```{r}
-de<-readRDS("output/fastTopics/GoM_DE_u19.RDS")
-de_list<-list()
-for(k in 1:12){
-  dat <- data.frame(postmean = de$postmean[,k],
-                  z        = de$z[,k],
-                  lfsr     = de$lfsr[,k])
-  
-  dat <- subset(dat,lfsr < 0.01)
-  dat <- dat[order(dat$postmean,decreasing = TRUE),]
-  de_list[[k]]<-dat
-  print(volcano_plot(de, k=k, ymax=250,
-  plot.title = sprintf("topic:%s", k)))
-}
-```
-```{r}
-# count how many DE genes identified in each topic
-tbl<-unlist(lapply(de_list, function(i){sum(i$z >0)}))
-names(tbl)<-paste0("t",1:12)
-print("Number of up-regulated genes in each topic against the rest:")
-tbl
-```
 
 **GO Enrichment result table**
 
@@ -296,21 +433,30 @@ BP results show k1 enriched for granulocyte activation and neutrophil mediated i
 
 MF results show broad enrichment of molecular binding, with k7 highly enriched for cell adhesion molecular binding. 
 
-```{r fig.height = 12, fig.width = 10}
+```{r fig.height = 6, fig.width = 10}
 library(ComplexHeatmap)
 #enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
 
-input_mat <-
-  enrich_out %>% 
+top_GO <-
+  enrich_out %>% filter(!k %in% c("k1", "k7", "k8", "k9"),
+                        grepl("Biological_Process", database)) %>% 
   select(k, description, database, FDR) %>% distinct() %>% 
-  group_by(k, database) %>%
+  group_by(k) %>%
+  mutate(FDR = -log10(FDR)) %>% 
+  slice_max(order_by = FDR, n = 6) %>%
+  select(k, description)
+  
+input_matrix <-
+    enrich_out %>% 
+  filter(!k %in% c("k1", "k7", "k8", "k9") & 
+           description %in% top_GO$description & 
+           grepl("Biological_Process", database)) %>%
   mutate(FDR = -log10(FDR)) %>%
-  top_n(10) 
-
-for(i in db){
+  select(k, description, FDR)
+    
+for(i in db[1]){
   mat <- 
-    input_mat %>% 
-    filter(grepl(i, database)) %>%
+    input_matrix %>%
     pivot_wider(names_from = description,
                 values_from = FDR) 
   terms<-mat$k
@@ -318,14 +464,14 @@ for(i in db){
   rownames(mat)<-terms
   
   col_fun = colorRamp2(c(min(mat, na.rm = TRUE),
-                         max(15, na.rm = TRUE)), 
+                         max(mat[!is.infinite(mat)], na.rm = TRUE)), 
                        c("white", "red"))
   #pdf(sprintf("../output/fastTopics/%s_GO_enrichment_by_topics_heatmap.pdf", i),
       #height = 15, width = 12)
   ht <- 
   Heatmap(
     t(mat),
-    width=unit(10, "cm"),
+    width=unit(8, "cm"),
     name = "-log10(FDR)",
     row_names_side = "left",
     cluster_rows = FALSE,
@@ -339,19 +485,174 @@ for(i in db){
 }
 ```
 
-## GO enrichment for association with traits (MAGMA method) 
 
-gene-set inputs: top 100 genes from each topic + immune cell markers 
-GWAS: ukb-a-446
+## Assessing topic enrichment for immune marker gene sets
+
+K4, k5, K6 satisfy the following criteria:
+
+1. higher proportion in lungs than spleens  
+2. significant MAGMA Z scores (K6 is at the boundary of threshold for allergy)
+
+Immune marker gene sets:
+
+1. GO terms for T helper cell differentiation, immune response (Th2, Th17, Treg)     
+2. ChatGPT: Th2 response genes, tissue-resident cell markers for lung lymphocytes     
+3. Tissue-resident lymphocyte markers: S1PR1, LMNA, SELL, RGS1, KLRG1, CD69, DUSP6, RGCC, SOCS1, ITGAE, CCR7, CTLA4, PDCD1, IL2RB, ITGA1, CXCR3
+4. Core TRM signature genes: ITGA1, ITGAE, CXCR6, CX3CR1(-), PDCD1, CD101
+5. Lung-specific TRM: PHLDA1, RBPJ, DOCK5, GOLIM4, CD101, ATP10D, XCL1, KRT81, FAM167A, RTKN2
+
 ```{r}
-enrich_out <- read.table("output/fastTopics/top100_topic_GO_immune.gsa.txt",
-                         header = TRUE)
+lung_specific<-"PHLDA1, RBPJ, DOCK5, GOLIM4, CD101, ATP10D, XCL1, KRT81, FAM167A, RTKN2"
+lung_TRM_genes <- c(strsplit(lung_specific, ", ")[[1]],
+                    "ITGA1", "ITGAE", "CXCR6", "PDCD1", 
+                    "DUSP6", "CRTAM", "IL17A", "IL2", "IFNG")
+```
+
+```{r eval=FALSE}
+# get topic specific genes
+de<-readRDS("output/fastTopics/GoM_DE_u19.RDS")
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc")
+de_list<-list()
+for(k in 1:12){
+  dat <- data.frame(postmean = de$postmean[,k],
+                  z        = de$z[,k],
+                  lfsr     = de$lfsr[,k])
+  
+  dat <- subset(dat,lfsr < 0.01 & postmean > 0 )
+  dat <- dat[order(dat$postmean,decreasing = TRUE),]
+  de_list[[k]]<-dat
+}
+topic5 <- de_list[[5]]
+
+# tissue-resident T cells
+tissue_res <- c("PDCD1", "KCNK5","DUSP6","CXCL13","IL10","IL2","CRTAM","ITGA1",
+                "ITGAE","RGS1","CXCR6", "CD101", "XCL1", "DOCK5", "RBPJ", "PHLDA1")
+tissue_res_genes <- ncbi37$V1[ncbi37$V6 %in% tissue_res]
+write.table(matrix(c("TISSUE_RESIDENT_MEMORY_T", tissue_res_genes), nrow=1), 
+            "~/cluster/data/MAGMA/gene_sets/TISSUE_RESIDENT_MEMORY_T_geneset.txt", 
+            quote = F, sep=" ", col.names = FALSE, row.names = FALSE)
+
+```
+
+### Testing on topic marker genes
+
+Enrichment test: Fisher's exact test
+
+Topic 5 specific genes are slightly enriched for Th17 cell differentiation and activation.
+```{r}
+test_topic_enrichment <-
+  function(topic_genes,
+           gene_sets, 
+           bkg_genes) {
+    enrichTest <-
+      sapply(1:length(gene_sets), function(i) {
+        overlaps <- intersect(topic_genes, gene_sets[[i]])
+        numOverlaps <- sum(topic_genes %in% gene_sets[[i]])
+        # make a contingency table
+        if (!is.null(numOverlaps)) {
+          X = matrix(
+            c(
+              numOverlaps,
+              length(gene_sets[[i]]) - numOverlaps,
+              length(topic_genes) - numOverlaps,
+              length(bkg_genes$V1) - (length(gene_sets[[i]]) - numOverlaps)
+            ),
+            byrow = TRUE,
+            ncol = 2
+          )
+          lm <- fisher.test(X) 
+          # summarize results
+          return(c(
+            gsub("_geneset.txt", "", names(gene_sets)[i]),
+            paste(overlaps, collapse = ","),
+            lm$p.value,
+            lm$estimate
+          ))
+        }
+      })
+    enrichTest <- data.frame(t(enrichTest))
+    colnames(enrichTest) <- c("GOTerm", "GenesInSet","P", "OR")
+    return(enrichTest)
+  }
+```
+
+
+```{r}
+workdir<-"~/cluster/data/MAGMA"
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+
+files <- c(
+  list.files(paste0(workdir, "/gene_sets"),
+             pattern = "CELL_DIFFERENTIATION"),
+  list.files(paste0(workdir, "/gene_sets"), pattern =
+               "T_HELPER_2_CELL_CYTOKINE_PRODUCTION"),
+  list.files(paste0(workdir, "/gene_sets"), pattern =
+               "IMMUNE_RESPONSE_geneset"),
+   list.files(paste0(workdir, "/gene_sets"), pattern =
+               "CHEMOKINE")
+  #"TISSUE_RESIDENT_MEMORY_T_geneset.txt"
+)
+
+genesets <- list()
+for(i in files){
+  f <- read.table(sprintf("%s/gene_sets/%s", workdir, i))
+  genes <- ncbi37[ncbi37$V1 %in% as.character(f[, -1]), ]$V6
+  genesets[[i]] <- genes
+}
+
+#genesets$GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION_geneset.txt <-
+#  c(genesets$GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION_geneset.txt,
+#    "IL25", "IL5", "IL6", "IL9", "IL13")
+genesets$lung_TRM_genes<-lung_TRM_genes
+topic5 <- de_list[[5]]
+
+totalGenes <- read.table("output/fastTopics/GO_background_genes.txt")
+# replace TNFRSF4 with its ligand 
+#rownames(topic5) <- gsub("TNFRSF4", "TNFSF4", rownames(topic5))
+
+enrich_out <- 
+  test_topic_enrichment(
+    topic_genes = rownames(topic5),
+    gene_sets = genesets,
+    bkg_genes = totalGenes) %>%
+  mutate(FDR = p.adjust(P, method = "fdr"))
+
+
 DT::datatable(
-  enrich_out %>% mutate(P = format(P, scientific = TRUE, digits = 2))
+  enrich_out %>% 
+    select(-P) %>%
+    mutate(FDR = round(as.numeric(FDR), 4),
+           OR = round(as.numeric(OR), 4)) %>%
+    arrange(FDR),
+  caption = "Topic 5"
+)
+
+```
+
+Enrichment test: Fisher's exact test
+
+Topic 6 specific genes are significantly enriched for tissue-resident genes, Treg/Th17 differentiation, and response to chemokines.
+```{r}
+topic6 <- de_list[[6]]
+
+enrich_out <- 
+  test_topic_enrichment(
+    topic_genes = rownames(topic6),
+    gene_sets = genesets,
+    bkg_genes = totalGenes
+  )
+
+
+DT::datatable(
+  enrich_out %>% 
+    mutate(P = round(as.numeric(P), 4),
+           OR = round(as.numeric(OR), 4)) %>%
+    arrange(P),
+  caption = "Topic 6"
 )
 ```
 
-# Identify topics correlated with tissue difference
+# Identify specific topics 
 
 1. We can test whether topic proportion is correlated with the tissue of origin
 $$
@@ -359,14 +660,15 @@ F  = \beta X_{\text{tissue}} + \text{Covariates} + \epsilon
 $$
 2. perform T-test to see whether topic proportions between two tissues are significantly different
 
-## Barplot for topic proportions in cell types
+## Barplot for average topic proportions 
 
 * The topic proportion between tissue are similar across T cell subsets.
 * $CD8^+$ T cells have the highest proportion of k3 compared to others, similar as NK cells.
 * The topic k1 dominates lung monocytes, and this topic separates ILC3 cells from other T/NK cells in lungs.
 * The topic proportion that differs the most between tissue occurs in B cells(eg. k4, k10, k12)
 
-```{r fig.width = 12, message=FALSE}
+```{r} 
+#fig.width = 12, fig.height=6, message=FALSE}
 library(catecolors)
 
 # convert poisson NMF model to multinational model
@@ -374,13 +676,14 @@ multinom_fit<-poisson2multinom(fit)
 pdat<-data.frame(multinom_fit$L)
 pdat$tissue<-metadata$tissue.ident
 pdat$celltype<-metadata$major
+pdat$batch <- metadata$batch
 pdat<-pdat %>% 
   pivot_longer(
-    !c(tissue, celltype),
+    !c(tissue, batch, celltype),
     names_to="topic", values_to="proportion")
 
 # cell number by tissue and cell type
-table(metadata$tissue.ident, metadata$major)
+table(metadata$batch, metadata$merged)
 
 # original scale
 prop <-
@@ -407,18 +710,55 @@ prop <-
   mutate(
     celltype =
       factor(celltype, levels = ct_order),
-    topic = factor(topic, levels = paste0("k", 1:12))
-  ) %>%
+    topic = factor(topic, levels = paste0("k", 1:12))) %>%
   group_by(tissue, celltype, topic) %>%
   dplyr::summarise(topicProp = sum(proportion) / n())
 
-ggplot(prop, aes(x = tissue, y = topicProp, fill = topic)) +
+ggplot(prop, 
+         #filter(grepl("B", celltype)),
+       aes(x = tissue, y = topicProp, fill = topic)) +
   geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) + 
   xlab("") +  ylab("Normalized topic proportion") + 
   scale_fill_manual(values = kelly()[-1]) + 
+  theme_cowplot(font_size = 16) + 
   theme(axis.text.x = element_text(angle = 90)) 
 
 ```
+## Comparing gene expression LFC of asthma risk genes vs. non-risk genes
+
+```{r}
+magma <- fread("~/cluster/data/MAGMA/results/ukb-a-446/ukb-a-446.genes.out")
+magma_genes <- magma$GENE[p.adjust(magma$P) <= 0.05]
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+magma_genes <- ncbi37$V6[ncbi37$V1 %in% magma_genes] #249 risk genes
+other_genes <- ncbi37$V6[ncbi37$V1 %in%  magma$GENE[p.adjust(magma$P) > 0.05]]
+de_list<-readRDS("output/fastTopics/GoM_topDE_gene_list.RDS")
+names(de_list) <- paste0("k", 1:12)
+lapply(1:12, function(i){
+  riskGenes = de_list[[i]][rownames(de_list[[i]]) %in% magma_genes, ]
+  bkgGenes = de_list[[i]][rownames(de_list[[i]]) %in% other_genes, ]
+  gginput = data.frame(
+    rbind(cbind(riskGenes$postmean, "risk_genes"),
+    cbind(bkgGenes$postmean, "other_genes")))
+  colnames(gginput) <- c("postmean", "label")
+  ggplot(gginput,
+         aes(x = as.numeric(postmean), 
+             fill = factor(
+               label, 
+               levels = c("risk_genes", "other_genes")))) + 
+    geom_density(alpha = 0.5) + 
+    theme_cowplot(font_size=16) + 
+    theme(legend.position = "none") + 
+    ggtitle(paste0("k", i))
+})
+
+
+
+```
+
+
+
+
 
 ## Visualize the estimated topic proportions
 ```{r fig.height = 10, fig.width=10}
