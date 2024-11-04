@@ -530,15 +530,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree05e4962b37eb6191dfc49a6d1811377135400f8atargetblank05e4962a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree7d517cf92b239761704731784572d0c1f253dabftargetblank7d517cfa">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/05e4962b37eb6191dfc49a6d1811377135400f8a" target="_blank">05e4962</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/7d517cf92b239761704731784572d0c1f253dabf" target="_blank">7d517cf</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree05e4962b37eb6191dfc49a6d1811377135400f8atargetblank05e4962a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree7d517cf92b239761704731784572d0c1f253dabftargetblank7d517cfa"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -548,7 +548,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/05e4962b37eb6191dfc49a6d1811377135400f8a" target="_blank">05e4962</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/7d517cf92b239761704731784572d0c1f253dabf" target="_blank">7d517cf</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -662,6 +662,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/7d517cf92b239761704731784572d0c1f253dabf/analysis/gene_set_analysis_for_RNA_topics.Rmd" target="_blank">7d517cf</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-11-03
+</td>
+<td>
+performed MAGMA joint analysis
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/312e694ff6ebdad42d1e7d15cf9e2efce3786069/docs/gene_set_analysis_for_RNA_topics.html" target="_blank">312e694</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-11-03
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -951,11 +985,18 @@ Jing Gu
 </div>
 </div>
 </div>
-<div id="topic-de-genes-with-asthma-magma-z-scores"
+<div id="topic-de-genes-overlapped-with-disease-risk-genes"
 class="section level2">
-<h2>Topic DE genes with Asthma MAGMA Z scores</h2>
-<p>Input: 1. Topic specific genes overlapped with MAGMA risk genes (FDR
-&lt; 0.05) 2. background genes for topic modeling (~17K)</p>
+<h2>Topic DE genes overlapped with disease risk genes</h2>
+<div id="testing-on-genes-having-high-asthma-magma-z-scores"
+class="section level3">
+<h3>Testing on genes having high asthma MAGMA Z scores</h3>
+<p>Input:</p>
+<ol style="list-style-type: decimal">
+<li>Topic specific genes overlapped with MAGMA risk genes (FDR &lt;
+0.05)</li>
+<li>background genes for topic modeling (~17K)</li>
+</ol>
 <p>Enrichment test: Fisher’s exact test</p>
 <p>Topic 5 specific genes with high Asthma z scores are enriched for
 Treg and Th2 differentiation, and T cell activation.</p>
@@ -970,11 +1011,16 @@ Th17 immune response, lung TRM genes, Treg diff, and chemokine
 production.</p>
 <div class="datatables html-widget html-fill-item" id="htmlwidget-f28229f4ed8e6e8836fd" style="width:100%;height:auto;"></div>
 <script type="application/json" data-for="htmlwidget-f28229f4ed8e6e8836fd">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26"],["GOBP_T_CELL_ACTIVATION_INVOLVED_IN_IMMUNE_RESPONSE","GOBP_T_HELPER_17_TYPE_IMMUNE_RESPONSE","lung_TRM_genes","GOBP_POSITIVE_REGULATION_OF_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_CHEMOKINE_PRODUCTION","GOBP_T_HELPER_17_CELL_DIFFERENTIATION","GOBP_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_POSITIVE_REGULATION_OF_CHEMOKINE_PRODUCTION","GOBP_REGULATION_OF_CD4_POSITIVE_CD25_POSITIVE_ALPHA_BETA_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_B_CELL_ACTIVATION_INVOLVED_IN_IMMUNE_RESPONSE","GOBP_NEGATIVE_REGULATION_OF_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_RESPONSE_TO_CHEMOKINE","GOBP_REGULATION_OF_T_HELPER_17_CELL_DIFFERENTIATION","GOBP_NEGATIVE_REGULATION_OF_CHEMOKINE_PRODUCTION","GOBP_REGULATION_OF_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_NEGATIVE_REGULATION_OF_REGULATORY_T_CELL_DIFFERENTIATION","GOBP_NEGATIVE_REGULATION_OF_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_17_CELL_DIFFERENTIATION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_REGULATION_OF_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_T_HELPER_2_CELL_DIFFERENTIATION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_2_CELL_CYTOKINE_PRODUCTION","GOBP_T_HELPER_2_CELL_CYTOKINE_PRODUCTION","GOBP_POSITIVE_REGULATION_OF_T_HELPER_17_TYPE_IMMUNE_RESPONSE","GOBP_NEGATIVE_REGULATION_OF_CHEMOKINE_MEDIATED_SIGNALING_PATHWAY","GOBP_REGULATION_OF_CHEMOKINE_MEDIATED_SIGNALING_PATHWAY"],["FCER1G,IL2,IFNG,RORA","IL2,RORA,PHB","IL2,IFNG","IL2,IFNG","IL10,TNF,IFNG","IL2,RORA","IL2,IFNG","TNF,IFNG","IFNG","IL10,IL2","IL2","CXCR4,DUSP1","IL2","IL10","IL2","","","","","","","","","","",""],[13.1773,26.3035,45.3825,35.0852,12.8314,24.1297,20.8534,11.17,62.9125,8.954599999999999,37.7772,8.017300000000001,17.1813,17.9955,11.8053,0,0,0,0,0,0,0,0,0,0,0],[0.0047,0.0047,0.0102,0.0111,0.0111,0.0163,0.0183,0.0509,0.054,0.0609,0.0633,0.0633,0.1117,0.1117,0.1476,1,1,1,1,1,1,1,1,1,1,1]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>GOTerm<\/th>\n      <th>GenesInSet<\/th>\n      <th>OR<\/th>\n      <th>FDR<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[3,4]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"GOTerm","targets":1},{"name":"GenesInSet","targets":2},{"name":"OR","targets":3},{"name":"FDR","targets":4}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+</div>
 <div id="testing-on-genes-having-high-allergy-magma-z-scores"
 class="section level3">
 <h3>Testing on genes having high Allergy MAGMA Z scores</h3>
-<p>Input: 1. Topic specific genes overlapped with MAGMA risk genes (FDR
-&lt; 0.05) 2. background genes for topic modeling (~17K)</p>
+<p>Input:</p>
+<ol style="list-style-type: decimal">
+<li>Topic specific genes overlapped with MAGMA risk genes (FDR &lt;
+0.05)</li>
+<li>background genes for topic modeling (~17K)</li>
+</ol>
 <p>Enrichment test: Fisher’s exact test</p>
 <p>Topic 4/5/6 specific genes with high Allergy Z scores barely show
 enrichment.</p>
