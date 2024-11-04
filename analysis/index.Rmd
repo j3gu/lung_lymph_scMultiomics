@@ -24,9 +24,9 @@ TBD
 
 
 ### Topic analysis
-
+Topic models on scRNA-seq data
 - [identify topics with different proportions between tissue](cross_tissue_DE_u19_fastTopics.html)
-- [test topic enrichment for genetic risks using MAGMA](test_magma.html) 
+- [test topic enrichment for genetic risks using MAGMA](gene_set_analysis_for_RNA_topics.html) 
 - [test motif enrichment for topic-specific genes](U19_motif_analysis.html)  
 
 

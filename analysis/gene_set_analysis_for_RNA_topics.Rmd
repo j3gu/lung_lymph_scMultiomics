@@ -1,0 +1,536 @@
+---
+title: "A testrun for MAGMA"
+output: html_document
+date: '`r Sys.Date()`'
+author: 'Jing Gu'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(data.table)
+library(dplyr)
+library(tidyr)
+workdir <- "/home/jinggu/cluster/data/MAGMA"
+```
+
+# MAGMA
+
+**Gene analysis**
+A linear principal component regression model that estimates whether there is genetic effect of gene g on the phenotype Y, conditional on all covariates. The model first projects genotype matrix for a gene g onto its PCs, pruning away PCs with very small eigenvalues. Then it performs F test in the regression of Y on SNP matrix and covariates to estimate genetic effect.
+
+$$
+  Y = \alpha_{0g}\vec 1 + X_g^*\alpha_g  + W\beta_g + \epsilon_g
+$$
+When inividual geneotype matrix not available, MAGMA performs gene test with mean $X^2$ statistics and a gene p-value is then obtained by using a known approximation of the sampling distribution. Please refer to the following paper for details of approximation for the distribution of the weighted combination of p-values. This model requires summary statistics and reference LD panel.
+
+Ref: Hou C (2005) A simple approximation for the distribution of the weighted combination of non-independent or independent probabilities. Stat Probabil Lett 73: 179–187.
+
+**Competitive gene-set analysis (GSA)**
+
+One-sided Two-sample T test or linear regression in equivalence is applied to test whether the genes in a gene set are more strongly associated with Y or not. 
+
+Let Z denote the association z-score. 
+Let $\S_s$ be an indicator variable with element $s_g = 1$ defined as for gene g in gene set s and 0 otherwise. The goal is to test whether $\beta_s$ is greater than zero, which represents the difference in association between genes in the gene set and genes outside the gene set.
+
+$$
+Z = \beta_{0s}\vec 1 + S_s\beta_s + \epsilon
+$$
+This also be tested by unpaired two sample T-test, while two samples can have unequal variances and sample sizes. 
+
+## Testrun
+
+Procedure: 
+
+1. annotate SNPs and genes
+2. gene-based analysis
+3. gene-set analysis
+```{bash, eval = FALSE}
+#zcat BBJ_HDLC.txt.gz | awk 'NR>1 && $2==3 {print $1,$2,$3}' > HDLC_chr3.magma.input.snp.chr.pos.txt
+#zcat BBJ_HDLC.txt.gz | awk 'NR>1 && $2==3 {print $1,10^(-$11)}' >  HDLC_chr3.magma.input.p.txt
+cd /home/jinggu/cluster/data/MAGMA/results
+#traitID=ukb-a-446
+module load bcftools
+# extract SNPs and p-values
+for i in {ukb-b-17241,} #ukb-b-20296,,ukb-b-16207,ukb-b-13704}
+do
+echo $i
+mkdir $i
+bcftools query -f'%ID %CHROM %POS\n' /project/xinhe/shared/IEU_vcf/$i.vcf.gz > ./$i/${i}_snploc.txt
+bcftools query -f'%ID [%LP]\n' /project/xinhe/shared/IEU_vcf/$i.vcf.gz > ./$i/${i}_pval.txt
+bcftools query -f'[%SS]\n' /project/xinhe/shared/IEU_vcf/$i.vcf.gz |uniq > ./$i/${i}_ss.txt
+done
+```
+
+```{r eval = FALSE}
+workdir="/home/jinggu/cluster/data/MAGMA"
+for(i in c("ukb-b-20296","ukb-b-17241","ukb-b-16207","ukb-b-13704")) {
+  # convert p-values to absolute value
+  f <- fread(paste0(workdir, sprintf("/results//%s/%s_pval.txt", i, i)))
+  f <- f[f$V2 != ".",]
+  f$V2 <- 10 ^ (-as.numeric(f$V2))
+  fwrite(f,
+         paste0(workdir, sprintf("/results/%s/%s_input_p.txt", i, i)),
+         sep = " ",
+         col.names = FALSE)
+}
+# subset coding genes to be the input genes for topic modeling
+fit <- readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
+allGenes <-
+  fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+subGenes <- allGenes[allGenes$V6 %in% rownames(fit$F),]
+write.table(
+  subGenes,
+  "/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc",
+  quote = F,
+  row.names = F,
+  sep = "\t"
+)
+
+```
+
+```{bash eval = FALSE}
+traitID="ukb-a-446"
+cd /home/jinggu/cluster/data/MAGMA/results/$traitID
+ncbi37=/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc
+source ~/.bashrc
+# annotate SNPs
+snploc=${traitID}_snploc.txt
+magma --annotate \
+      --snp-loc $snploc \
+      --gene-loc $ncbi37 \
+      --out $traitID
+      
+# gene-based analysis
+ref=/home/jinggu/cluster/data/MAGMA/reference_data/g1000_eur 
+magma --bfile $ref \
+      --gene-annot $traitID.genes.annot \
+      --pval ${traitID}_input_p.txt N=336782 \ 
+      #--gene-settings adap-permp \
+      --out $traitID
+    
+# gene-set analysis
+
+```
+
+```{r eval = FALSE}
+de_list<-readRDS("output/fastTopics/GoM_topDE_gene_list.RDS")
+names(de_list) <- paste0("k", 1:12)
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+for(i in 1:length(de_list)){
+  gene_set <- matrix(c(names(de_list)[i], ncbi37$V1[ncbi37$V6 %in% rownames(de_list[[i]])]),
+                     nrow = 1)
+  write.table(gene_set,
+              sprintf("%s/%s_geneset.txt", workdir, names(de_list)[i]), 
+              quote = F, row.names = F, sep=" ", col.names = F)
+}
+
+
+dataDIR="/project2/xinhe/jinggu/data/MAGMA/gene_sets/dictys"
+for(i in list.files(dataDIR)){
+  fname = gsub("_asthma_TF_targets.txt", "", i)
+  f = read.table(paste0(dataDIR, "/", i), header = FALSE)
+  gene_set <- matrix(c(fname, ncbi37$V1[ncbi37$V6 %in% f$V1]),
+                     nrow = 1)
+  write.table(gene_set,
+              sprintf("%s/%s_geneset.txt", dataDIR, fname), 
+              quote = F, row.names = F, sep=" ", col.names = F)
+}
+```
+
+```{bash eval = FALSE}
+source ~/.bashrc
+cd /home/jinggu/cluster/data/MAGMA
+traitID="ukb-a-446"
+condition="k1,k2,k3,k4,k5"
+geneset=/home/jinggu/cluster/data/MAGMA/gene_sets/top100_geneset.txt
+for i in {ukb-b-16207,ukb-b-13704,ukb-d-PNEUMONIA,ukb-a-446,ukb-a-447}
+do
+magma \
+    --gene-results results/$i/$i.genes.raw \
+    --set-annot ${geneset} \
+    --out results/$i/${i}_top100_joint_topics \
+    --model joint=gene_sets/joint_models.txt
+done
+```
+## GSA Marginal associations
+
+We evaluated each set of topic DE genes one at a time for whether genes in each set have stronger association with the phenotype compared to those outside of the set. Around half of the tests show significant p-values, which seems to be inflated. 
+
+### Changing background gene set 
+
+* Total number of genes reduced from to 18K to ~16K
+* P values for the reduced background genes are very similar to the full ones.
+```{r}
+f <- read.table(paste0(workdir, "/results/ukb-a-446/all_genes/ukb-a-446.gsa.out"), skip = 3, header = T)
+f_reduced <- read.table(paste0(workdir, "/results/ukb-a-446/ukb-a-446_topics.gsa.out"), skip = 3, header = T)
+DT::datatable(f_reduced)
+
+plot(y = -log10(f_reduced$P), 
+     x = -log10(f$P),
+     ylab = "-log10(P) for input genes for topic models (~16K)",
+     xlab = "-log10(P) for all genes (~18K)")
+abline(a = 0, b = 1, col = "red")
+```
+
+### Testing on top 100 genes from each topic
+
+The supplementary table from MAGMA paper shows the mean type 1 error rates are well controlled for a set of size 100. The [MSigDB canonical pathways](https://www.gsea-msigdb.org/gsea/msigdb/human/genesets.jsp?collection=CP) contains 1320 gene sets from a number of different databases. I can look into the average size of the gene sets.
+![MAGMA controlling for type 1 error rates for gene-set analysis ](https://github.com/user-attachments/assets/e4ea0389-c993-46a1-bc6b-c2a69630addf)
+Selecting top 100 genes will reduce the number of overlapping genes across topic DE genes. Indeed, we see more topics have insignificant association p-values. 
+```{r eval = FALSE}
+de_list<-readRDS("output/fastTopics/GoM_topDE_gene_list.RDS")
+names(de_list) <- paste0("k", 1:12)
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+for(i in 1:length(de_list)){
+  top100 <- de_list[[i]] %>% arrange(desc(z)) %>% slice_head(n=100)
+  gene_set <- matrix(c(names(de_list)[i], 
+                       ncbi37$V1[ncbi37$V6 %in% rownames(top100)]),
+                     nrow = 1)
+  write.table(gene_set,
+              sprintf("%s/%s_top100_geneset.txt", workdir, names(de_list)[i]), 
+              quote = F, row.names = F, sep=" ", col.names = F)
+}
+```
+### Enrichment results by traits
+
+Lung related immune diseases from UK Biobank: 
+Blood clot, DVT, emphysema (chronic bronchitis), asthma, rhinitis eczema/allergy diagnosed by doctor
+
+Sample size: 336,782. 
+
+Instead of all DE genes, I used top 100 up-regulated genes ranked by z scores to test the enrichment for each topic across immune traits. For Asthma, now we see only k3, k4, k5 and k12 (4 out of 12) topics show significant enrichment after multiple testing correction. For other immune diseases, allergy displays very strong enrichment for k4, k5 and k12, but none of the others have enrichment signal. 
+
+```{r}
+# A function to plot heatmap
+library(ComplexHeatmap)
+library(colorRamp2)
+#enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
+
+plot_heatmap <- 
+  function(input_tbl, 
+           cluster_by_rows=FALSE, 
+           cluster_by_cols=FALSE,
+           max_colour_value=NULL){
+    if(is.null(max_colour_value)){
+      max_colour_value = max(input_mat, na.rm = TRUE)
+    }
+  col_fun = 
+    colorRamp2(c(
+      min(input_mat, na.rm = TRUE),
+      max_colour_value), 
+      c("white", "red"))
+  ht <- 
+  Heatmap(
+    t(input_tbl),
+    width=unit(10, "cm"),
+    name = "-log10(P)",
+    row_names_side = "left",
+    cluster_rows = cluster_by_rows,
+    cluster_columns = cluster_by_cols,
+    na_col = "black",
+    col = col_fun,
+    #column_title = sprintf("%s", i)
+  )
+  draw(ht)
+}
+```
+
+```{r}
+traits <- c("Asthma", "Allergy", "Chronic_bronchitis", "Blood_clot", "Asthma/COPD")
+traitIDs <- c("ukb-a-446","ukb-a-447","ukb-b-16207","ukb-b-13704", "ukb-d-PNEUMONIA")
+tbl <- c()
+for(trait in traitIDs) {
+  df_top <- read.table(
+    paste0(workdir, "/results/", 
+           trait,"/",
+           trait, "_top100.gsa.out"),
+    skip = 3,
+    header = T
+  )
+  tbl <- rbind(
+    tbl,
+    df_top %>% 
+      mutate(TRAIT = trait) %>%
+      select(-c(TYPE, NGENES))
+  )
+}
+DT::datatable(
+  tbl %>%  
+    mutate(TRAIT = factor(TRAIT, labels = traits)) %>%
+    select(TRAIT, VARIABLE, SE, P)
+  )
+
+input_mat <-
+  data.frame(
+    tbl %>%
+      mutate(P = -log10(P),
+             TRAIT = factor(TRAIT,
+                            levels = traitIDs,
+                            labels = traits)) %>%
+      select(c(VARIABLE, TRAIT, P)) %>%
+      pivot_wider(names_from = TRAIT,
+                  values_from = P),
+    row.names = 1
+  )
+
+plot_heatmap(
+  input_mat, 
+  cluster_by_rows = TRUE,
+  cluster_by_cols = TRUE,
+  max_colour_value = 6)
+```
+## GSA Joint association 
+
+We evaluated all sets of topic DE genes jointly to accounted for the overlapping genes between topics. 
+
+```{r}
+tbl <- c()
+for(trait in traitIDs) {
+  df_top <- read.table(
+    paste0(workdir, "/results/", 
+           trait,"/",
+           trait, "_joint_topics.gsa.out"),
+    skip = 3,
+    header = T
+  )
+  tbl <- rbind(
+    tbl,
+    df_top %>% 
+      mutate(TRAIT = trait) %>%
+      select(-c(TYPE, NGENES, MODEL))
+  )
+}
+DT::datatable(
+  tbl %>%  
+    mutate(TRAIT = factor(TRAIT, labels = traits)) %>%
+    select(TRAIT, VARIABLE, SE, P)
+  )
+
+input_mat <-
+  data.frame(
+    tbl %>%
+      mutate(P = -log10(P),
+             TRAIT = factor(TRAIT,
+                            levels = traitIDs,
+                            labels = traits)) %>%
+      select(c(VARIABLE, TRAIT, P)) %>%
+      pivot_wider(names_from = TRAIT,
+                  values_from = P),
+    row.names = 1
+  )
+
+plot_heatmap(
+  input_mat, 
+  cluster_by_rows = TRUE,
+  cluster_by_cols = TRUE,
+  max_colour_value = 6)
+```
+
+
+
+## Topic 4/5 DE genes with Asthma MAGMA Z scores
+
+Input: 
+1. Topic specific genes overlapped with MAGMA risk genes (FDR < 0.05)
+2. background genes for topic modeling (~17K)
+
+Enrichment test: Fisher's exact test
+
+Topic 5 specific genes with high Asthma z scores are enriched for Treg and Th2 differentiation, and T cell activation.
+```{r}
+test_topic_enrichment <-
+  function(topic_genes,
+           gene_sets, 
+           bkg_genes) {
+    enrichTest <-
+      sapply(1:length(gene_sets), function(i) {
+        overlaps <- intersect(topic_genes, gene_sets[[i]])
+        numOverlaps <- sum(topic_genes %in% gene_sets[[i]])
+        # make a contingency table
+        if (!is.null(numOverlaps)) {
+          X = matrix(
+            c(
+              numOverlaps,
+              length(gene_sets[[i]]) - numOverlaps,
+              length(topic_genes) - numOverlaps,
+              length(bkg_genes$V1) - (length(gene_sets[[i]]) - numOverlaps)
+            ),
+            byrow = TRUE,
+            ncol = 2
+          )
+          lm <- fisher.test(X) 
+          # summarize results
+          return(c(
+            gsub("_geneset.txt", "", names(gene_sets)[i]),
+            paste(overlaps, collapse = ","),
+            lm$p.value,
+            lm$estimate
+          ))
+        }
+      })
+    enrichTest <- data.frame(t(enrichTest))
+    colnames(enrichTest) <- c("GOTerm", "GenesInSet","P", "OR")
+    return(enrichTest)
+  }
+
+lung_specific<-strsplit("PHLDA1, RBPJ, DOCK5, GOLIM4, CD101, ATP10D, XCL1, KRT81, FAM167A, RTKN2", ", ")[[1]]
+lung_TRM_genes <- c(lung_specific,
+                    "ITGA1", "ITGAE", "CXCR6", "PDCD1", 
+                    "DUSP6", "CRTAM", "IL17A", "IL2", "IFNG")
+
+files <- c(
+  list.files(paste0(workdir, "/gene_sets"),
+             pattern = "CELL_DIFFERENTIATION"),
+  list.files(paste0(workdir, "/gene_sets"), pattern =
+               "T_HELPER_2_CELL_CYTOKINE_PRODUCTION"),
+  list.files(paste0(workdir, "/gene_sets"), pattern =
+               "IMMUNE_RESPONSE_geneset"),
+   list.files(paste0(workdir, "/gene_sets"), pattern =
+               "CHEMOKINE")
+  #"TISSUE_RESIDENT_MEMORY_T_geneset.txt"
+)
+
+ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
+de_list<-readRDS("output/fastTopics/GoM_topDE_gene_list.RDS")
+names(de_list) <- paste0("k", 1:12)
+
+genesets <- list()
+for(i in files){
+  f <- read.table(sprintf("%s/gene_sets/%s", workdir, i))
+  genes <- ncbi37[ncbi37$V1 %in% as.character(f[, -1]), ]$V6
+  genesets[[i]] <- genes
+}
+genesets$lung_TRM_genes<-lung_TRM_genes
+```
+
+```{r}
+#output a table with overlapped genes and enrichment results
+output_enrichment_table<-function(MAGMA_output, num_topic){
+    totalGenes <- read.table("output/fastTopics/GO_background_genes.txt")
+    topic_ids <- ncbi37$V1[ncbi37$V6 %in% rownames(de_list[[num_topic]])]
+  topic_topZ <-
+    MAGMA_output %>% 
+    filter(GENE %in% topic_ids,
+           p.adjust(P, "fdr")<=0.05)
+  topic_topZ$SYMBOL <-
+    unlist(lapply(topic_topZ$GENE, function(i){ncbi37$V6[ncbi37$V1 == i]}))
+  print(DT::datatable(
+    topic_topZ %>% select(SYMBOL, CHR, START, STOP, NSNPS, P)
+  ))
+  
+  enrich_out <-
+    test_topic_enrichment(
+      topic_genes = topic_topZ$SYMBOL,
+      gene_sets = genesets,
+      bkg_genes = totalGenes) %>%
+    mutate(FDR = p.adjust(as.numeric(P), method = "fdr"))
+  
+  DT::datatable(
+    enrich_out %>% select(-P) %>%
+      mutate(FDR = round(FDR, 4),
+             OR = round(as.numeric(OR), 4)) %>%
+      arrange(FDR)
+  )
+}
+
+```
+
+```{r}
+f_zscores <- fread(paste0(workdir, "/results/ukb-a-446/ukb-a-446.genes.out"))
+output_enrichment_table(f_zscores, 5)
+```
+Topic 4 specific genes with high Asthma z scores are enriched for Th17 immune response.
+
+```{r}
+output_enrichment_table(f_zscores, 4)
+```
+
+Topic 6 specific genes with high Asthma z scores are enriched for Th17 immune response, lung TRM genes, Treg diff, and chemokine production.
+
+```{r}
+output_enrichment_table(f_zscores, 6)
+```
+
+### Testing on genes having high Allergy MAGMA Z scores
+
+Input: 
+1. Topic specific genes overlapped with MAGMA risk genes (FDR < 0.05)
+2. background genes for topic modeling (~17K)
+
+Enrichment test: Fisher's exact test
+
+Topic 4/5/6 specific genes with high Allergy Z scores barely show enrichment.
+```{r}
+f_zscores <- fread(paste0(workdir, "/results/ukb-a-447/ukb-a-447.genes.out"))
+output_enrichment_table(f_zscores, 5)
+```
+```{r}
+output_enrichment_table(f_zscores, 4)
+```
+
+
+
+
+## Gene-set associations for GRN cell-type specific targets
+```{r}
+
+```
+
+<!-- ## Gene-set associations for known immune cell markers -->
+
+<!-- Most immune cell markers were obtained from Gene ontology. The tissue-resident genes were from the single-cell lung paper and ChatGPT. After multiple correction (adj.P < 0.002), tissue-resident markers do not show significance for the gene-set association with Asthma. Neither do the genes involved in cell-cell adhesion or cell migration. The gene sets that are significantly enriched for higher association with Asthma risks are activation of T/B cells and T cell lineage differentiation. -->
+<!-- ```{bash eval = FALSE} -->
+<!-- cd /home/jinggu/cluster/data/MAGMA/testrun -->
+<!-- source ~/.bashrc -->
+<!-- traitID="ukb-a-446" -->
+<!-- geneset=gene_sets/GO_gene_sets_MAGMA.txt -->
+<!-- magma \ -->
+<!--     --gene-results $traitID.genes.raw \ -->
+<!--     --set-annot ${geneset} \ -->
+<!--     --out ${traitID}_GO_enriched -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- df_enriched <- read.table(paste0(workdir, "/results/ukb-a-446/ukb-a-446_GO_enriched.gsa.out"), -->
+<!--                     skip = 4, header = TRUE) -->
+<!-- tbl <- -->
+<!--   rbind( -->
+<!--     df_top %>% -->
+<!--       filter(NGENES > 10 & P < 0.05/12) %>% # correct for multiple testing -->
+<!--       select(VARIABLE, NGENES, BETA, SE, P), -->
+<!--     df_enriched %>% mutate(VARIABLE = FULL_NAME) %>% -->
+<!--       filter(NGENES > 10) %>% #& P < 0.05/33) %>% # correct for multiple testing 0.05/33 = 0.002 -->
+<!--       select(VARIABLE, NGENES, BETA, SE, P) %>%  -->
+<!--       arrange(P) %>% mutate(P = format(P, scientific = TRUE, digits = 2)) -->
+<!--   ) -->
+<!-- DT::datatable(tbl) -->
+<!-- #write.table(tbl, "../output/fastTopics/top100_topic_GO_immune.gsa.txt",  -->
+<!--             #quote = F, row.names = F, sep = "\t") -->
+<!-- ``` -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- ### Perform permutation to obtain null p-values -->
+<!-- ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/u19.fastTopics.gene.loc") -->
+<!-- B = 5000 -->
+<!-- for(i in 1:B){ -->
+<!--   gene_set = sample(ncbi37$V1, 700, replace = FALSE) -->
+<!--   write.table(matrix(c(paste0("set", i), gene_set), nrow = 1), -->
+<!--               sprintf("%s/set%s_geneset.txt", workdir, i),  -->
+<!--               quote = F, row.names = F, sep=" ", col.names = F) -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- f_null <- read.table(paste0(workdir, "/ukb-a-446_permutated700.gsa.out"),  -->
+<!--                      skip = 3, header = T) -->
+
+<!-- f_perm <- unlist(lapply(f_reduced$BETA, function(i){sum(f_null$BETA >= i)/5000})) -->
+
+<!-- plot(y = -log10(f_reduced$P),  -->
+<!--      x = -log10(f_perm),  -->
+<!--      xlab = "-log10(P) after permutation", -->
+<!--      ylab = "-log10(P) before permutation") -->
+<!-- abline(a = 0, b = 1, col = "red") -->
+<!-- ``` -->
+
