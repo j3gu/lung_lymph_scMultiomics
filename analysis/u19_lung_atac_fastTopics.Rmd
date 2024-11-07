@@ -1,0 +1,397 @@
+---
+title: "Modeling U19 atac-seq with fastTopics"
+output: html_document
+date: "`r Sys.Date()`"
+author: 'Jing Gu'
+---
+# Topic modeling on u19 lung atac-seq dataset
+The objective for this analysis is to identify topics that show different proportions in cases than controls in lungs. I applied topic models on atac-seq binary matrix with all cells from lungs. The dimension for the matrix is 71635 (#cells) by 114334 (#peaks).
+
+
+## Model fitting 
+
+Parameters: 
+
+N_updates = 20
+N_topics = 12
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(Matrix)
+library(fastTopics)
+library(ggplot2)
+library(cowplot)
+library(poolr)
+library(dplyr)
+library(tidyr)
+library(colorRamp2)
+library(ComplexHeatmap)
+library(ArchR)
+set.seed(10)
+
+# load data
+lung_counts<-readRDS("output/fastTopics/u19_full_atac_lung_counts.RDS")
+j <- which(colSums(lung_counts) >= 189) # at least 25% quantile
+counts <- lung_counts[,j]
+fit<-readRDS("output/fastTopics/fit_model_u19_full_ATAC_niter210.RDS")
+metadata<-readRDS("output/fastTopics/u19_full_atac_metadata.RDS")
+metadata <- metadata[metadata$Tissue == "Lung", ]
+#metadata<-readRDS("output/fastTopics/u19_cell_metadata.RDS")
+ct_order <- 
+  c("Naive_B",
+    "Memory_B",
+    "CD16neg_NK",
+    "CD16pos_NK",
+    "CD8_T",
+    "CD4_T",
+    "Treg",
+    "Th17",
+    "Other"
+  )
+metadata$CellType <-
+  factor(
+    metadata$CellType,
+    levels = ct_order,
+    labels =
+      c(
+        "Naive_B",
+        "Memory_B",
+        "NK",
+        "NK",
+        "CD8_T",
+        "CD4_T",
+        "Treg",
+        "Th17",
+        "Other"
+      )
+  )
+```
+
+check the convergence
+```{r}
+# check for convergence of model fitting 
+plot_progress(fit,x = "iter",add.point.every = 10,colors = "black") +
+  theme_cowplot(font_size = 10)
+
+summary(fit)
+```
+
+```{r}
+loglik <- loglik_multinom_topic_model(counts, fit)
+pdat <- data.frame(loglik)
+ggplot(pdat,aes(loglik)) +
+  geom_histogram(bins = 64,color = "white",fill = "black", linewidth = 0.25) +
+  labs(y = "number of cells") +
+  theme_cowplot(font_size = 10)
+
+```
+
+```{r}
+pdat <- data.frame(loglik = loglik,subpop = metadata$CellGroup2)
+
+ggplot(pdat, aes(x = loglik,fill = subpop)) +
+  geom_histogram(bins = 64,color = "white",size = 0.25) +
+  labs(y = "number of cells") +
+  theme_cowplot(font_size = 10)
+```
+
+## Visualize topics with structural plots
+
+* plot by cell-types
+
+```{r message=F, fig.height=4, fig.width = 8}
+clusters<-factor(metadata$CellType)
+structure_plot(fit,topics = 1:12,gap = 25,
+               grouping = clusters,
+               verbose=FALSE) + theme_cowplot(font_size=16) + 
+theme(axis.text.x = element_text(size = 14, angle=45, vjust = 0.5),
+                         axis.text.y = element_text(size = 16),
+                         axis.title.y = element_text(size = 16))
+```
+
+* plot by status
+
+```{r message=F, fig.height=4, fig.width = 8}
+structure_plot(fit,topics = 1:12,gap = 25,
+               grouping = metadata$Status,
+               verbose=FALSE) + theme_cowplot(font_size=16)
+```
+* plot by batch
+
+```{r message=F, fig.height=4, fig.width = 8}
+structure_plot(fit,topics = 1:12,gap = 25,
+               grouping = metadata$Batch,
+               verbose=FALSE) + theme_cowplot(font_size=16)
+```
+## Identifying topics that capture batch or donor effects
+
+Comparing topic proportions across batches, we see certain topic has large variation within one batch and large variation across batches.
+
+Comparing topic proportion for each individual versus all other samples, we see k8 topic is strongly contributed by SMO-9. 
+
+```{r fig.width = 10}
+print(table(metadata$Sample, metadata$Batch))
+
+# convert poisson NMF model to multinational model
+multinom_fit<-poisson2multinom(fit)
+pdat<-data.frame(multinom_fit$L)
+
+gginput<-
+  data.frame(pdat, 
+             metadata[, c("Sample", "Status", "Batch", "CellType", "CellGroup2")]) %>%
+  pivot_longer(cols = !c(Sample, Status, Batch, CellType, CellGroup2), 
+               names_to = "topic", values_to = "proportion") %>%
+  mutate(topic = factor(topic, levels = paste0("k", 1:12)))
+
+
+p1<-
+  ggplot(gginput,
+       aes(x = topic,
+           y = proportion)) +
+  geom_boxplot(outlier.shape = NA,
+               aes(colour = Batch)) +
+  theme_cowplot(font_size = 16)
+
+p1
+
+
+p_donors <-
+  lapply(unique(gginput$Sample), function(i) {
+    ggplot(gginput,
+           aes(x = topic,
+               y = proportion)) +
+      geom_boxplot(outlier.shape = NA,
+                   aes(colour = Sample!=i)) +
+      theme_cowplot(font_size = 16) + 
+      theme(legend.position = "none") + 
+      ggtitle(i)
+  })
+library(gridExtra)
+#marrangeGrob(list(p1, p2), nrow=2, ncol =1)
+marrangeGrob(p_donors, nrow=3, ncol=3)
+```
+
+## Identify topics with different proportion between cell type and status
+
+Top barplot shows topic proportions do not vary a lot across cell types. Bottom barplot shows Topic 7 has higher proportion in cases while topic 8 shows the opposite across T and NK cells.
+
+Topic 5 has higher proportion in cases while topic 9 shows the opposite across B cells.
+
+```{r message=FALSE, fig.width=12, fig.height = 6}
+library(catecolors)
+# cell number by tissue and cell type
+table(metadata$Status, metadata$CellType)
+
+prop <-
+  gginput %>% 
+  group_by(CellType, topic) %>% 
+  mutate(topic = 
+           factor(topic,
+                  levels = paste0("k", 1:12))) %>%
+  dplyr::summarise(
+    topic_prop = sum(proportion) / n()
+    )
+
+ggplot(prop, 
+       aes(x = CellType, 
+           y = topic_prop, 
+           fill = topic)) + 
+  geom_bar(stat = "identity", width = 0.5) + 
+  scale_fill_manual(values = kelly()[-1]) + 
+  xlab("") + ylab("topic proportion") + theme_cowplot(font_size = 16) + 
+  theme(axis.text.x = element_text(angle = 90)) 
+
+# Scaled to be added up to be 1
+prop <-
+  gginput %>% 
+  group_by(Status, CellType, topic) %>% 
+  mutate(topic = 
+           factor(topic,
+                  levels = paste0("k", 1:12))) %>%
+  dplyr::summarise(
+    topic_prop = sum(proportion) / n()
+    )
+
+ggplot(prop, 
+       aes(x = Status, 
+           y = topic_prop, 
+           fill = topic)) + 
+  geom_bar(stat = "identity") + 
+  scale_fill_manual(values = kelly()[-1]) + 
+  facet_grid(cols = vars(CellType)) + 
+  xlab("") + ylab("topic proportion") + theme_cowplot(font_size = 16) + 
+  theme(axis.text.x = element_text(angle = 90)) 
+
+```
+
+## Characterize topics
+
+### A table of the nearest gene from top 50 peaks ranked by loadings 
+```{r eval=FALSE}
+proj<-loadArchRProject("~/cluster/projects/u19_multiomics/analyses/u19_peaks_status/")
+peakDF <- readRDS("~/cluster/projects/u19_multiomics/output/u19_full_atac_btw_tissue_peaks.RDS")
+# prepare inputs for testing motif enrichment
+peaks <- data.frame(
+  name = as.character(granges(proj@peakSet)),
+  idx = proj@peakSet$idx
+  )
+peaks <-cbind(data.frame(granges(proj@peakSet)), peaks)[which(peakDF$tissue == "Lung"), ]
+peaks <- peaks[j, ]
+gr <- GenomicRanges::GRanges(peaks)
+peaks$nearestGenes<-proj@geneAnnotation$genes[nearest(gr, proj@geneAnnotation$genes)]$symbol
+for(i in 1:12){
+  write.table(
+  peaks[order(fit$F[,i], decreasing = TRUE)[1:500], ] %>%
+    select(seqnames, start, end, idx, nearestGenes),
+  sprintf("../output/homer/u19_lung_atac/topic%s_top500_loading_peaks.bed", i),
+  sep = "\t", row.names = F, quote = F, col.names = F)
+}
+
+# bkg genes
+write.table(
+  peaks %>% select(c(seqnames, start, end, idx, nearestGenes)),
+  "../output/homer/u19_lung_atac/fastTopics_bgPeaks.bed",
+  sep = "\t", rownames = FALSE, quote = F, colnames = FALSE)
+```
+
+```{r}
+peaks <- read.table("output/homer/u19_lung_atac/fastTopics_bgPeaks.bed", header = F)
+
+DT::datatable(
+  data.frame(apply(fit$F, 2, function(i){
+    peaks[order(i, decreasing = TRUE)[1:50], 5]
+  }))
+)
+```
+
+```{r eval = FALSE}
+library(WebGestaltR)
+library(fastTopics)
+library(dplyr)
+#check the list of database
+listGeneSet(
+      organism = "hsapiens",
+      hostName = "https://www.webgestalt.org/",
+      cache = NULL
+)
+```
+
+## Test motif enrichment for peaks across topics
+
+Motif enrichment patterns look similar between topic 5 and 7, which have higher proportion in cases than controls.
+
+```{r eval=FALSE}
+
+# colnames(peaks)[1]<-"chr"
+# peaks <- readRDS("output/fastTopics/u19_atac_all_peaks_metadata.RDS")
+# de <- readRDS("output/fastTopics/GoM_diff_atac_u19.RDS")
+# de$lpval <- de$svalue # The shinkage method "ash" outputs svalue rather than lpval
+
+# run homer 
+
+
+## /project2/xinhe/software/homer/bin/findMotifsGenome.pl output/positions.bed hg38 output/homer -len 8,10,12 -size 200 -mis 2 -S 25 -p 1 -h
+for(i in 2:12){
+  motif_enrich <- run_homer(
+    de,
+    k=i,
+    positions = peaks,
+    genome = "hg38",
+    #subset = function(postmean, lpval, lfsr, rank, quantile) lfsr < 0.05,
+    homer.exec = "/project2/xinhe/software/homer/bin/findMotifsGenome.pl",
+    out.dir = paste0("output/topic", i),
+    homer.options = "-len 8,10,12 -size 200 -mis 2 -S 25 -p 1 -h",
+    verbose = TRUE
+  )
+}
+```
+
+
+```{r}
+library(ComplexHeatmap)
+library(circlize)
+enrich_list<-list()
+for(i in c(5,7,8,9)){
+  topic <- paste0("topic", i)
+  enrich_out <- fread(sprintf("output/homer/u19_lung_atac/bkg/topic%s_homer/knownResults.txt", i))
+  enrich_out$motif <- unlist(
+    lapply(enrich_out$`Motif Name`, function(i){
+      strsplit(i, "/")[[1]][1]
+    }))
+  
+  enrich_list[[i]]<-cbind(topic, enrich_out)
+}
+
+top_motifs <- unique(unlist(
+  lapply(enrich_list[c(5,7,8,9)], function(i) {
+    return(
+      (i %>% arrange(`q-value (Benjamini)`) %>%
+      select(motif) %>%unlist())[1:20]
+    )})
+))
+# add known marker TFs
+#top_motifs <- c(top_motifs, "Smad3(MAD)", "GATA3(Zf)", "NFkB-p65-Rel(RHD)", "Tcf7(HMG)", "Bach2(bZIP)", "IRF1(IRF)", "STAT5(Stat)", "SpiB(ETS)",
+#"RUNX-AML(Runt)", "Eomes(T-box)","RORa(NR)", "RORg(NR)")
+motif_tbl <- c()
+for (i in c(5,7,8,9)) {
+  motif_tbl <- rbind(
+    motif_tbl,
+    enrich_list[[i]] %>%
+      filter(motif %in% top_motifs) %>%
+      mutate(value = -log10(`P-value`)) %>%
+      select(topic, motif, value)
+    
+  )
+}
+
+# motif_tbl$motif <-
+#   gsub("\\(", "_", motif_tbl$motif)
+# motif_tbl$motif <-
+#   gsub("\\)", "", motif_tbl$motif)
+
+motif_tbl$motif <- unlist(lapply(motif_tbl$motif, function(i){strsplit(i, "\\(")[[1]][1]}))
+
+mat <- motif_tbl %>% pivot_wider(names_from = motif,
+                                 values_from = value)
+mat <- data.frame(mat, row.names = 1)
+```
+
+```{r, fig.width=4, fig.height=10}
+col_fun = colorRamp2(c(0, 5, 25), c("blue", "white", "red"))
+Heatmap(t(mat), name = "-log10(P-value)", col = col_fun) 
+
+DT::datatable(
+  enrich_list[[7]] %>% mutate(`-logP` = -`Log P-value`) %>% 
+  select(motif, `-logP`, `% of Target Sequences with Motif`),
+  caption="topic 12"
+)
+```
+
+
+```{r eval = FALSE}
+## Validate topics with enrichment test
+
+### GO enrichemnt test on top 500 genes ranked by loadings
+set.seed(100)
+#de <- de_analysis(fit,counts,pseudocount = 0.1,
+                 # control = list(ns = 1e4,nc = 20))
+de<-readRDS("output/fastTopics/GoM_diff_atac_u19.RDS")
+db <- c(#"pathway_KEGG", "disease_GLAD4U", "disease_OMIM",
+                "Biological_Process", 
+                "Cellular_Component",
+                "Molecular_Function")
+
+enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_top500.RDS")
+enrich_out<-data.frame(enrich_out, row.names = NULL)
+DT::datatable(
+  enrich_out %>% 
+    filter(database==sprintf("geneontology_%s_noRedundant", db[3])) %>%
+    mutate(FDR=format(FDR, scientific=TRUE, digits=2),
+           enrichment=format(enrichmentRatio, digits=2)) %>%
+    select(c(k, description, enrichment, FDR)),
+   caption=db[3]
+  )
+```
+
+`
+
+

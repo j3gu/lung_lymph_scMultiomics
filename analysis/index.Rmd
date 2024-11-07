@@ -30,6 +30,8 @@ Topic models on scRNA-seq data
 - [test topic enrichment for genetic risks using MAGMA](gene_set_analysis_for_RNA_topics.html) 
 - [test motif enrichment for topic-specific genes](U19_motif_analysis.html)  
 
+Topic models on lung scATAC-seq data
+- [identify topics with high proportion in cases](u19_lung_atac_fastTopics.html)
 
 ### GRN analysis
 [test motif enrichment for TF targets from GRN](identify_TFs_with_immune_function.html)
