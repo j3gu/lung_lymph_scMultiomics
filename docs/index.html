@@ -13,7 +13,7 @@
 
 <title>Lung-resident immune cells</title>
 
-<script src="site_libs/header-attrs-2.26/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
@@ -310,7 +310,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2024-11-03
+<strong>Last updated:</strong> 2024-11-07
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -357,15 +357,15 @@ results.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree7d517cf92b239761704731784572d0c1f253dabftargetblank7d517cfa">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree3d533291a3b651a3db0288e84f150240ca7f1d42targetblank3d53329a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/7d517cf92b239761704731784572d0c1f253dabf" target="_blank">7d517cf</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/3d533291a3b651a3db0288e84f150240ca7f1d42" target="_blank">3d53329</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree7d517cf92b239761704731784572d0c1f253dabftargetblank7d517cfa"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree3d533291a3b651a3db0288e84f150240ca7f1d42targetblank3d53329a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -375,7 +375,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/7d517cf92b239761704731784572d0c1f253dabf" target="_blank">7d517cf</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/3d533291a3b651a3db0288e84f150240ca7f1d42" target="_blank">3d53329</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -396,6 +396,8 @@ Ignored files:
 Untracked files:
     Untracked:  analysis/.ipynb_checkpoints/
     Untracked:  analysis/GOBP_B_CELL_ACTIVATION_INVOLVED_IN_IMMUNE_RESPONSE.v2024.1.Hs.gmt
+    Untracked:  analysis/run_fastTopics.R
+    Untracked:  analysis/run_fastTopics_lungOnly.R
     Untracked:  analysis/test.pdf
     Untracked:  analysis/test_GO_enrichment.ipynb
     Untracked:  analysis/u19_atac_fastTopics.Rmd
@@ -436,7 +438,9 @@ Untracked files:
     Untracked:  test.pdf
 
 Unstaged changes:
+    Modified:   analysis/U19_motif_analysis.ipynb
     Modified:   analysis/cross_tissue_DE_u19_fastTopics.Rmd
+    Modified:   analysis/gene_set_analysis_for_RNA_topics.Rmd
     Modified:   analysis/identify_regulatory_programs_u19_GRN.Rmd
     Modified:   analysis/rank_TFs_from_pairwise_comparison.ipynb
     Deleted:    analysis/test_magma.Rmd
@@ -487,6 +491,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/3d533291a3b651a3db0288e84f150240ca7f1d42/analysis/index.Rmd" target="_blank">3d53329</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-11-07
+</td>
+<td>
+topic models on lung atac-seq
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/2a8488f20170cf24085449530f85b2284634c7b1/docs/index.html" target="_blank">2a8488f</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-11-03
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 html
@@ -1288,6 +1326,9 @@ enrichment for genetic risks using MAGMA</a></li>
 <li><a href="U19_motif_analysis.html">test motif enrichment for
 topic-specific genes</a></li>
 </ul>
+<p>Topic models on lung scATAC-seq data - <a
+href="u19_lung_atac_fastTopics.html">identify topics with high
+proportion in cases</a></p>
 </div>
 <div id="grn-analysis" class="section level3">
 <h3>GRN analysis</h3>
