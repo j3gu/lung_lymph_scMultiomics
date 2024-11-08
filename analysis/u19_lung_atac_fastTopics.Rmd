@@ -115,6 +115,7 @@ structure_plot(fit,topics = 1:12,gap = 25,
                grouping = metadata$Status,
                verbose=FALSE) + theme_cowplot(font_size=16)
 ```
+
 * plot by batch
 
 ```{r message=F, fig.height=4, fig.width = 8}
@@ -122,6 +123,7 @@ structure_plot(fit,topics = 1:12,gap = 25,
                grouping = metadata$Batch,
                verbose=FALSE) + theme_cowplot(font_size=16)
 ```
+
 ## Identifying topics that capture batch or donor effects
 
 Comparing topic proportions across batches, we see certain topic has large variation within one batch and large variation across batches.
@@ -172,9 +174,9 @@ marrangeGrob(p_donors, nrow=3, ncol=3)
 
 ## Identify topics with different proportion between cell type and status
 
-Top barplot shows topic proportions do not vary a lot across cell types. Bottom barplot shows Topic 7 has higher proportion in cases while topic 8 shows the opposite across T and NK cells.
+Top barplot shows topic proportions do not vary a lot across cell types. 
 
-Topic 5 has higher proportion in cases while topic 9 shows the opposite across B cells.
+Bottom barplot shows Topic 7 has higher proportion in cases while topic 8 shows the opposite across T and NK cells. Topic 5 has higher proportion in cases while topic 9 shows the opposite across B cells.
 
 ```{r message=FALSE, fig.width=12, fig.height = 6}
 library(catecolors)
@@ -277,7 +279,11 @@ listGeneSet(
 
 ## Test motif enrichment for peaks across topics
 
-Motif enrichment patterns look similar between topic 5 and 7, which have higher proportion in cases than controls.
+Top 500 loading peaks for each topic were tested for motif enrichment compared to all peaks used in topic models with Homer. 
+
+### Heatmap for top 20 enriche motifs 
+
+Topic 7 has similar motif enrichment patterns as topic 5, but topic 5 is strongly enriched for some additional motifs. Topic 8 and 9 that are in lower proportion in cases than controls indeed have distinct enrichment patterns. 
 
 ```{r eval=FALSE}
 
@@ -360,9 +366,9 @@ col_fun = colorRamp2(c(0, 5, 25), c("blue", "white", "red"))
 Heatmap(t(mat), name = "-log10(P-value)", col = col_fun) 
 
 DT::datatable(
-  enrich_list[[7]] %>% mutate(`-logP` = -`Log P-value`) %>% 
-  select(motif, `-logP`, `% of Target Sequences with Motif`),
-  caption="topic 12"
+  enrich_list[[7]] %>% 
+  select(motif, `P-value`, `% of Target Sequences with Motif`),
+  caption="topic 7"
 )
 ```
 

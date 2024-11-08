@@ -31,6 +31,7 @@ Topic models on scRNA-seq data
 - [test motif enrichment for topic-specific genes](U19_motif_analysis.html)  
 
 Topic models on lung scATAC-seq data
+
 - [identify topics with high proportion in cases](u19_lung_atac_fastTopics.html)
 
 ### GRN analysis
