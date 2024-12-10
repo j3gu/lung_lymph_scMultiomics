@@ -10,8 +10,9 @@
 
 
 
+<meta name="date" content="2024-10-15" />
 
-<title>Lung-resident immune cells</title>
+<title>Identify batch effects on the sc-multiomics dataset</title>
 
 <script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -29,6 +30,9 @@
        h6 {font-size: 12px;}
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
@@ -231,6 +235,69 @@ $(document).ready(function () {
 
 
 
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
 
 </head>
 
@@ -238,6 +305,16 @@ $(document).ready(function () {
 
 
 <div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
 
 
 
@@ -281,7 +358,9 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Lung-resident immune cells</h1>
+<h1 class="title toc-ignore">Identify batch effects on the sc-multiomics
+dataset</h1>
+<h4 class="date">2024-10-15</h4>
 
 </div>
 
@@ -314,7 +393,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 </p>
 <p>
 <strong>Checks:</strong> <span
-class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
 <span class="glyphicon glyphicon-exclamation-sign text-danger"
 aria-hidden="true"></span> 0
 </p>
@@ -357,6 +436,90 @@ results.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20221229code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20221229)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20221229code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20221229)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
 <a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreef1e648adbeaa31895a90ec1f89e6c3db4b4ea311targetblankf1e648aa">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
@@ -392,6 +555,7 @@ were generated:
 Ignored files:
     Ignored:    analysis/.RData
     Ignored:    analysis/.Rhistory
+    Ignored:    analysis/figure/
 
 Untracked files:
     Untracked:  analysis/.ipynb_checkpoints/
@@ -465,10 +629,12 @@ have uncommitted changes.
 
 <p>
 These are the previous versions of the repository in which changes were
-made to the R Markdown (<code>analysis/index.Rmd</code>) and HTML
-(<code>docs/index.html</code>) files. If you’ve configured a remote Git
-repository (see <code>?wflow_git_remote</code>), click on the hyperlinks
-in the table below to view the files as they were in that past version.
+made to the R Markdown
+(<code>analysis/identify_batch_effects_multiomics.Rmd</code>) and HTML
+(<code>docs/identify_batch_effects_multiomics.html</code>) files. If
+you’ve configured a remote Git repository (see
+<code>?wflow_git_remote</code>), click on the hyperlinks in the table
+below to view the files as they were in that past version.
 </p>
 <div class="table-responsive">
 <table class="table table-condensed table-hover">
@@ -497,7 +663,7 @@ Message
 Rmd
 </td>
 <td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/f1e648adbeaa31895a90ec1f89e6c3db4b4ea311/analysis/index.Rmd" target="_blank">f1e648a</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/f1e648adbeaa31895a90ec1f89e6c3db4b4ea311/analysis/identify_batch_effects_multiomics.Rmd" target="_blank">f1e648a</a>
 </td>
 <td>
 Jing Gu
@@ -509,856 +675,6 @@ Jing Gu
 identified batch effects
 </td>
 </tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/7b4b0042f72bb4bc2b98c02409c76f9d782adc7b/docs/index.html" target="_blank">7b4b004</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-07
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/c2d37841c1a99ff262cefe665cdaa71f5dd837f5/analysis/index.Rmd" target="_blank">c2d3784</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-07
-</td>
-<td>
-topic models on lung atac-seq
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/0e7f14478e6e6cb15a3f1d32a230384a7c49ea67/docs/index.html" target="_blank">0e7f144</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-07
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/3d533291a3b651a3db0288e84f150240ca7f1d42/analysis/index.Rmd" target="_blank">3d53329</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-07
-</td>
-<td>
-topic models on lung atac-seq
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/2a8488f20170cf24085449530f85b2284634c7b1/docs/index.html" target="_blank">2a8488f</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-03
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/312e694ff6ebdad42d1e7d15cf9e2efce3786069/docs/index.html" target="_blank">312e694</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-03
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/9e5ab376a4387e47fde703af5694a74cd8e36870/docs/index.html" target="_blank">9e5ab37</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-03
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/63cadeb1fa9b5cd4f9132cdba207c3c1e5899289/analysis/index.Rmd" target="_blank">63cadeb</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-03
-</td>
-<td>
-updated index page
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/2dd04b4db0050ff3062d8c357f4933d2920eafef/docs/index.html" target="_blank">2dd04b4</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-03
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/e496376c46772915f65b9cbe01527aa45bde286a/analysis/index.Rmd" target="_blank">e496376</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-11-03
-</td>
-<td>
-performed MAGMA joint analysis
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/5902a9e9f944d1ea6dcaf592947e0a1afd9f7078/docs/index.html" target="_blank">5902a9e</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-09-16
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/188ffdab4c3e46f36943d616360dc80af8cfe677/analysis/index.Rmd" target="_blank">188ffda</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-09-16
-</td>
-<td>
-updated index page
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/19c03efd29ddea5eb287e00b2714c3cfaf694172/docs/index.html" target="_blank">19c03ef</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-09-16
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/bedefae7160bb529d7b62f5d7bb0c13f5f1d5fb1/analysis/index.Rmd" target="_blank">bedefae</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-09-16
-</td>
-<td>
-updated index page
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/3e22868f8a21a7e7684ccafb1924647c74d962d8/docs/index.html" target="_blank">3e22868</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-09-16
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/b5a09051174b336ae479c3db1d09e045eddedbf3/analysis/index.Rmd" target="_blank">b5a0905</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-09-16
-</td>
-<td>
-updated index page
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/ab42a522928f55ec11eed96ddad99ec889993b1d/docs/index.html" target="_blank">ab42a52</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-09-16
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a2b320f9503edc615d2ca99357009badb7791fe9/analysis/index.Rmd" target="_blank">a2b320f</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-09-16
-</td>
-<td>
-test topic enrichment for genetic risks
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/71a11fc1d56cbc833a77f52979b2db80daabb2cb/docs/index.html" target="_blank">71a11fc</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-06-05
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/8e7a5acb456e8a39bdba33f7ddee763b03006d4c/analysis/index.Rmd" target="_blank">8e7a5ac</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-06-05
-</td>
-<td>
-h2g analysis
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/d649e54e90a0d76d2591e9be2b78936501e944d4/docs/index.html" target="_blank">d649e54</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-27
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/f43bb77087b64673bf3f938c8e0370780c71b150/docs/index.html" target="_blank">f43bb77</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-27
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/85f1ae53fa5520486a9399cdcc7dba0c123bc18d/docs/index.html" target="_blank">85f1ae5</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-27
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/b664f6eeb1f536ca1969a5653a119d61af42b9ec/analysis/index.Rmd" target="_blank">b664f6e</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-27
-</td>
-<td>
-wflow_publish("analysis/index.Rmd")
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/076b0e4a9bc9f9492713a9f70d83b34e6c617f22/docs/index.html" target="_blank">076b0e4</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-25
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/39319534affdbf9738ca44613fe0c137778236e4/analysis/index.Rmd" target="_blank">3931953</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-25
-</td>
-<td>
-updated result page
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/dd883b0acfd3a23701202b4dd7227ff0a1da5726/docs/index.html" target="_blank">dd883b0</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-25
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/15ac23e3e674285f6756d75b0dfd1b2675217307/analysis/index.Rmd" target="_blank">15ac23e</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-25
-</td>
-<td>
-updated result page
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/8cd28c76fbed819de94e8a6fe1a967ac9fbd397f/analysis/index.Rmd" target="_blank">8cd28c7</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-22
-</td>
-<td>
-updated GSEA results
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/f812a40863cae53d9ee687fd66c34ad72e519b12/docs/index.html" target="_blank">f812a40</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-09
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/9c7a42393034d5c14ec5ff102c47ff9fcfa76f82/docs/index.html" target="_blank">9c7a423</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-09
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/beb3e4eee742ee338d52509698f71098fecbfd7f/docs/index.html" target="_blank">beb3e4e</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-09
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/832e20e92ef644d68451d9e11d1435fca1023b82/docs/index.html" target="_blank">832e20e</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-09
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/1f9a6a9f431487acb223e185c2cc03bca6fcb870/analysis/index.Rmd" target="_blank">1f9a6a9</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-09
-</td>
-<td>
-cross-tissue comparison
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/68d9e18eb743d0da900d1db89f4c0cf4f6d68531/docs/index.html" target="_blank">68d9e18</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-09
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/7ca45f65c382b0a20a2b14e62730ecd79f9140f9/analysis/index.Rmd" target="_blank">7ca45f6</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2024-05-09
-</td>
-<td>
-cross-tissue comparison
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/7c312730cdf9608349140f2f1d104af5e7163e9c/docs/index.html" target="_blank">7c31273</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2023-04-17
-</td>
-<td>
-updates on DEG
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/a747e1b8e856f748a34b28aff6bca38575df3f0a/docs/index.html" target="_blank">a747e1b</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2023-04-04
-</td>
-<td>
-add motif enrichment analyses
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/3210eeb27eb6d96e89632d73f3975a387327e49c/docs/index.html" target="_blank">3210eeb</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2023-03-24
-</td>
-<td>
-differential accessibility analysis
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/a62518c0d6663fd9593d9020145cb04fa168c991/docs/index.html" target="_blank">a62518c</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2023-01-19
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/75f6c396048de1763f3a95c6e3fea8a69e37b586/docs/index.html" target="_blank">75f6c39</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2023-01-19
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/1acc8b60c75ea6fcfa3b59e38e1f41c89532b99c/analysis/index.Rmd" target="_blank">1acc8b6</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2023-01-19
-</td>
-<td>
-wflow_publish(c("analysis/index.Rmd"))
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/954cb2adf563ec6a257f219970d6c816efb89182/docs/index.html" target="_blank">954cb2a</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2023-01-19
-</td>
-<td>
-perform DE analysis
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/fe8799987a2b1f779459e2a14930009847b37470/docs/index.html" target="_blank">fe87999</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2022-12-29
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/2003997c17dadc231f51e6b15c44ad0b80d60e4a/analysis/index.Rmd" target="_blank">2003997</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2022-12-29
-</td>
-<td>
-Publish README.Rmd
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/91173905116d1e4e5e813b27df3ea26d61007fba/docs/index.html" target="_blank">9117390</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2022-12-29
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/e475baf578743f906a0f3453ae8cf4182316c122/analysis/index.Rmd" target="_blank">e475baf</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2022-12-29
-</td>
-<td>
-Publish README.Rmd
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/c864f9ed05b31dead74f237fc8ac2585da443907/docs/index.html" target="_blank">c864f9e</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2022-12-29
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/48e445ac1f4cf075e2290e5ee28f919de365b7d3/docs/index.html" target="_blank">48e445a</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2022-12-29
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/b89c4aed2c6aafa9f3bfb599ff6fe6a4143ce8c9/analysis/index.Rmd" target="_blank">b89c4ae</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2022-12-29
-</td>
-<td>
-Start workflowr project.
-</td>
-</tr>
 </tbody>
 </table>
 </div>
@@ -1366,55 +682,154 @@ Start workflowr project.
 </div>
 </div>
 </div>
-<div id="welcome-to-the-project-website." class="section level1">
-<h1>Welcome to the project website.</h1>
-<p>This project is about using functional profiling of lung immune cells
-to better understand the genetics of asthma and allergy diseases.</p>
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
-<p>TBD</p>
+<div id="objective" class="section level1">
+<h1>Objective</h1>
+<p>By running topic models on the exact same cells for both scRNA-seq
+and scATAC-seq data separately, we aim to identify batch effects and
+their impacts on both data sets. The topic model for each data set has
+12 topics, and these topics vary in proportion across cell types, which
+have been previously defined by marker gene expression based on
+scRNA-seq data.</p>
+<pre><code>Joining with `by = join_by(id)`</code></pre>
+<pre><code>[1] &quot;Check if the topic models for subsampled RNA are in the same order as ATAC-seq metadata matrix: TRUE&quot;</code></pre>
+<div id="batch-information" class="section level2">
+<h2>Batch information</h2>
+<pre><code>           
+            batch1 batch2 batch3
+  lungs_1     4889      0      0
+  lungs_2     8333      0      0
+  lungs_3        0   2664      0
+  lungs_4        0   6866      0
+  lungs_5        0      0   8323
+  lungs_6        0      0   5955
+  spleens_1   3347      0      0
+  spleens_2      0   2045      0
+  spleens_3      0      0   6813</code></pre>
 </div>
-<div id="literature-reviews" class="section level2">
-<h2>Literature reviews</h2>
+<div id="strctural-plots-for-both-datasets-49235-cells"
+class="section level2">
+<h2>Strctural plots for both datasets (49235 cells)</h2>
+<div id="single-cell-rna-seq" class="section level3">
+<h3>single-cell RNA-seq</h3>
+<p>Grouped by batch or tissue-batch pair, the structural plots already
+show some consistency across batches but also some distinct patterns
+across tissue.</p>
+<pre><code>Running tsne on 665 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 482 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 853 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 525 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 404 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 593 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 134 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 92 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 252 x 12 matrix.</code></pre>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-4-1.png" width="960" style="display: block; margin: auto;" />
+## single-cell ATAC-seq</p>
+<pre><code>Running tsne on 693 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 487 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 820 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 522 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 370 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 612 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 141 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 79 x 12 matrix.</code></pre>
+<pre><code>Running tsne on 276 x 12 matrix.</code></pre>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-5-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
-<div id="results" class="section level2">
-<h2>Results</h2>
-<div id="heritability-enrichment" class="section level3">
-<h3>Heritability enrichment</h3>
-<p><a href="u19_h2g_enrichment.html">test heritability enrichment and
-identify the relevant cell type or tissue</a></p>
 </div>
-<div id="topic-analysis" class="section level3">
-<h3>Topic analysis</h3>
-<ul>
-<li><a href="identify_batch_effects_multiomics.html">examine batch
-effects</a></li>
-</ul>
-<p>Topic models on scRNA-seq data</p>
-<ul>
-<li><a href="cross_tissue_DE_u19_fastTopics.html">identify topics with
-different proportions between tissue</a></li>
-<li><a href="gene_set_analysis_for_RNA_topics.html">test topic
-enrichment for genetic risks using MAGMA</a></li>
-<li><a href="U19_motif_analysis.html">test motif enrichment for
-topic-specific genes</a></li>
-</ul>
-<p>Topic models on lung scATAC-seq data</p>
-<ul>
-<li><a href="u19_lung_atac_fastTopics.html">identify topics with high
-proportion in cases</a></li>
-</ul>
+<div id="identify-batch-effects-in-both-rna-seq-and-atac-seq"
+class="section level2">
+<h2>Identify batch effects in both RNA-seq and ATAC-seq</h2>
+<p><strong>scRNA-seq</strong></p>
+<p>Topic 11 on average has similar proportion across three batches, but
+is highly variable in batch 3. Topic 7 is more dominant in batch 2 while
+topic 9 more in batch 1. We can also see this trend in structural
+plots.</p>
+<p>From individual donor plot, we see the pattern in topic 11 is mainly
+driven by the spleen sample in batch 3 (spleens_3).</p>
+<p><strong>scATAC-seq</strong></p>
+<p>Topic 7 on average has similar proportion across three batches, but
+is highly variable in batch 3. Topic 5 is much more dominant in batch 3.
+For batch 2, topic 2/3 is more dominant but topic 9 is more depleted. We
+can also see this trend in structural plots.</p>
+<p>From individual donor plot, we see the pattern in topic 5 and 7 are
+mainly driven by the spleen sample in batch 3 (spleens_3).</p>
+<div id="topic-proportions-by-batch" class="section level3">
+<h3>Topic proportions by batch</h3>
+<pre><code>Joining with `by = join_by(id)`</code></pre>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-6-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
-<div id="grn-analysis" class="section level3">
-<h3>GRN analysis</h3>
-<p><a href="identify_TFs_with_immune_function.html">test motif
-enrichment for TF targets from GRN</a></p>
+<div id="topic-proportion-by-individual-donor-versus-all-other-donors"
+class="section level3">
+<h3>Topic proportion by individual donor versus all other donors</h3>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-7-1.png" width="1152" style="display: block; margin: auto;" /><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-7-2.png" width="1152" style="display: block; margin: auto;" /></p>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-8-1.png" width="1152" style="display: block; margin: auto;" /><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-8-2.png" width="1152" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre><code>R version 4.2.0 (2022-04-22)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: CentOS Linux 7 (Core)
+
+Matrix products: default
+BLAS/LAPACK: /software/openblas-0.3.13-el7-x86_64/lib/libopenblas_haswellp-r0.3.13.so
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8 LC_NUMERIC=C         LC_TIME=C           
+ [4] LC_COLLATE=C         LC_MONETARY=C        LC_MESSAGES=C       
+ [7] LC_PAPER=C           LC_NAME=C            LC_ADDRESS=C        
+[10] LC_TELEPHONE=C       LC_MEASUREMENT=C     LC_IDENTIFICATION=C 
+
+attached base packages:
+[1] grid      stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] gridExtra_2.3         circlize_0.4.15       ComplexHeatmap_2.14.0
+ [4] colorRamp2_0.1.0      tidyr_1.3.1           dplyr_1.1.4          
+ [7] poolr_1.1-1           cowplot_1.1.3         ggplot2_3.5.1        
+[10] fastTopics_0.6-193    Matrix_1.6-5          workflowr_1.7.1      
+
+loaded via a namespace (and not attached):
+ [1] matrixStats_1.2.0   fs_1.6.5            RColorBrewer_1.1-3 
+ [4] doParallel_1.0.17   progress_1.2.3      httr_1.4.7         
+ [7] rprojroot_2.0.4     tools_4.2.0         bslib_0.8.0        
+[10] utf8_1.2.4          R6_2.5.1            irlba_2.3.5.1      
+[13] BiocGenerics_0.44.0 uwot_0.2.2          lazyeval_0.2.2     
+[16] colorspace_2.1-1    GetoptLong_1.0.5    withr_3.0.2        
+[19] tidyselect_1.2.1    prettyunits_1.2.0   processx_3.8.3     
+[22] compiler_4.2.0      git2r_0.33.0        cli_3.6.3          
+[25] plotly_4.10.4       labeling_0.4.3      sass_0.4.9         
+[28] scales_1.3.0        SQUAREM_2021.1      quadprog_1.5-8     
+[31] callr_3.7.3         pbapply_1.7-2       mixsqp_0.3-54      
+[34] stringr_1.5.1       digest_0.6.37       rmarkdown_2.29     
+[37] RhpcBLASctl_0.23-42 pkgconfig_2.0.3     htmltools_0.5.8.1  
+[40] highr_0.11          fastmap_1.2.0       invgamma_1.1       
+[43] GlobalOptions_0.1.2 htmlwidgets_1.6.4   rlang_1.1.4        
+[46] rstudioapi_0.15.0   farver_2.1.2        shape_1.4.6        
+[49] jquerylib_0.1.4     generics_0.1.3      jsonlite_1.8.9     
+[52] gtools_3.9.5        magrittr_2.0.3      S4Vectors_0.36.2   
+[55] Rcpp_1.0.13-1       munsell_0.5.1       fansi_1.0.6        
+[58] lifecycle_1.0.4     stringi_1.8.4       whisker_0.4.1      
+[61] yaml_2.3.10         mathjaxr_1.6-0      Rtsne_0.17         
+[64] parallel_4.2.0      promises_1.3.0      ggrepel_0.9.6      
+[67] crayon_1.5.3        lattice_0.22-5      hms_1.1.3          
+[70] knitr_1.48          ps_1.7.6            pillar_1.9.0       
+[73] rjson_0.2.21        stats4_4.2.0        codetools_0.2-19   
+[76] glue_1.8.0          evaluate_1.0.1      getPass_0.2-2      
+[79] data.table_1.16.2   RcppParallel_5.1.9  vctrs_0.6.5        
+[82] png_0.1-8           httpuv_1.6.14       foreach_1.5.2      
+[85] gtable_0.3.6        purrr_1.0.2         clue_0.3-65        
+[88] ashr_2.2-63         cachem_1.1.0        xfun_0.49          
+[91] later_1.3.2         viridisLite_0.4.2   truncnorm_1.0-9    
+[94] tibble_3.2.1        iterators_1.0.14    IRanges_2.32.0     
+[97] cluster_2.1.6      </code></pre>
 </div>
-<div id="slides-download" class="section level3">
-<h3>Slides download</h3>
-</div>
-<div id="notes" class="section level3">
-<h3>Notes</h3>
 </div>
 </div>
 </div>
@@ -1435,6 +850,8 @@ footer is added to webpages before the MathJax javascript. -->
 
 
 
+</div>
+</div>
 
 </div>
 
@@ -1467,6 +884,35 @@ $(document).ready(function () {
 
 <!-- code folding -->
 
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>
