@@ -9,7 +9,7 @@ date: '2024-10-15'
 By running topic models on the exact same cells for both scRNA-seq and scATAC-seq data separately, we aim to identify batch effects and their impacts on both data sets. The topic model for each data set has 12 topics, and these topics vary in proportion across cell types, which have been previously defined by marker gene expression based on scRNA-seq data.
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 
 library(Matrix)
 library(fastTopics)
@@ -104,7 +104,8 @@ p2 <- make_structure_plot(fit_rna, 1:k, metadata$tissue_batch)
 
 marrangeGrob(list(p1, p2), nrow=2, ncol =1)
 ```
-## single-cell ATAC-seq 
+### single-cell ATAC-seq 
+
 ```{r, fig.height = 8, fig.width = 10}
 
 p1 <- make_structure_plot(fit, 1:k, metadata$batch)
