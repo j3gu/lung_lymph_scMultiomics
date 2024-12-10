@@ -520,15 +520,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreef1e648adbeaa31895a90ec1f89e6c3db4b4ea311targetblankf1e648aa">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreecc3743bd6113cd446a02371e97458b3caaa38968targetblankcc3743ba">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/f1e648adbeaa31895a90ec1f89e6c3db4b4ea311" target="_blank">f1e648a</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/cc3743bd6113cd446a02371e97458b3caaa38968" target="_blank">cc3743b</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreef1e648adbeaa31895a90ec1f89e6c3db4b4ea311targetblankf1e648aa"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreecc3743bd6113cd446a02371e97458b3caaa38968targetblankcc3743ba"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -538,7 +538,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/f1e648adbeaa31895a90ec1f89e6c3db4b4ea311" target="_blank">f1e648a</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/cc3743bd6113cd446a02371e97458b3caaa38968" target="_blank">cc3743b</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -555,7 +555,6 @@ were generated:
 Ignored files:
     Ignored:    analysis/.RData
     Ignored:    analysis/.Rhistory
-    Ignored:    analysis/figure/
 
 Untracked files:
     Untracked:  analysis/.ipynb_checkpoints/
@@ -663,6 +662,40 @@ Message
 Rmd
 </td>
 <td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/cc3743bd6113cd446a02371e97458b3caaa38968/analysis/identify_batch_effects_multiomics.Rmd" target="_blank">cc3743b</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-12-10
+</td>
+<td>
+identified batch effects
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/cd36f9948c82aa1ea5dcc503eb12619cb8f5b33e/docs/identify_batch_effects_multiomics.html" target="_blank">cd36f99</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-12-10
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
 <a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/f1e648adbeaa31895a90ec1f89e6c3db4b4ea311/analysis/identify_batch_effects_multiomics.Rmd" target="_blank">f1e648a</a>
 </td>
 <td>
@@ -690,7 +723,6 @@ their impacts on both data sets. The topic model for each data set has
 12 topics, and these topics vary in proportion across cell types, which
 have been previously defined by marker gene expression based on
 scRNA-seq data.</p>
-<pre><code>Joining with `by = join_by(id)`</code></pre>
 <pre><code>[1] &quot;Check if the topic models for subsampled RNA are in the same order as ATAC-seq metadata matrix: TRUE&quot;</code></pre>
 <div id="batch-information" class="section level2">
 <h2>Batch information</h2>
@@ -714,27 +746,85 @@ class="section level2">
 <p>Grouped by batch or tissue-batch pair, the structural plots already
 show some consistency across batches but also some distinct patterns
 across tissue.</p>
-<pre><code>Running tsne on 665 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 482 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 853 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 525 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 404 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 593 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 134 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 92 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 252 x 12 matrix.</code></pre>
-<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-4-1.png" width="960" style="display: block; margin: auto;" />
-## single-cell ATAC-seq</p>
-<pre><code>Running tsne on 693 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 487 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 820 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 522 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 370 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 612 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 141 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 79 x 12 matrix.</code></pre>
-<pre><code>Running tsne on 276 x 12 matrix.</code></pre>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-4-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-1">
+Past versions of unnamed-chunk-4-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-4-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/cd36f9948c82aa1ea5dcc503eb12619cb8f5b33e/docs/figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-4-1.png" target="_blank">cd36f99</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-12-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="single-cell-atac-seq" class="section level3">
+<h3>single-cell ATAC-seq</h3>
 <p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-5-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-5-1">
+Past versions of unnamed-chunk-5-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-5-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/cd36f9948c82aa1ea5dcc503eb12619cb8f5b33e/docs/figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-5-1.png" target="_blank">cd36f99</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-12-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 </div>
 <div id="identify-batch-effects-in-both-rna-seq-and-atac-seq"
@@ -756,14 +846,200 @@ can also see this trend in structural plots.</p>
 mainly driven by the spleen sample in batch 3 (spleens_3).</p>
 <div id="topic-proportions-by-batch" class="section level3">
 <h3>Topic proportions by batch</h3>
-<pre><code>Joining with `by = join_by(id)`</code></pre>
 <p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-6-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-6-1">
+Past versions of unnamed-chunk-6-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-6-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/cd36f9948c82aa1ea5dcc503eb12619cb8f5b33e/docs/figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-6-1.png" target="_blank">cd36f99</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-12-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="topic-proportion-by-individual-donor-versus-all-other-donors"
 class="section level3">
 <h3>Topic proportion by individual donor versus all other donors</h3>
-<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-7-1.png" width="1152" style="display: block; margin: auto;" /><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-7-2.png" width="1152" style="display: block; margin: auto;" /></p>
-<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-8-1.png" width="1152" style="display: block; margin: auto;" /><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-8-2.png" width="1152" style="display: block; margin: auto;" /></p>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-7-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-7-1">
+Past versions of unnamed-chunk-7-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-7-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/cd36f9948c82aa1ea5dcc503eb12619cb8f5b33e/docs/figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-7-1.png" target="_blank">cd36f99</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-12-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-7-2.png" width="1152" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-7-2">
+Past versions of unnamed-chunk-7-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-7-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/cd36f9948c82aa1ea5dcc503eb12619cb8f5b33e/docs/figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-7-2.png" target="_blank">cd36f99</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-12-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-8-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-8-1">
+Past versions of unnamed-chunk-8-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-8-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/cd36f9948c82aa1ea5dcc503eb12619cb8f5b33e/docs/figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-8-1.png" target="_blank">cd36f99</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-12-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-8-2.png" width="1152" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-8-2">
+Past versions of unnamed-chunk-8-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-8-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/cd36f9948c82aa1ea5dcc503eb12619cb8f5b33e/docs/figure/identify_batch_effects_multiomics.Rmd/unnamed-chunk-8-2.png" target="_blank">cd36f99</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2024-12-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
