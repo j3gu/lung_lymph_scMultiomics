@@ -24,6 +24,8 @@ TBD
 
 
 ### Topic analysis
+- [examine batch effects](identify_batch_effects_multiomics.html)
+
 Topic models on scRNA-seq data 
 
 - [identify topics with different proportions between tissue](cross_tissue_DE_u19_fastTopics.html)
