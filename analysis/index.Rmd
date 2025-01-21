@@ -24,8 +24,12 @@ TBD
 
 
 ### Topic analysis
+
+Topic QC
+
 - [examine batch effects for the matched RNA/ATAC-seq datasets](identify_batch_effects_multiomics.html)
 - [examine batch effects for the full ATAC-seq](identify_batch_effects_full_atac.html)
+
 Topic models on scRNA-seq data 
 
 - [identify topics with different proportions between tissue](cross_tissue_DE_u19_fastTopics.html)
