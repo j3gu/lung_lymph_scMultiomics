@@ -125,9 +125,14 @@ marrangeGrob(list(p1, p2), nrow=2, ncol =1)
 
 ### Topic proportions by batches
 
-For lung samples, topics 1,6,8 has different average proportions across batches, and some other topics can have very large variations within the same batch.
+Lung:
 
-For spleen samples, topic 7 has different mean proportions across batches. 
+* topic 1 and topic 6 dominated by Lung COB-6 from batch 4
+* topic 8 dominated by Lung COB-11 from batch 5
+
+Spleen: 
+
+* topic 7 dominated by Spleen SMO-10 from batch 3
 
 ```{r fig.width = 10}
 # convert poisson NMF model to multinomial model
@@ -158,9 +163,7 @@ p1
 
 ### Topic proportion by donors 
 
-For lungs, we see topic 1 and 6 have higher mean proportion mainly due to Lung_COB-6 sample from batch 4. Topic 8 has higher mean proportion in batch 5 (contributed by COB-11).
-
-For spleens, high mean proportion of topic 7 can be attributed to spleen_SMO-10 sample from batch 3.
+Comparing each donor sample with the rest of donor samples separately for each tissue
 
 Case samples: COB-5, 7, 10, 11 and SMO-8
 
