@@ -1,7 +1,7 @@
 ---
-title: "Identify batch effects on the sc-multiomics dataset"
+title: "Identify batch effects on the matched sc-multiomics dataset"
 output: html_document
-date: '2024-10-15'
+date: '`r Sys.Date()`'
 ---
 
 # Objective
@@ -30,8 +30,8 @@ set.seed(10)
 ```{r}
 # load model and count matrix
 fit_rna <- readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
-counts_rna <- readRDS("output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
-counts<-readRDS("output/fastTopics/aggregated_lymph_scATAC_counts.RDS")
+#counts_rna <- readRDS("output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
+#counts<-readRDS("output/fastTopics/aggregated_lymph_scATAC_counts.RDS")
 fit<-readRDS("output/fastTopics/fit_model_u19_ATAC_niter300.RDS")
 metadata<-readRDS("output/u19_output/u19_matched_rna_atac_cell_metadata.RDS")
 metadata$donor_id <- paste(metadata$Sample, metadata$donor_id, sep="_")
@@ -62,11 +62,14 @@ k = 12
 
 
 ## Batch information
+
+Lungs_5 in batch 3 is the only sample from asthmatic patients. 
+
 ```{r}
 table(rna_metadata$full.ident, rna_metadata$batch)
 ```
 
-## Strctural plots for both datasets (49235 cells)
+## Strctural plots for matched datasets (49235 cells)
 
 ### single-cell RNA-seq 
 
@@ -104,6 +107,7 @@ p2 <- make_structure_plot(fit_rna, 1:k, metadata$tissue_batch)
 
 marrangeGrob(list(p1, p2), nrow=2, ncol =1)
 ```
+
 ### single-cell ATAC-seq 
 
 ```{r, fig.height = 8, fig.width = 10}
@@ -115,22 +119,14 @@ p2 <- make_structure_plot(fit, 1:k, metadata$tissue_batch)
 marrangeGrob(list(p1, p2), nrow=2, ncol =1)
 ```
 
-## Identify batch effects in both RNA-seq and ATAC-seq
 
-**scRNA-seq**
+## Distribution of topic proportions across batches
 
-Topic 11 on average has similar proportion across three batches, but is highly variable in batch 3.
-Topic 7 is more dominant in batch 2 while topic 9 more in batch 1. We can also see this trend in structural plots.
+### scRNA-seq
 
-From individual donor plot, we see the pattern in topic 11 is mainly driven by the spleen sample in batch 3 (spleens_3). 
+Lung: k9 proportion dominated by lungs-1 and lungs-2 from batch 1
 
-**scATAC-seq**
-
-Topic 7 on average has similar proportion across three batches, but is highly variable in batch 3. Topic 5 is much more dominant in batch 3. For batch 2, topic 2/3 is more dominant but topic 9 is more depleted. We can also see this trend in structural plots.
-
-From individual donor plot, we see the pattern in topic 5 and 7 are mainly driven by the spleen sample in batch 3 (spleens_3). 
-
-### Topic proportions by batch
+Spleen: k7, k10, k11 each dominated by one spleen sample from each batch.
 
 ```{r fig.width = 10}
 # convert poisson NMF model to multinational model
@@ -153,7 +149,7 @@ gginput_rna <-
      metadata[, c("id" ,"donor_id", "batch", "major", "Sample")], pdat) %>%
   pivot_longer(cols = !c(id, donor_id, batch, major, Sample), 
                names_to = "topic", values_to = "proportion") %>%
-  mutate(topic = factor(topic, levels = paste0("k", 1:12)))
+  mutate(topic = factor(topic, levels = paste0("k", 1:12))) 
 
 p1<-
   ggplot(gginput,
@@ -162,7 +158,7 @@ p1<-
   geom_boxplot(outlier.shape = NA,
                aes(colour = batch)) +
   theme_cowplot(font_size = 16) + 
-  ggtitle("scATAC")
+  ggtitle("scATAC") + facet_grid(Sample ~ .)
 
 p2<-
   ggplot(gginput_rna,
@@ -171,15 +167,31 @@ p2<-
   geom_boxplot(outlier.shape = NA,
                aes(colour = batch)) +
   theme_cowplot(font_size = 16) + 
-  ggtitle("scRNA")
+  ggtitle("scRNA") + facet_grid(Sample ~ .)
 
-marrangeGrob(list(p2, p1), nrow=2, ncol =1)
-
+p2
 ```
 
-### Topic proportion by individual donor versus all other donors
+### scATAC-seq
+
+Lung: k5 proportion dominated by lungs-5 and lungs-6 from batch 3
+
+Spleen: k5, k7, k19 dominated by spleens_6 from batch 3
+
+```{r fig.width = 12}
+p1
+```
+
+## Topic proportion by donor
+
+Comparing the donor of interest with the rest separately for each tissue
+
+### scRNA-seq
 
 ```{r, fig.height = 10, fig.width = 12}
+
+tbl_rna <- gginput_rna
+gginput_rna <- tbl_rna %>% filter(Sample == "lungs")
 p_donors_rna <-
   lapply (unique(gginput_rna$donor_id), function(i) {
            ggplot(gginput_rna,
@@ -191,21 +203,73 @@ p_donors_rna <-
              theme(legend.position = "none") +
              ggtitle(i)
          })
-marrangeGrob(p_donors_rna, nrow=3, ncol=2, top="scRNA")
+marrangeGrob(p_donors_rna, nrow=3, ncol=2, top="lungs_scRNA")
+```
+```{r, fig.width=12}
+gginput_rna <- tbl_rna %>% filter(Sample == "spleens")
+p_donors_rna <-
+  lapply (unique(gginput_rna$donor_id), function(i) {
+           ggplot(gginput_rna,
+                  aes(x = topic,
+                      y = proportion)) +
+             geom_boxplot(outlier.shape = NA,
+                          aes(colour = donor_id != i)) +
+             theme_cowplot(font_size = 16) +
+             theme(legend.position = "none") +
+             ggtitle(i)
+         })
+marrangeGrob(p_donors_rna, nrow=2, ncol=2, top="spleens_scRNA")
 ```
 
-```{r fig.width = 12, fig.height = 10 }
+### scATAC-seq
+
+```{r fig.width = 12}
+tbl <- gginput
+gginput <- tbl %>% filter(Sample == "lungs")
 p_donors <-
-  lapply(unique(gginput$donor_id), function(i) {
-    ggplot(gginput,
-           aes(x = topic,
-               y = proportion)) +
-      geom_boxplot(outlier.shape = NA,
-                   aes(colour = donor_id!=i)) +
-      theme_cowplot(font_size = 16) + 
-      theme(legend.position = "none") + 
-      ggtitle(i)
-  })
-marrangeGrob(p_donors, nrow=3, ncol=2, top = "scATAC")
+  lapply (unique(gginput$donor_id), function(i) {
+           ggplot(gginput,
+                  aes(x = topic,
+                      y = proportion)) +
+             geom_boxplot(outlier.shape = NA,
+                          aes(colour = donor_id != i)) +
+             theme_cowplot(font_size = 16) +
+             theme(legend.position = "none") +
+             ggtitle(i)
+         })
+marrangeGrob(p_donors, nrow=3, ncol=2, top="lungs_scATAC")
+```
+```{r fig.width = 12}
+gginput <- tbl %>% filter(Sample == "spleens")
+p_donors <-
+  lapply (unique(gginput$donor_id), function(i) {
+           ggplot(gginput,
+                  aes(x = topic,
+                      y = proportion)) +
+             geom_boxplot(outlier.shape = NA,
+                          aes(colour = donor_id != i)) +
+             theme_cowplot(font_size = 16) +
+             theme(legend.position = "none") +
+             ggtitle(i)
+         })
+marrangeGrob(p_donors, nrow=2, ncol=2, top="spleens_scATAC")
 ```
 
+## Correct batch effects by removing samples
+
+After removing spleens_6 sample, we have less batch effects in spleens ATAC-seq data.
+
+```{r fig.width = 10}
+
+p1<-
+  ggplot(tbl %>% filter(!donor_id %in% c("spleens_6")),
+       aes(x = topic,
+           y = proportion)) +
+  geom_boxplot(outlier.shape = NA,
+               aes(colour = batch)) +
+  theme_cowplot(font_size = 16) + 
+  ggtitle("scATAC")  + facet_grid(Sample ~.)
+
+
+p1
+```

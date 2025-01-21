@@ -1,0 +1,219 @@
+---
+title: "Identify batch effects on the full scATAC-seq dataset"
+output: html_document
+date: '`r Sys.Date()`'
+---
+
+# Objective
+
+By running topic models on the full scATAC-seq data, we aim to identify batch effects and compare them with those from the matched sc-multiomics datasets. The topic model for the data set has 12 topics, and these topics vary in proportion across cell types, which have been previously defined by marker gene expression based on scRNA-seq data.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+
+library(Matrix)
+library(fastTopics)
+library(ggplot2)
+library(cowplot)
+library(poolr)
+library(dplyr)
+library(tidyr)
+library(colorRamp2)
+library(ComplexHeatmap)
+library(circlize)
+library(gridExtra)
+
+#library(ArchR)
+set.seed(10)
+```
+
+```{r}
+# load model and count matrix
+# fit_rna <- readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
+# counts_rna <- readRDS("output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
+#counts<-readRDS("../output/fastTopics/u19_full_atac_across_tissue_peaks.RDS")
+fit<-readRDS("output/fastTopics/u19_scATAC/fit_model_k12_niter250.RDS")
+metadata<-readRDS("/home/jinggu/cluster/projects/u19_multiomics/output/u19_full_atac_majority/metadata.RDS")
+metadata$Batch <- factor(metadata$Batch,
+  labels = paste0("batch", c(2, 3, 4, 5, 1))
+)
+metadata$donor_id <- paste(metadata$Tissue, metadata$Sample, sep="_")
+# rna_metadata <- readRDS("output/fastTopics/u19_cell_metadata.RDS")
+# subset data to the same cells 
+# rna_metadata$id<-unlist(lapply(rownames(rna_metadata), function(i){
+#     tissue_index = strsplit(i, "_")[[1]][2]
+#     barcode = strsplit(i, "_")[[1]][1]
+#     if(tissue_index == "1"){
+#       return(paste0("lungs#", barcode))
+#     }else{
+#       paste0("spleens#", barcode)
+#     }
+# }))
+# rna_metadata <- inner_join(
+#   rna_metadata %>% mutate(rna_id = rownames(rna_metadata)), 
+#   metadata %>% select(id, donor_id, batch, major, Sample))
+# 
+# matched_rows <- match(metadata$id,rna_metadata$id)
+# rna_metadata <- rna_metadata[matched_rows, ]
+# 
+# fit_rna$L <- fit_rna$L[rna_metadata$rna_id, ]
+# 
+# paste0("Check if the topic models for subsampled RNA are in the same order as ATAC-seq metadata matrix: ",
+#        sum(rownames(fit_rna$L) == rna_metadata$rna_id) == dim(rna_metadata)[1])
+k = 12
+```
+
+
+## Batch information
+
+Samples are matched for tissues across batches: at least one lung and one spleen in each batch
+
+Batch 1 and 2 have only control samples, but the rest have both case and control samples. 
+
+
+```{r}
+table(metadata$donor_id, metadata$Batch)
+
+metadata$status_id <- paste(metadata$Status, metadata$Sample, sep="_")
+table(metadata$status_id, metadata$Batch)
+
+```
+
+## Strctural plots 
+
+* full scATAC-seq datasets (102277 cells)
+* peak matrix with a union set of peaks called from each tissue and cell-type pair
+* 250K peaks in total
+
+```{r}
+make_structure_plot <-
+  function(fit_model,
+           topics,
+           groupby) {
+    structure_plot(
+      fit_model,
+      topics = topics,
+      grouping = groupby,
+      gap = 100,
+      verbose = FALSE
+    ) + theme_cowplot() +
+      theme(
+        axis.text.x = element_text(
+          size = 14,
+          angle = 45,
+          vjust = 0.6
+        ),
+        axis.text.y = element_text(size = 16),
+        axis.title.y = element_text(size = 16)
+      )
+  }
+
+```
+
+
+```{r, fig.height = 8, fig.width = 10}
+metadata$tissue_batch <- paste(metadata$Tissue, metadata$Batch, sep = "_")
+k <- 12
+p1 <- make_structure_plot(fit, 1:k, metadata$Batch)
+
+p2 <- make_structure_plot(fit, 1:k, metadata$tissue_batch)
+
+marrangeGrob(list(p1, p2), nrow=2, ncol =1)
+```
+
+## Distribution of topic proportions across batches
+
+### Topic proportions by batches
+
+For lung samples, topics 1,6,8 has different average proportions across batches, and some other topics can have very large variations within the same batch.
+
+For spleen samples, topic 7 has different mean proportions across batches. 
+
+```{r fig.width = 10}
+# convert poisson NMF model to multinomial model
+multinom_fit<-poisson2multinom(fit)
+pdat<-data.frame(multinom_fit$L)
+
+tbl<-
+  data.frame(pdat, 
+             metadata[, c("donor_id", "Batch", "Tissue", "PredCellType", "Sample")]) %>%
+  pivot_longer(cols = !c(donor_id, Batch, Tissue, Sample, PredCellType), 
+               names_to = "topic", values_to = "proportion") %>%
+  mutate(topic = factor(topic, levels = paste0("k", 1:12)))
+
+
+p1<-
+  ggplot(tbl,
+       aes(x = topic,
+           y = proportion)) +
+  geom_boxplot(outlier.shape = NA,
+               aes(colour = Batch)) +
+  theme_cowplot(font_size = 16) + 
+  ggtitle("scATAC")  + facet_grid(Tissue ~.)
+
+
+p1
+
+```
+
+### Topic proportion by donors 
+
+For lungs, we see topic 1 and 6 have higher mean proportion mainly due to Lung_COB-6 sample from batch 4. Topic 8 has higher mean proportion in batch 5 (contributed by COB-11).
+
+For spleens, high mean proportion of topic 7 can be attributed to spleen_SMO-10 sample from batch 3.
+
+Case samples: COB-5, 7, 10, 11 and SMO-8
+
+```{r fig.width = 12, fig.height = 10 }
+gginput <- tbl %>% filter(Tissue == "Lung")
+p_donors <-
+  lapply(unique(gginput$donor_id), function(i) {
+    ggplot(gginput,
+           aes(x = topic,
+               y = proportion)) +
+      geom_boxplot(outlier.shape = NA,
+                   aes(colour = donor_id!=i)) +
+      theme_cowplot(font_size = 16) + 
+      theme(legend.position = "none") + 
+      ggtitle(i)
+  })
+marrangeGrob(p_donors, nrow=3, ncol=2, top = "Lung_scATAC")
+```
+```{r fig.width = 12, fig.height = 10}
+gginput <- tbl %>% filter(Tissue == "Spleen")
+p_donors <-
+  lapply(unique(gginput$donor_id), function(i) {
+    ggplot(gginput,
+           aes(x = topic,
+               y = proportion)) +
+      geom_boxplot(outlier.shape = NA,
+                   aes(colour = donor_id!=i)) +
+      theme_cowplot(font_size = 16) + 
+      theme(legend.position = "none") + 
+      ggtitle(i)
+  })
+marrangeGrob(p_donors, nrow=3, ncol=2, top = "Spleen_scATAC")
+```
+
+## Correct batch effects by removing samples
+
+COB-11 is the only lung sample in batch 5 and also asthmatic patient, so let's keep it.
+
+After removing COB-6 sample, we see topic 7 and 9 have some kind of batch effects in lungs.
+After removing SMO-10 sample, we have no batch 3 and less batch effects in spleens.
+
+```{r fig.width = 10}
+
+p1<-
+  ggplot(tbl %>% filter(!Sample %in% c("COB-6", "SMO-10")),
+       aes(x = topic,
+           y = proportion)) +
+  geom_boxplot(outlier.shape = NA,
+               aes(colour = Batch)) +
+  theme_cowplot(font_size = 16) + 
+  ggtitle("scATAC")  + facet_grid(Tissue ~.)
+
+
+p1
+```
+
