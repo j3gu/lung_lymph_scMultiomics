@@ -6,7 +6,7 @@ author: 'Jing Gu'
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = F, message = F)
 library(Matrix)
 library(fastTopics)
 library(ggplot2)
@@ -21,9 +21,10 @@ set.seed(10)
 
 # load data
 counts<-readRDS("output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
+#fit8 <- readRDS("output/fastTopics/u19_scRNA/fit_model_k8_niter300.RDS")
 fit<-readRDS("output/fastTopics/fit_model_updates12_k150.RDS")
 metadata<-readRDS("output/fastTopics/u19_cell_metadata.RDS")
-
+k = 12
 # add sample covariates information
 metadata$donor_id<-metadata$orig.ident
 metadata$donor_id[metadata$full.ident=="spleens_2"]<-'3'
@@ -31,6 +32,18 @@ metadata$donor_id[metadata$full.ident=="spleens_3"]<-'6'
 batch_ids<-c("batch1", "batch1", "batch2", "batch2", "batch3", "batch3", "batch1", "batch2", "batch3")
 metadata$batch<-factor(metadata$full.ident, labels = batch_ids)
 metadata$tissue_batch <- paste0(metadata$tissue.ident, "_", metadata$batch)
+metadata$core_ID <- 
+  factor(factor(metadata$full.ident),
+         labels = c(paste("SMO", c(2,3,5,7,8,9), sep="-"),
+                    paste("SMO", c(1,4,10), sep = "-")))
+f_cov <- fread("output/u19_output/sample_covariates.txt")
+metadata <- left_join(metadata, 
+                      f_cov[, c("core_ID", 
+                                "Age", 
+                                "Sex", 
+                                "Race", 
+                                "Asthmatic status")]
+)
 ```
 # Model fitting and evaluation
 Parameters: 
@@ -45,6 +58,7 @@ plot_progress(fit,x = "iter",add.point.every = 10,colors = "black") +
   theme_cowplot(font_size = 10)
 
 summary(fit)
+
 ```
 
 ```{r}
@@ -75,13 +89,16 @@ ggplot(pdat %>% filter(subpop %in% celltypes),aes(x = loglik,fill = subpop)) +
 
 * plot by tissue
 ```{r message=F, fig.height=4, fig.width = 8}
-structure_plot(fit,topics = 1:12,gap = 25,
+#fit$L[,4] <- fit$L[,4] + fit$L[, 5]
+structure_plot(fit,topics = 1:k, gap = 25,
                grouping = metadata$tissue.ident,
                verbose=FALSE) + theme_cowplot(font_size = 16)
 ```
+
+
 * plot by cell-type
 
-```{r message=F, fig.height=4, fig.width = 8}
+```{r message=F, fig.height=4, fig.width = 12}
 ct_order <- 
   c("Naive_B",
     "Memory_B",
@@ -130,16 +147,17 @@ ordered_tissue_samples<-unlist(
                                                )}))
 tissue_samples<-factor(tissue_samples,
                        levels = ordered_tissue_samples)
-structure_plot(fit,topics = 1:12,gap = 25,
+structure_plot(fit,topics = setdiff(1:k, c(2,7,9)),gap = 100,
                grouping = metadata$major,
-               verbose=FALSE
-               ) + theme_cowplot() + 
+               verbose=FALSE) + theme_cowplot() + 
 theme(axis.text.x = element_text(size = 14, angle=45, vjust = 0.6),
                          axis.text.y = element_text(size = 16),
                          axis.title.y = element_text(size = 16))
 ```
+
+
 By batch
-```{r, fig.width = 12}
+```{r, message=FALSE, fig.width = 12, fig.height = 10}
 plots<-list()
 for(i in unique(metadata$batch)){
   plots[[i]] <-
@@ -200,7 +218,8 @@ check_topic_correlation(lung_TRM_genes, "TRM genes")
 ```
 ## Identifying topics that capture batch or donor effects
 
-Each of the three spleen samples are in separate batches. K11 has high proportion of batch 3, which is probably driven by spleen 3. For K3-6 with a high proportion in lungs, I did not see a clear trend of batch/donor effects, which is reassuring.
+### Plotting topic proportion distribution across batches
+Each of the three spleen samples are in separate batches. Topic 10-12 show strong batch effects with spleen samples. For K3-6 with a high proportion in lungs, I did not see a clear trend of batch/donor effects, which is reassuring.
 
 ```{r fig.width = 10}
 print(table(metadata$full.ident, metadata$batch))
@@ -208,10 +227,6 @@ print(table(metadata$full.ident, metadata$batch))
 # convert poisson NMF model to multinational model
 multinom_fit<-poisson2multinom(fit)
 pdat<-data.frame(multinom_fit$L)
-boxplots_for_topics <- function(){
- 
-  
-}
 
 gginput<-
   data.frame(pdat, 
@@ -221,22 +236,15 @@ gginput<-
   mutate(topic = factor(topic, levels = paste0("k", 1:12)))
 
 
-p1<-
-  ggplot(gginput,
-       aes(x = topic,
-           y = proportion)) +
-  geom_boxplot(outlier.shape = NA,
-               aes(colour = tissue.ident)) +
-  # stat_summary(fun="mean", aes(colour = tissue.ident)) +
-  theme_cowplot(font_size = 16)
 
-p2<-
+p<-
   ggplot(gginput,
        aes(x = topic,
            y = proportion)) +
   geom_boxplot(outlier.shape = NA,
                aes(colour = batch)) +
-  theme_cowplot(font_size = 16)
+  theme_cowplot(font_size = 16) + 
+  facet_grid(tissue.ident ~.)
 
 
 
@@ -252,26 +260,9 @@ p_donors <-
       ggtitle(i)
   })
 library(gridExtra)
-marrangeGrob(list(p1, p2), nrow=2, ncol =1)
+p
 marrangeGrob(p_donors, nrow=3, ncol=3)
 ```
-Topic 3-6 show consistent topic proportion across batches.
-```{r}
-p_batch <-
-  lapply(3:6, function(i){
-    ggplot(gginput %>% filter(topic == paste0("k", i)),
-         aes(x = batch,
-             y = proportion)) +
-      geom_boxplot(outlier.shape = NA,
-                   aes(colour = tissue.ident)) +
-      theme_cowplot(font_size = 16) + 
-      theme(legend.position = "none") + 
-      ggtitle(paste0("k", i)) + ylim(c(0, 0.8))
-})
-
-marrangeGrob(p_batch, nrow=2, ncol=2)
-```
-
 
 # Characterize topics 
 
@@ -294,8 +285,8 @@ for(k in 1:12){
   dat <- subset(dat,lfsr < 0.01)
   dat <- dat[order(dat$postmean,decreasing = TRUE),]
   de_list[[k]]<-dat
-  #print(volcano_plot(de, k=k, ymax=250,
-  #plot.title = sprintf("topic:%s", k)))
+  print(volcano_plot(de, k=k, ymax=250,
+  plot.title = sprintf("topic:%s", k)))
 }
 ```
 ```{r}
@@ -384,7 +375,7 @@ All topics have fewer number of GO terms with enrichment, except for topic 1.
 
 ```{r}
 library(htmltools)
-enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
+enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_top500.RDS")
 enrich_out<-data.frame(enrich_out, row.names = NULL)
 
 DT::datatable(
@@ -433,22 +424,22 @@ BP results show k1 enriched for granulocyte activation and neutrophil mediated i
 
 MF results show broad enrichment of molecular binding, with k7 highly enriched for cell adhesion molecular binding. 
 
-```{r fig.height = 6, fig.width = 10}
+```{r fig.height = 8, fig.width = 10}
 library(ComplexHeatmap)
 #enrich_out<-readRDS("output/fastTopics/GO_enrichment_results_GoM_DE.RDS")
 
 top_GO <-
-  enrich_out %>% filter(!k %in% c("k1", "k7", "k8", "k9"),
+  enrich_out %>% filter(!k %in% c("k1", "k7"),
                         grepl("Biological_Process", database)) %>% 
   select(k, description, database, FDR) %>% distinct() %>% 
   group_by(k) %>%
   mutate(FDR = -log10(FDR)) %>% 
-  slice_max(order_by = FDR, n = 6) %>%
+  slice_max(order_by = FDR, n = 5) %>%
   select(k, description)
   
 input_matrix <-
     enrich_out %>% 
-  filter(!k %in% c("k1", "k7", "k8", "k9") & 
+  filter(!k %in% c("k1", "k7") & 
            description %in% top_GO$description & 
            grepl("Biological_Process", database)) %>%
   mutate(FDR = -log10(FDR)) %>%
@@ -488,7 +479,7 @@ for(i in db[1]){
 
 ## Assessing topic enrichment for immune marker gene sets
 
-K4, k5, K6 satisfy the following criteria:
+k5, K6 satisfy the following criteria:
 
 1. higher proportion in lungs than spleens  
 2. significant MAGMA Z scores (K6 is at the boundary of threshold for allergy)
@@ -652,7 +643,7 @@ DT::datatable(
 )
 ```
 
-# Identify specific topics 
+## Identify specific topics 
 
 1. We can test whether topic proportion is correlated with the tissue of origin
 $$
@@ -667,8 +658,7 @@ $$
 * The topic k1 dominates lung monocytes, and this topic separates ILC3 cells from other T/NK cells in lungs.
 * The topic proportion that differs the most between tissue occurs in B cells(eg. k4, k10, k12)
 
-```{r} 
-#fig.width = 12, fig.height=6, message=FALSE}
+```{r fig.width = 12, fig.height=6} 
 library(catecolors)
 
 # convert poisson NMF model to multinational model
@@ -682,51 +672,58 @@ pdat<-pdat %>%
     !c(tissue, batch, celltype),
     names_to="topic", values_to="proportion")
 
-# cell number by tissue and cell type
-table(metadata$batch, metadata$merged)
-
-# original scale
-prop <-
-  pdat %>%
-  mutate(
-    celltype =
-      factor(celltype, levels = ct_order),
-    topic = factor(topic, levels = paste0("k", 1:12))
-  ) %>%
-  group_by(tissue, celltype, topic) %>%
-  dplyr::summarise(topicProp = sum(proportion))
-
-ggplot(prop, aes(x = tissue, y = topicProp, fill = topic)) +
-  geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) +
-  xlab("") +  ylab("Sum of topic proportions") +
-  scale_fill_manual(values = kelly()[-1]) +
-  theme(axis.text.x = element_text(angle = 90)) +
-  ggtitle("")
-
+# Original scale
+# prop <-
+#   pdat %>%
+#   mutate(
+#     celltype =
+#       factor(celltype, levels = ct_order),
+#     topic = factor(topic, levels = paste0("k", 1:k))
+#   ) %>%
+#   group_by(tissue, celltype, topic) %>%
+#   dplyr::summarise(topicProp = sum(proportion))
+# 
+# ggplot(prop, aes(x = tissue, y = topicProp, fill = topic)) +
+#   geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) +
+#   xlab("") +  ylab("Sum of topic proportions") +
+#   scale_fill_manual(values = kelly()[-1]) +
+#   theme(axis.text.x = element_text(angle = 90)) +
+#   ggtitle("")
+# Removal of spleen batch 3 sample
+multinom_fit<-poisson2multinom(fit)
+pdat<-data.frame(multinom_fit$L)
+pdat$tissue<-metadata$tissue.ident
+pdat$celltype<-metadata$major
+pdat$batch <- metadata$batch
+pdat<-pdat %>% 
+  filter(!(tissue == "spleens" & batch == "batch3")) %>%
+  pivot_longer(
+    !c(tissue, batch, celltype),
+    names_to="topic", values_to="proportion")
 
 # Normalized scale
 prop <-
-  pdat %>%
+  pdat %>% #filter(topic != "k5") %>%
   mutate(
     celltype =
       factor(celltype, levels = ct_order),
-    topic = factor(topic, levels = paste0("k", 1:12))) %>%
+    topic = factor(topic, levels = paste0("k", 1:k))) %>%
   group_by(tissue, celltype, topic) %>%
   dplyr::summarise(topicProp = sum(proportion) / n())
 
-ggplot(prop, 
+ggplot(prop,
          #filter(grepl("B", celltype)),
        aes(x = tissue, y = topicProp, fill = topic)) +
-  geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) + 
-  xlab("") +  ylab("Normalized topic proportion") + 
-  scale_fill_manual(values = kelly()[-1]) + 
-  theme_cowplot(font_size = 16) + 
-  theme(axis.text.x = element_text(angle = 90)) 
+  geom_bar(stat = "identity") + facet_grid(cols = vars(celltype)) +
+  xlab("") +  ylab("Normalized topic proportion") +
+  scale_fill_manual(values = kelly()[-1]) +
+  theme_cowplot(font_size = 16) +
+  theme(axis.text.x = element_text(angle = 90))
 
 ```
-## Comparing gene expression LFC of asthma risk genes vs. non-risk genes
 
-```{r}
+```{r eval = F}
+## Comparing gene expression LFC of asthma risk genes vs. non-risk genes
 magma <- fread("~/cluster/data/MAGMA/results/ukb-a-446/ukb-a-446.genes.out")
 magma_genes <- magma$GENE[p.adjust(magma$P) <= 0.05]
 ncbi37<-fread("/home/jinggu/cluster/data/MAGMA/gene_loc/NCBI37.3.gene.loc")
@@ -756,36 +753,168 @@ lapply(1:12, function(i){
 
 ```
 
+## Testing cross-tissue difference with batch effects corrected
 
+For each cell type, fit a regression model on the vector of topic proportion for each cell against tissue and batch effects. Test whether $\beta$ is significant different from zero.
+$$
+L_{c} = X_{tissue,c}\beta + W_{batch}\alpha + \epsilon_c
+$$
 
+```{r}
+modelsDF <- list()
+for(ct in ct_order){
+  idx <- which(metadata$major == ct)
+  rnaDF <- 
+    data.frame(
+      multinom_fit$L[idx, ],
+      metadata[idx, ])
+  rnaDF$tissue = factor(rnaDF$tissue.ident,
+                    levels = c("spleens", "lungs"))
+  
+  models <- lm(as.matrix(rnaDF[, 1:12]) ~ as.numeric(rnaDF$tissue) + rnaDF$batch)
+                #factor(rnaDF$Age) + rnaDF$Sex + rnaDF$Race)
+  modelsDF[[ct]] <- coefficients(summary(models))
+}
 
+stats_tbl <- c() 
+for(j in names(modelsDF)){
+  out <- c()
+  for(k in 1:12){
+    out <- rbind(out, c(k, modelsDF[[j]][[k]][2, ]))
+  }
+  stats_tbl <- rbind(stats_tbl, cbind(j, out))
+}
 
-## Visualize the estimated topic proportions
-```{r fig.height = 10, fig.width=10}
-library(Ternary)
-library(Rtsne)
-par0 <- par(mar = c(0,0,0,0))
-pdat<-data.frame(multinom_fit$L)
-TernaryPlot(alab="k10", blab = "k11", clab = "k12",
-            grid.col = "skyblue", grid.minor.lines = 0)
-TernaryPoints(pdat[metadata$tissue.ident == "lungs", 10:12], cex = 0.1, col = "red")
-TernaryPoints(pdat[metadata$tissue.ident == "spleens", 10:12], cex = 0.1, col = "green")
+stats_tbl <- data.frame(stats_tbl)
+colnames(stats_tbl) <- 
+  c("celltype",
+    "k",
+    "estimate",
+    "std",
+    "t_val",
+    "p_val")
+
+stats_tbl$adjP_val <- p.adjust(stats_tbl$p_val, method = "bonferroni")
 
 ```
-```{r fig.height = 10, fig.width=10}
-TernaryPlot(alab="k3", blab = "k5", clab = "k12",
-            grid.col = "skyblue", grid.minor.lines = 0)
-TernaryPoints(pdat[metadata$tissue.ident == "lungs", c(3,5,12)], cex = 0.1, col = "red")
-TernaryPoints(pdat[metadata$tissue.ident == "spleens", c(3,5,12)], cex = 0.1, col = "green")
+
+
+### Summarizing p-values with QQ plot
+```{r}
+qqplot(y = -log10(stats_tbl$adjP_val),
+       x = -log10(1:dim(stats_tbl)[1]/dim(stats_tbl)[1]), 
+       xlab = "-log10(p) under the null",
+       ylab = "-log10(emperical p-value)")
+abline(a = 0, b = 1, col = "red") 
+
+# ggplot(stats_tbl, 
+#        aes(y = -log10(adjP_val),
+#            x = -log10((1:dim(stats_tbl)[1])/dim(stats_tbl)[1]))) + 
+#   geom_point() + 
+#   geom_abline(slope = 1) 
+```
+
+### Topic proportion distribution for asthma-related topics
+```{r}
+gginput <- 
+  data.frame(barcode = rownames(multinom_fit$L),
+             multinom_fit$L,
+             metadata[, c("major", "tissue.ident", "batch", "Age", "Sex", "Race")]) %>% 
+  pivot_longer(!c(barcode, major, tissue.ident, batch, Age, Sex, Race), 
+               names_to = "topic", 
+               values_to = "proportion")
+
+ct_histograms <- list()
+for(ct in ct_order){
+  ct_histograms[[ct]] <-
+    ggplot(gginput %>% 
+           filter(topic %in% c("k3", "k4", "k5", "k8", "k12") &
+                    major == ct), 
+       aes(x = proportion , fill = tissue.ident)) + 
+  geom_histogram(alpha = 0.5) +
+  facet_grid(topic ~ ., scales = "free_y") + 
+    ggtitle(ct)
+}
+
+ct_histograms
+```
+
+### Heatmap for p-values from cross-tissue comparison
+```{r}
+library(scales)
+stats_tbl$log_pval <- -log10(stats_tbl$adjP_val)
+stats_tbl$log_pval[is.infinite(stats_tbl$log_pval)] <- NA
+heatmap_plot <- 
+  ggplot(stats_tbl, aes(x = factor(k, 1:12), 
+                        y = factor(celltype, levels = rev(ct_order)), 
+                        fill = log_pval)) + 
+  geom_tile() +
+  scale_fill_gradient2(
+    low = "blue",
+    mid = "white",
+    high = "red",
+    midpoint = 5,
+    limits = c(0, 25),
+    oob = squish,
+    na.value = "red") +
+  theme_minimal() + xlab("") + ylab("") + 
+  geom_text(aes(label = ifelse(estimate > 0, "*", ""))) + 
+  labs(fill ="-log10(adj_P)")
+
+heatmap_plot
+
+
+
+# mat <- 
+#   stats_tbl %>% 
+#     mutate(adjP_val = -log10(adjP_val)) %>%
+#     pivot_wider(id_cols = !c(std, t_val, p_val, estimate), 
+#                 names_from = k, 
+#                 values_from = adjP_val)
+# mat[, -1][sapply(mat[, -1], is.infinite)] <- NA # convert inf to NA
+# ct_info <- mat$celltype
+# mat <- as.matrix(mat[, -1])
+# rownames(mat) <- ct_info
+# col_fun = colorRamp2(c(0, 2, 50), c("blue", "white", "red"))
+# #col_fun = colorRamp2(c(0, 10, max(mat[mat != 100])), c("blue", "white", "red"))
+# Heatmap(mat,  col = col_fun, na_col = "red",
+#         cluster_rows = F, cluster_columns = F,
+#         name = "-log10(adjusted P)",
+#         row_split = ) 
 
 ```
-```{r fig.height = 10, fig.width=10}
-TernaryPlot(alab="k7", blab = "k8", clab = "k9",
-            grid.col = "skyblue", grid.minor.lines = 0)
-TernaryPoints(pdat[metadata$tissue.ident == "lungs", 7:9], cex = 0.1, col = "red")
-TernaryPoints(pdat[metadata$tissue.ident == "spleens", 7:9], cex = 0.1, col = "green")
 
-```
+
+
+<!-- ## Visualize the estimated topic proportions -->
+<!-- ```{r fig.height = 10, fig.width=10} -->
+<!-- library(Ternary) -->
+<!-- library(Rtsne) -->
+<!-- par0 <- par(mar = c(0,0,0,0)) -->
+<!-- pdat<-data.frame(multinom_fit$L) -->
+<!-- TernaryPlot(alab="k10", blab = "k11", clab = "k12", -->
+<!--             grid.col = "skyblue", grid.minor.lines = 0) -->
+<!-- TernaryPoints(pdat[metadata$tissue.ident == "lungs", 10:12], cex = 0.1, col = "red") -->
+<!-- TernaryPoints(pdat[metadata$tissue.ident == "spleens", 10:12], cex = 0.1, col = "green") -->
+
+<!-- ``` -->
+<!-- ```{r fig.height = 10, fig.width=10} -->
+<!-- TernaryPlot(alab="k3", blab = "k5", clab = "k12", -->
+<!--             grid.col = "skyblue", grid.minor.lines = 0) -->
+<!-- TernaryPoints(pdat[metadata$tissue.ident == "lungs", c(3,5,12)], cex = 0.1, col = "red") -->
+<!-- TernaryPoints(pdat[metadata$tissue.ident == "spleens", c(3,5,12)], cex = 0.1, col = "green") -->
+
+<!-- ``` -->
+<!-- ```{r fig.height = 10, fig.width=10} -->
+<!-- TernaryPlot(alab="k7", blab = "k8", clab = "k9", -->
+<!--             grid.col = "skyblue", grid.minor.lines = 0) -->
+<!-- TernaryPoints(pdat[metadata$tissue.ident == "lungs", 7:9], cex = 0.1, col = "red") -->
+<!-- TernaryPoints(pdat[metadata$tissue.ident == "spleens", 7:9], cex = 0.1, col = "green") -->
+
+<!-- ``` -->
+
+
+
 ## Perform t-test while adjusting for confounders
 
 
@@ -917,6 +1046,5 @@ DT::datatable(topic5_genes %>% mutate(z=format(z, digits=2),
                 select(-postmean) %>%
                 filter(Treg==TRUE|CD8_T==TRUE|CD4_T==TRUE|Th17==TRUE))
 ```
-
 
 
