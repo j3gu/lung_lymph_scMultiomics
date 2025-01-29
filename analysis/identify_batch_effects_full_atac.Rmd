@@ -33,34 +33,17 @@ set.seed(10)
 # counts_rna <- readRDS("output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
 #counts<-readRDS("../output/fastTopics/u19_full_atac_across_tissue_peaks.RDS")
 fit<-readRDS("output/fastTopics/u19_scATAC/fit_model_k12_niter250.RDS")
-metadata<-readRDS("/home/jinggu/cluster/projects/u19_multiomics/output/u19_full_atac_majority/metadata.RDS")
+metadata<-readRDS("/home/jinggu/cluster/projects/u19_multiomics/output/u19_full_atac_cell_metadata.RDS")
 metadata$Batch <- factor(metadata$Batch,
   labels = paste0("batch", c(2, 3, 4, 5, 1))
 )
 metadata$donor_id <- paste(metadata$Tissue, metadata$Sample, sep="_")
-# rna_metadata <- readRDS("output/fastTopics/u19_cell_metadata.RDS")
-# subset data to the same cells 
-# rna_metadata$id<-unlist(lapply(rownames(rna_metadata), function(i){
-#     tissue_index = strsplit(i, "_")[[1]][2]
-#     barcode = strsplit(i, "_")[[1]][1]
-#     if(tissue_index == "1"){
-#       return(paste0("lungs#", barcode))
-#     }else{
-#       paste0("spleens#", barcode)
-#     }
-# }))
-# rna_metadata <- inner_join(
-#   rna_metadata %>% mutate(rna_id = rownames(rna_metadata)), 
-#   metadata %>% select(id, donor_id, batch, major, Sample))
-# 
-# matched_rows <- match(metadata$id,rna_metadata$id)
-# rna_metadata <- rna_metadata[matched_rows, ]
-# 
-# fit_rna$L <- fit_rna$L[rna_metadata$rna_id, ]
-# 
-# paste0("Check if the topic models for subsampled RNA are in the same order as ATAC-seq metadata matrix: ",
-#        sum(rownames(fit_rna$L) == rna_metadata$rna_id) == dim(rna_metadata)[1])
+# Match cell barcodes across metadata and L matrix of the fitted model
+# new_metadata <- metadata[intersect(rownames(fit$L), rownames(metadata)), ]
+# saveRDS(new_metadata, "../output/u19_output/u19_full_atac_cell_metadata.RDS")
 k = 12
+print("check whether L matrix has the same order as metadata: ")
+sum(rownames(metadata) == rownames(fit$L)) == dim(fit$L)[1]
 ```
 
 
@@ -127,12 +110,16 @@ marrangeGrob(list(p1, p2), nrow=2, ncol =1)
 
 Lung:
 
-* topic 1 and topic 6 dominated by Lung COB-6 from batch 4
-* topic 8 dominated by Lung COB-11 from batch 5
+* k6 - COB-5 from batch 4
+* k9 - SMO-8/9 from batch 3
+* k12 - COB-5/6 from batch 4, COB-11 from batch 5
 
 Spleen: 
 
-* topic 7 dominated by Spleen SMO-10 from batch 3
+* k1 - SMO-10 from batch 3, COB-10 from batch 5
+* k6 - SMO-10 from batch 3, SMO-1 from batch 1, COB-10 from batch 5 
+* k9 - SMO-10 from batch 3
+* k12 - SMO-1 from batch 1 and SMO-4 from batch 2
 
 ```{r fig.width = 10}
 # convert poisson NMF model to multinomial model
@@ -200,15 +187,12 @@ marrangeGrob(p_donors, nrow=3, ncol=2, top = "Spleen_scATAC")
 
 ## Correct batch effects by removing samples
 
-COB-11 is the only lung sample in batch 5 and also asthmatic patient, so let's keep it.
-
-After removing COB-6 sample, we see topic 7 and 9 have some kind of batch effects in lungs.
-After removing SMO-10 sample, we have no batch 3 and less batch effects in spleens.
+After removing SMO-1/10 sample, we have no batch 3 and less batch effects in spleens.
 
 ```{r fig.width = 10}
 
 p1<-
-  ggplot(tbl %>% filter(!Sample %in% c("COB-6", "SMO-10")),
+  ggplot(tbl %>% filter(!Sample %in% c("SMO-1", "SMO-10")),
        aes(x = topic,
            y = proportion)) +
   geom_boxplot(outlier.shape = NA,
