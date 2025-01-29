@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2025-01-21" />
+<meta name="date" content="2025-01-29" />
 
 <title>Identify batch effects on the full scATAC-seq dataset</title>
 
@@ -360,7 +360,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Identify batch effects on the full
 scATAC-seq dataset</h1>
-<h4 class="date">2025-01-21</h4>
+<h4 class="date">2025-01-29</h4>
 
 </div>
 
@@ -389,7 +389,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-01-21
+<strong>Last updated:</strong> 2025-01-29
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -520,15 +520,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree710e6c4924d714f4634006f4aff5f1f3bc99ebc1targetblank710e6c4a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree9e9d39278f07ab1d1dd5ae2113e9d23469f0b0bctargetblank9e9d392a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/710e6c4924d714f4634006f4aff5f1f3bc99ebc1" target="_blank">710e6c4</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/9e9d39278f07ab1d1dd5ae2113e9d23469f0b0bc" target="_blank">9e9d392</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree710e6c4924d714f4634006f4aff5f1f3bc99ebc1targetblank710e6c4a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree9e9d39278f07ab1d1dd5ae2113e9d23469f0b0bctargetblank9e9d392a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -538,7 +538,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/710e6c4924d714f4634006f4aff5f1f3bc99ebc1" target="_blank">710e6c4</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/9e9d39278f07ab1d1dd5ae2113e9d23469f0b0bc" target="_blank">9e9d392</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -577,6 +577,7 @@ Untracked files:
     Untracked:  analysis/ukb-a-446.log
     Untracked:  analysis/ukb-a-446_GO_immune.log
     Untracked:  code/.ipynb_checkpoints/
+    Untracked:  code/make_plots.R
     Untracked:  code/run_GO_enrichment.R
     Untracked:  code/run_fastTopics.R
     Untracked:  code/run_magma.sh
@@ -666,6 +667,40 @@ Message
 Rmd
 </td>
 <td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/9e9d39278f07ab1d1dd5ae2113e9d23469f0b0bc/analysis/identify_batch_effects_full_atac.Rmd" target="_blank">9e9d392</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-01-29
+</td>
+<td>
+identified batch effects in full ATAC-seq
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/a9d6863a68c4f20ac95e58648be0e1038a881bfe/docs/identify_batch_effects_full_atac.html" target="_blank">a9d6863</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-01-21
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
 <a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/710e6c4924d714f4634006f4aff5f1f3bc99ebc1/analysis/identify_batch_effects_full_atac.Rmd" target="_blank">710e6c4</a>
 </td>
 <td>
@@ -727,6 +762,8 @@ sc-multiomics datasets. The topic model for the data set has 12 topics,
 and these topics vary in proportion across cell types, which have been
 previously defined by marker gene expression based on scRNA-seq
 data.</p>
+<pre><code>[1] &quot;check whether L matrix has the same order as metadata: &quot;</code></pre>
+<pre><code>[1] TRUE</code></pre>
 <div id="batch-information" class="section level2">
 <h2>Batch information</h2>
 <p>Samples are matched for tissues across batches: at least one lung and
@@ -824,12 +861,17 @@ class="section level2">
 <h3>Topic proportions by batches</h3>
 <p>Lung:</p>
 <ul>
-<li>topic 1 and topic 6 dominated by Lung COB-6 from batch 4</li>
-<li>topic 8 dominated by Lung COB-11 from batch 5</li>
+<li>k6 - COB-5 from batch 4</li>
+<li>k9 - SMO-8/9 from batch 3</li>
+<li>k12 - COB-5/6 from batch 4, COB-11 from batch 5</li>
 </ul>
 <p>Spleen:</p>
 <ul>
-<li>topic 7 dominated by Spleen SMO-10 from batch 3</li>
+<li>k1 - SMO-10 from batch 3, COB-10 from batch 5</li>
+<li>k6 - SMO-10 from batch 3, SMO-1 from batch 1, COB-10 from batch
+5</li>
+<li>k9 - SMO-10 from batch 3</li>
+<li>k12 - SMO-1 from batch 1 and SMO-4 from batch 2</li>
 </ul>
 <p><img src="figure/identify_batch_effects_full_atac.Rmd/unnamed-chunk-5-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>
@@ -1032,11 +1074,8 @@ Jing Gu
 <div id="correct-batch-effects-by-removing-samples"
 class="section level2">
 <h2>Correct batch effects by removing samples</h2>
-<p>COB-11 is the only lung sample in batch 5 and also asthmatic patient,
-so let’s keep it.</p>
-<p>After removing COB-6 sample, we see topic 7 and 9 have some kind of
-batch effects in lungs. After removing SMO-10 sample, we have no batch 3
-and less batch effects in spleens.</p>
+<p>After removing SMO-1/10 sample, we have no batch 3 and less batch
+effects in spleens.</p>
 <p><img src="figure/identify_batch_effects_full_atac.Rmd/unnamed-chunk-8-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-8-1">
