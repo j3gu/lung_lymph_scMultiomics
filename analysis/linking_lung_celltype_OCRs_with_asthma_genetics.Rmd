@@ -20,16 +20,14 @@ What we have:
   * asthma fine-mapped variants grouped by enhancers using multiple functional data
   * normalized CA and GE matrix (Feature x cell)
     - TMM and log-normalization (column-wise)
-    - scaled to zscore (row-wise)
+    - scaled to zscore within each tissue (row-wise)
 
 1. Define asthma candidate enhancers by ePIPs $\ge$ 0.5
   * the selected cutoff shows strong enrichment with overlapping OCRs
   * randomly sampling 10 enhancers from low ePIPs as negative ctrls 
 2. Overlap with the joint set of peaks in our dataset
   * peaks need to contain fine-mapped variants
-3. Compute average levels for each overlapping peak that contain fine-mapped variants 
-  * within tissue 
-  * across tissues (for cross-tissue comparison)
+3. Compute average levels across cell types 
   
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE)
