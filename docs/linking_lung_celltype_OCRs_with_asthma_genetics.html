@@ -555,15 +555,15 @@ data/CRE_0_asthma_fine-mapping_summary.txt
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreea65bf34f613e4aabaa63bdf54d87b9cd2bbb9b21targetblanka65bf34a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree6fb29da947d3dfc9aa885e76eb9d372affe6cf77targetblank6fb29daa">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/a65bf34f613e4aabaa63bdf54d87b9cd2bbb9b21" target="_blank">a65bf34</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/6fb29da947d3dfc9aa885e76eb9d372affe6cf77" target="_blank">6fb29da</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreea65bf34f613e4aabaa63bdf54d87b9cd2bbb9b21targetblanka65bf34a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree6fb29da947d3dfc9aa885e76eb9d372affe6cf77targetblank6fb29daa"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -573,7 +573,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/a65bf34f613e4aabaa63bdf54d87b9cd2bbb9b21" target="_blank">a65bf34</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/6fb29da947d3dfc9aa885e76eb9d372affe6cf77" target="_blank">6fb29da</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -598,6 +598,7 @@ Untracked files:
     Untracked:  analysis/Rplots.pdf
     Untracked:  analysis/cross_tissue_DE_u19_k10_fastTopics.Rmd
     Untracked:  analysis/differential_peak_analysis.Rmd
+    Untracked:  analysis/full_atac_h2g_enrichment.Rmd
     Untracked:  analysis/identify_T_subsets.Rmd
     Untracked:  analysis/identify_batch_effects_full_atac_k8.Rmd
     Untracked:  analysis/run_fastTopics.R
@@ -712,6 +713,40 @@ Message
 Rmd
 </td>
 <td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/6fb29da947d3dfc9aa885e76eb9d372affe6cf77/analysis/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd" target="_blank">6fb29da</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-02-18
+</td>
+<td>
+linking OCRs to asthma genetics
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/8d25a9cf2c28210bcc54a20d9cb1aaa08eba91b5/docs/linking_lung_celltype_OCRs_with_asthma_genetics.html" target="_blank">8d25a9c</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-02-18
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
 <a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a65bf34f613e4aabaa63bdf54d87b9cd2bbb9b21/analysis/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd" target="_blank">a65bf34</a>
 </td>
 <td>
@@ -785,7 +820,7 @@ functional data</li>
 <li>normalized CA and GE matrix (Feature x cell)
 <ul>
 <li>TMM and log-normalization (column-wise)</li>
-<li>scaled to zscore (row-wise)</li>
+<li>scaled to zscore within each tissue (row-wise)</li>
 </ul></li>
 </ul>
 <ol style="list-style-type: decimal">
@@ -804,13 +839,8 @@ OCRs</li>
 <li>peaks need to contain fine-mapped variants</li>
 </ul>
 <ol start="3" style="list-style-type: decimal">
-<li>Compute average levels for each overlapping peak that contain
-fine-mapped variants</li>
+<li>Compute average levels across cell types</li>
 </ol>
-<ul>
-<li>within tissue</li>
-<li>across tissues (for cross-tissue comparison)</li>
-</ul>
 </div>
 <div id="result" class="section level1">
 <h1>Result</h1>
