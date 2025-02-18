@@ -7,6 +7,7 @@ date: '`r Sys.Date()`'
 # Objective
 
 For asthma fine-mapped regions, what cell types have open chromatin at these regions?
+
 * Shared or cell-type specific?
 * Present In lungs or spleens?
 
@@ -204,6 +205,7 @@ hist(data.frame(ranges(gr_hg38_paired[gr_hg38_paired$type == "high"]))$width,
      main = "Size distribution for enhancers with high ePIPs",
      xlab = "peak size")
 ```
+
 ## Processing chromatin accessibility separately for each tissue
 
 We computed z-scores separately for each tissue.
@@ -227,7 +229,7 @@ aggr_lung <- aggregate_counts(lung_counts[paired@from, ], metadata$PredCellType)
 aggr_spleen <- aggregate_counts(spleen_counts[paired@from, ], metadata$PredCellType)
 ```
 
-## Comparing chromatin accessibility between peaks at high or low ePIPs 
+### Comparing chromatin accessibility between peaks at high or low ePIPs 
 
  * Lung CD4_T subsets show overall higher mean accessibility btw peaks with high ePIP and those with low ePIPs
     - Treg has the highest mean difference 
@@ -409,6 +411,7 @@ lung_heatmap + spleen_heatmap
 * specific to Treg:
   - TNFRSF11A, SLC7A10 (both specific to lungs)
 
+
 ### Heatmaps for accessibiltiy across cell types in case and control
 
 ```{r}
@@ -487,6 +490,7 @@ lung_heatmap + case_heatmap
 ```
 Overall, chromatin levels in control are more open than those in case. Majoriy of CD4 subsets have lower chromatin accessibility, and NK/CD8+ T cells show higher accessibility near several regions, which turns out to be open in negative controls as well.
 
+
 ## Validate cell-type specific OCRs near asthma risk enhancers
 
 Do their nearby genes show differential expression?
@@ -530,6 +534,7 @@ rna_counts <-
       counts = rna_counts[row_idx, ], 
       aggr_by = metadata$major))
 ```
+
 ### Overlapping DE genes across cell types with the nearest genes from cell-type specific OCRs
 
 Cell-type specific OCRs are defined as those have higher accessibility in CD4 T subsets.
