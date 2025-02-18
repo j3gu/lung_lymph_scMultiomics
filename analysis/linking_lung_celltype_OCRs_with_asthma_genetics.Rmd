@@ -22,7 +22,7 @@ What we have:
     - TMM and log-normalization (column-wise)
     - scaled to zscore within each tissue (row-wise)
 
-1. Define asthma candidate enhancers by ePIPs $\ge$ 0.3
+1. Define asthma candidate enhancers by ePIPs $\ge$ 0.5
   * the selected cutoff shows strong enrichment with overlapping OCRs
   * randomly sampling 10 enhancers from low ePIPs as negative ctrls 
 2. Overlap with the joint set of peaks in our dataset
@@ -150,7 +150,7 @@ gr_hg38$labels <- paste(round(gr_hg38$aoa_epip, 2),
                         round(gr_hg38$coa_epip, 2),
                          sep = "_")
 
-gr_hg38$type <- ifelse(gr_hg38$aoa_epip >= 0.3|gr_hg38$coa_epip >= 0.3, "high", "low")
+gr_hg38$type <- ifelse(gr_hg38$aoa_epip >= 0.5|gr_hg38$coa_epip >= 0.5, "high", "low")
 
 paired <- findOverlaps(proj@peakSet, gr_hg38)
 
@@ -181,7 +181,7 @@ gr_peaks$type <- gr_hg38[paired@to]$type
 
 ## Enrichment test for enhancers with high ePIPs
 
-At a cutoff of 0.3 for ePIPs, enhancers with high ePIPs show significant enrichment for the overlapped OCRs. 
+At a cutoff of 0.5 for ePIPs, enhancers with high ePIPs show significant enrichment for the overlapped OCRs. 
 ```{r}
 fisher_x = rbind(table(gr_hg38[unique(paired@to)]$type), 
                  table(gr_hg38[-paired@to, ]$type))
