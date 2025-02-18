@@ -22,7 +22,7 @@ What we have:
     - TMM and log-normalization (column-wise)
     - scaled to zscore within each tissue (row-wise)
 
-1. Define asthma candidate enhancers by ePIPs $\ge$ 0.5
+1. Define asthma candidate enhancers by ePIPs $\ge$ 0.3
   * the selected cutoff shows strong enrichment with overlapping OCRs
   * randomly sampling 10 enhancers from low ePIPs as negative ctrls 
 2. Overlap with the joint set of peaks in our dataset
@@ -115,7 +115,7 @@ aggregate_counts <- function(counts, aggr_by){
 ```
 
 ```{r}
-f <- fread("~/projects/lung_lymph_scMultiomics/data/CRE_0_asthma_fine-mapping_summary.txt")
+f <- fread("data/CRE_0_asthma_fine-mapping_summary.txt")
 # add SNP positions 
 # ukbb_snps <- fread("/home/jinggu/cluster/data/gwas/ukbb_vars/ukb_b38_vars.txt.gz")
 # f$pos <-
@@ -150,7 +150,7 @@ gr_hg38$labels <- paste(round(gr_hg38$aoa_epip, 2),
                         round(gr_hg38$coa_epip, 2),
                          sep = "_")
 
-gr_hg38$type <- ifelse(gr_hg38$aoa_epip >= 0.5|gr_hg38$coa_epip >= 0.5, "high", "low")
+gr_hg38$type <- ifelse(gr_hg38$aoa_epip >= 0.3|gr_hg38$coa_epip >= 0.3, "high", "low")
 
 paired <- findOverlaps(proj@peakSet, gr_hg38)
 
@@ -181,7 +181,7 @@ gr_peaks$type <- gr_hg38[paired@to]$type
 
 ## Enrichment test for enhancers with high ePIPs
 
-At a cutoff of 0.5 for ePIPs, enhancers with high ePIPs show significant enrichment for the overlapped OCRs. 
+At a cutoff of 0.3 for ePIPs, enhancers with high ePIPs show significant enrichment for the overlapped OCRs. 
 ```{r}
 fisher_x = rbind(table(gr_hg38[unique(paired@to)]$type), 
                  table(gr_hg38[-paired@to, ]$type))
@@ -192,10 +192,6 @@ fisher.test(fisher_x)
 ```
 
 ## Size distribution for Ethan's list of enhancers
-
-* 27 enhancers with PIPs >= 0.5
-* 31 peaks (501 bp) overlap with 27 enhancers at high PIPs
-* The above peaks are required to contain asthma fine-mapped variants.
 
 ```{r}
 gr_hg38_paired <- gr_hg38[paired@to]
