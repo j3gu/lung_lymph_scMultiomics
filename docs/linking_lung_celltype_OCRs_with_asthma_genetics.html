@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2025-02-18" />
+<meta name="date" content="2025-02-21" />
 
 <title>Linking asthma fine-mapped regions with lung immune OCRs</title>
 
@@ -369,7 +369,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Linking asthma fine-mapped regions with
 lung immune OCRs</h1>
-<h4 class="date">2025-02-18</h4>
+<h4 class="date">2025-02-21</h4>
 
 </div>
 
@@ -398,7 +398,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-02-18
+<strong>Last updated:</strong> 2025-02-21
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -529,15 +529,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeaccd1fae8ed58f65a4001d8693f30767c9d6755ctargetblankaccd1faa">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreef9138369a6ab80320b05684af517963c603eca94targetblankf913836a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/accd1fae8ed58f65a4001d8693f30767c9d6755c" target="_blank">accd1fa</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/f9138369a6ab80320b05684af517963c603eca94" target="_blank">f913836</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeaccd1fae8ed58f65a4001d8693f30767c9d6755ctargetblankaccd1faa"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreef9138369a6ab80320b05684af517963c603eca94targetblankf913836a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -547,7 +547,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/accd1fae8ed58f65a4001d8693f30767c9d6755c" target="_blank">accd1fa</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/f9138369a6ab80320b05684af517963c603eca94" target="_blank">f913836</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -628,7 +628,6 @@ Unstaged changes:
     Modified:   analysis/identify_batch_effects_full_atac.Rmd
     Modified:   analysis/identify_batch_effects_multiomics.Rmd
     Modified:   analysis/identify_regulatory_programs_u19_GRN.Rmd
-    Modified:   analysis/index.Rmd
     Modified:   analysis/rank_TFs_from_pairwise_comparison.ipynb
     Deleted:    analysis/test_magma.Rmd
     Modified:   analysis/u19_h2g_enrichment.Rmd
@@ -682,6 +681,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/f9138369a6ab80320b05684af517963c603eca94/analysis/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd" target="_blank">f913836</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-02-21
+</td>
+<td>
+performed DA tests
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/32c3d8381457290efcff7a92bc8e946009a10313/docs/linking_lung_celltype_OCRs_with_asthma_genetics.html" target="_blank">32c3d83</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-02-18
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -872,13 +905,16 @@ class="math inline">\(\ge\)</span> 0.5</li>
 <ul>
 <li>the selected cutoff shows strong enrichment with overlapping
 OCRs</li>
-<li>randomly sampling 10 enhancers from low ePIPs as negative ctrls</li>
+<li>randomly sampling 10 enhancers from low ePIPs as negative
+controls</li>
 </ul>
 <ol start="2" style="list-style-type: decimal">
 <li>Overlap with the joint set of peaks in our dataset</li>
 </ol>
 <ul>
 <li>peaks need to contain fine-mapped variants</li>
+<li>for multiples peaks overlapping one enhancer sequence, choose the
+one with maximum mean accessibility</li>
 </ul>
 <ol start="3" style="list-style-type: decimal">
 <li>Compute average levels across cell types</li>
@@ -889,8 +925,102 @@ OCRs</li>
 <div id="enrichment-test-for-enhancers-with-high-epips"
 class="section level2">
 <h2>Enrichment test for enhancers with high ePIPs</h2>
+<p>At a cutoff of 0.5 for ePIPs, we don’t see significant enrichment of
+enhancers with high ePIPs overlapping cell-type specific OCRs.</p>
+<pre><code>GRanges object with 119 ranges and 15 metadata columns:
+                  seqnames              ranges strand |     score
+                     &lt;Rle&gt;           &lt;IRanges&gt;  &lt;Rle&gt; | &lt;numeric&gt;
+       Lung_Other     chr1 172746261-172746761      * |  54.78110
+  Spleen_Memory_B     chr1 173202304-173202804      * |   6.46594
+   Spleen_Naive_B     chr1 198671106-198671606      * | 127.35600
+  Lung_Th17/CD4_T     chr1 198683836-198684336      * |   5.57938
+  Lung_Th17/CD4_T     chr1 198686852-198687352      * |   5.57938
+              ...      ...                 ...    ... .       ...
+       Lung_CD8_T    chr17   47741709-47742209      * |  26.05730
+       Lung_Other    chr17   49345028-49345528      * |   4.20968
+   Spleen_Naive_B    chr17   49362676-49363176      * |  19.24040
+        Lung_Treg    chr18   62339513-62340013      * |  17.38400
+        Lung_Treg    chr19   33235558-33236058      * |  22.02630
+                  replicateScoreQuantile groupScoreQuantile Reproducibility
+                               &lt;numeric&gt;          &lt;numeric&gt;       &lt;numeric&gt;
+       Lung_Other                  0.907              0.880               5
+  Spleen_Memory_B                  0.415              0.298               3
+   Spleen_Naive_B                  0.829              0.811               5
+  Lung_Th17/CD4_T                  0.362              0.249               3
+  Lung_Th17/CD4_T                  0.362              0.249               2
+              ...                    ...                ...             ...
+       Lung_CD8_T                  0.732              0.693               5
+       Lung_Other                  0.285              0.133               2
+   Spleen_Naive_B                  0.623              0.561               3
+        Lung_Treg                  0.601              0.495               5
+        Lung_Treg                  0.792              0.750               5
+                          GroupReplicate distToGeneStart  nearestGene
+                             &lt;character&gt;       &lt;integer&gt;  &lt;character&gt;
+       Lung_Other     Lung_Other._.SMO-3           87492        FASLG
+  Spleen_Memory_B Spleen_Memory_B._.CO..            4758       TNFSF4
+   Spleen_Naive_B Spleen_Naive_B._.SMO-1           32684        PTPRC
+  Lung_Th17/CD4_T Lung_Th17/CD4_T._.SM..           45414        PTPRC
+  Lung_Th17/CD4_T Lung_Th17/CD4_T._.SM..           48430        PTPRC
+              ...                    ...             ...          ...
+       Lung_CD8_T     Lung_CD8_T._.SMO-8            8714        TBX21
+       Lung_Other     Lung_Other._.SMO-9           15886 LOC102724596
+   Spleen_Naive_B Spleen_Naive_B._.COB..             452       ZNF652
+        Lung_Treg      Lung_Treg._.SMO-2           14475    TNFRSF11A
+        Lung_Treg      Lung_Treg._.SMO-5            9957      SLC7A10
+                     peakType distToTSS  nearestTSS        GC       idx
+                  &lt;character&gt; &lt;integer&gt; &lt;character&gt; &lt;numeric&gt; &lt;integer&gt;
+       Lung_Other      Distal      6074  uc057niv.1    0.4271     17751
+  Spleen_Memory_B    Intronic      3003  uc001giv.4    0.3932     17818
+   Spleen_Naive_B    Intronic      4294  uc057oer.1    0.3772     19410
+  Lung_Th17/CD4_T    Intronic     12794  uc057oes.1    0.3074     19428
+  Lung_Th17/CD4_T    Intronic      9778  uc057oes.1    0.4311     19432
+              ...         ...       ...         ...       ...       ...
+       Lung_CD8_T    Intronic      8533  uc060gpu.1    0.4790      7484
+       Lung_Other    Intronic     15886  uc060hal.1    0.4671      7889
+   Spleen_Naive_B    Promoter       452  uc002iow.4    0.4611      7900
+        Lung_Treg    Intronic      8950  uc060ptv.1    0.4391      3355
+        Lung_Treg      Distal      9957  uc002num.2    0.6786      7383
+                          N distToSNP        type
+                  &lt;numeric&gt; &lt;integer&gt; &lt;character&gt;
+       Lung_Other         0         0        high
+  Spleen_Memory_B         0         0        high
+   Spleen_Naive_B         0         0         low
+  Lung_Th17/CD4_T         0         0         low
+  Lung_Th17/CD4_T         0         0         low
+              ...       ...       ...         ...
+       Lung_CD8_T         0         0        high
+       Lung_Other         0         0         low
+   Spleen_Naive_B         0         0         low
+        Lung_Treg         0         0        high
+        Lung_Treg         0         0        high
+  -------
+  seqinfo: 23 sequences from an unspecified genome; no seqlengths</code></pre>
+<pre><code>  seqnames     start       end width strand   Log2FC          FDR   MeanDiff
+1     chr5 134103305 134103805   501      * 3.447261 0.0008383540 0.09300436
+2    chr10   9010033   9010533   501      * 5.216200 0.0005034961 0.07263739
+3    chr10   9096237   9096737   501      * 4.276010 0.0166582481 0.03689451
+4    chr13  99275034  99275534   501      * 1.886747 0.0311640944 0.06950908
+  type
+1 high
+2  low
+3  low
+4  low</code></pre>
+<pre><code>            high_ePIP low_ePIP
+marker             12       16
+not_markers        19       72</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  fisher_x
+p-value = 0.02738
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 1.030143 7.648103
+sample estimates:
+odds ratio 
+  2.813649 </code></pre>
 <p>At a cutoff of 0.5 for ePIPs, enhancers with high ePIPs show
-significant enrichment for the overlapped OCRs.</p>
+significant enrichment for overlapping OCRs in our data.</p>
 <pre><code>               high_ePIP low_ePIP
 overlapped            27       81
 not_overlapped         8       75</code></pre>
@@ -909,55 +1039,7 @@ odds ratio
 <div id="size-distribution-for-ethans-list-of-enhancers"
 class="section level2">
 <h2>Size distribution for Ethan’s list of enhancers</h2>
-<p><img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-6-1">
-Past versions of unnamed-chunk-6-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-6-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/aa9d85bea2df4c514a18def49c51e27bbba23bb5/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-6-1.png" target="_blank">aa9d85b</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/b9acdaf064dee333c2065063a91dc90f72af2067/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-6-1.png" target="_blank">b9acdaf</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="processing-chromatin-accessibility-separately-for-each-tissue"
 class="section level2">
@@ -977,55 +1059,7 @@ with high ePIP and those with low ePIPs
 <li>Spleen subsets show not much differences between peaks with high
 ePIPs and those with low ePIPs.</li>
 </ul>
-<p><img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-8-1.png" width="864" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-8-1">
-Past versions of unnamed-chunk-8-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-8-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/aa9d85bea2df4c514a18def49c51e27bbba23bb5/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-8-1.png" target="_blank">aa9d85b</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/b9acdaf064dee333c2065063a91dc90f72af2067/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-8-1.png" target="_blank">b9acdaf</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-9-1.png" width="864" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div
@@ -1044,134 +1078,24 @@ regardless of PIPs</li>
 <li>Bottom section: all peaks overlapping enhancers with high ePIPs</li>
 </ul>
 <p>Y-axis: peak coordinate in hg38, aoa-ePIP, coa-ePIP, nearest gene
-<img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-12-1.png" width="1344" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-12-1">
-Past versions of unnamed-chunk-12-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-12-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/aa9d85bea2df4c514a18def49c51e27bbba23bb5/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-12-1.png" target="_blank">aa9d85b</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/b9acdaf064dee333c2065063a91dc90f72af2067/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-12-1.png" target="_blank">b9acdaf</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<ul>
-<li>Overall, we see more chromatin near asthma fine-mapped variants are
-more open in lungs than spleens.</li>
-<li>shared across all lymphocytes
-<ul>
-<li>IL2RA, SMAD3, BACH2, RPS26</li>
-</ul></li>
-<li>shared across T subsets
-<ul>
-<li>GAL3ST2, CXCR5, CCR7,</li>
-</ul></li>
-<li>specific to NK/CD8 T cells:
-<ul>
-<li>IRF1, TM9SF2, TSLP, LINC00298, TBX21,</li>
-</ul></li>
-<li>specific to Treg:
-<ul>
-<li>TNFRSF11A, SLC7A10 (both specific to lungs)</li>
-</ul></li>
-</ul>
+<img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-13-1.png" width="1344" style="display: block; margin: auto;" />
+* Overall, we see more chromatin near asthma fine-mapped variants are
+more open in lungs than spleens. * shared across all lymphocytes -
+IL2RA, SMAD3, BACH2, RPS26 * shared across T subsets - GAL3ST2, CXCR5,
+CCR7, * specific to NK/CD8 T cells: - IRF1, TM9SF2, TSLP, LINC00298,
+TBX21, * specific to Treg: - TNFRSF11A, SLC7A10 (both specific to
+lungs)</p>
 </div>
 <div
 id="heatmaps-for-accessibiltiy-across-cell-types-in-case-and-control"
 class="section level3">
 <h3>Heatmaps for accessibiltiy across cell types in case and
 control</h3>
-<p><img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-16-1.png" width="1344" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-16-1">
-Past versions of unnamed-chunk-16-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-16-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/aa9d85bea2df4c514a18def49c51e27bbba23bb5/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-16-1.png" target="_blank">aa9d85b</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/b9acdaf064dee333c2065063a91dc90f72af2067/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-16-1.png" target="_blank">b9acdaf</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Overall, chromatin levels in control are more open than those in
-case. Majoriy of CD4 subsets have lower chromatin accessibility, and
-NK/CD8+ T cells show higher accessibility near several regions, which
-turns out to be open in negative controls as well.</p>
+<p><img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-17-1.png" width="1344" style="display: block; margin: auto;" />
+Overall, chromatin levels in control are more open than those in case.
+Majoriy of CD4 subsets have lower chromatin accessibility, and NK/CD8+ T
+cells show higher accessibility near several regions, which turns out to
+be open in negative controls as well.</p>
 </div>
 </div>
 <div id="validate-cell-type-specific-ocrs-near-asthma-risk-enhancers"
@@ -1196,55 +1120,14 @@ tissue, which agrees with the differential GE analyses done for lungs
 only. As a result, we see consistency in the differential expression and
 the heatmap of normalized expression.</p>
 <pre><code>Warning: The input is a data frame-like object, convert it to a matrix.</code></pre>
-<p><img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-20-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-20-1">
-Past versions of unnamed-chunk-20-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-20-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/aa9d85bea2df4c514a18def49c51e27bbba23bb5/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-20-1.png" target="_blank">aa9d85b</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/b9acdaf064dee333c2065063a91dc90f72af2067/docs/figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-20-1.png" target="_blank">b9acdaf</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-02-18
-</td>
-</tr>
-</tbody>
-</table>
+<p><img src="figure/linking_lung_celltype_OCRs_with_asthma_genetics.Rmd/unnamed-chunk-21-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 </div>
+<div id="differential-accessibility-test-between-case-and-control"
+class="section level2">
+<h2>Differential accessibility test between case and control</h2>
+<p>For each peak, select the cell-type with the highest accessibility to
+perform DA test separately for each condition.</p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1317,7 +1200,6 @@ loaded via a namespace (and not attached):
 [73] cachem_1.1.0             xfun_0.49                restfulr_0.0.15         
 [76] later_1.4.1              tibble_3.2.1             iterators_1.0.14        
 [79] GenomicAlignments_1.34.1 cluster_2.1.8            statmod_1.5.0           </code></pre>
-</div>
 </div>
 </div>
 </div>
