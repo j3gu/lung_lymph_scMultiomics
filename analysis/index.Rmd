@@ -50,7 +50,8 @@ Topic models on lung scATAC-seq data
 
 
 ### Linking to asthma genetics
-- [Identify cell-types with open chromatin for asthma fine-mapped regions](linking_lung_celltype_OCRs_with_asthma_genetics.html)
+
+[Identify cell-types with open chromatin for asthma fine-mapped regions](linking_lung_celltype_OCRs_with_asthma_genetics.html)
 
 
 ### Slides download

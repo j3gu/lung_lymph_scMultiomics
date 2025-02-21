@@ -24,9 +24,10 @@ What we have:
 
 1. Define asthma candidate enhancers by ePIPs $\ge$ 0.5
   * the selected cutoff shows strong enrichment with overlapping OCRs
-  * randomly sampling 10 enhancers from low ePIPs as negative ctrls 
+  * randomly sampling 10 enhancers from low ePIPs as negative controls 
 2. Overlap with the joint set of peaks in our dataset
   * peaks need to contain fine-mapped variants
+  * for multiples peaks overlapping one enhancer sequence, choose the one with maximum mean accessibility
 3. Compute average levels across cell types 
   
 ```{r setup, include=FALSE}
@@ -126,7 +127,6 @@ f <- fread("data/CRE_0_asthma_fine-mapping_summary.txt")
 #   }))
 # f[f$pos == ""] <- 137605991 # fill in the empty position
 # write.table(f, "../data/CRE_0_asthma_fine-mapping_summary.txt", quote = F, sep = "\t", row.names = F)
-
 ```
 
 
@@ -181,7 +181,49 @@ gr_peaks$type <- gr_hg38[paired@to]$type
 
 ## Enrichment test for enhancers with high ePIPs
 
-At a cutoff of 0.5 for ePIPs, enhancers with high ePIPs show significant enrichment for the overlapped OCRs. 
+At a cutoff of 0.5 for ePIPs, we don't see significant enrichment of enhancers with high ePIPs overlapping cell-type specific OCRs.
+```{r}
+# load cell-type specific marker peaks
+f_markerPeaks <- readRDS("output/u19_output/diff_peak_analysis/lung_specific_DA_markerPeaks.RDS")
+markerList <- getMarkers(f_markerPeaks, 
+                         cutOff = "FDR <= 0.05 & Log2FC >= 0.585",
+                         returnGR = TRUE)
+
+gr_markers <-
+  lapply(names(markerList), function(i) {
+    paired <- findOverlaps(gr_peaks, markerList[[i]])
+    overlap_gr <- markerList[[i]][paired@to]
+    overlap_gr$type <- gr_peaks[paired@from]$type
+    return(overlap_gr)
+  })
+names(gr_markers) <- names(markerList)
+
+gr_peaks # 119 peaks in our data overlapping candidate enhancers from Ethan's list
+
+data.frame(gr_markers$CD4_T)
+
+
+count_tbl <-c()
+for(i in gr_markers){
+  count_tbl <- rbind(count_tbl, data.frame(i))
+}
+
+counts_tbl <- 
+  count_tbl %>%
+    select(seqnames, start, end, type) %>%
+    distinct() 
+
+fisher_x <- 
+  rbind(
+    table(counts_tbl$type),
+    table(gr_peaks[!gr_peaks %in% GRanges(count_tbl[, 1:3])]$type))
+    
+colnames(fisher_x) <- c("high_ePIP", "low_ePIP")
+rownames(fisher_x) <- c("marker", "not_markers")
+fisher_x
+fisher.test(fisher_x)
+```
+At a cutoff of 0.5 for ePIPs, enhancers with high ePIPs show significant enrichment for  overlapping OCRs in our data.
 ```{r}
 fisher_x = rbind(table(gr_hg38[unique(paired@to)]$type), 
                  table(gr_hg38[-paired@to, ]$type))
@@ -569,28 +611,88 @@ GE_heatmap<-
 GE_heatmap
 ```
 
+## Differential accessibility test between case and control
+
+For each peak, select the cell-type with the highest accessibility to perform DA test separately for each condition.
 
 ```{r eval = F}
 library(edgeR)
+colnames(countBySample) <- gsub("/",".", colnames(countBySample))
+y <- DGEList(counts=countBySample[, metadata$Tissue == "Lung"])
+y <- calcNormFactors(y)
 
-Batch <- factor(metadata$batch)
-Sample <- factor(metadata$Sample)
-CellType <- factor(metadata$major)
+# selected cell types to be tested for each peak (max in lung or spleen)
+ctrl_selected <- apply(lung_mat, 1, function(i){colnames(lung_mat)[which(i == max(i))]})
+case_selected <- apply(case_mat, 1, function(i){colnames(case_mat)[which(i == max(i))]})
+selected <- cbind(ctrl_selected, case_selected)
+selected <- selected[grepl(":", rownames(selected)), ]
 
-design <- model.matrix( ~ Batch  + CellType)
-rownames(design) <- colnames(d)
-design
+lung_metadata <- metadata[metadata$Tissue == "Lung", ]
 
-d <- estimateDisp(d, design, robust=TRUE)
-fit <- glmFit(d, design)
-lrt <- glmLRT(fit)
+# filter to selected peaks to be tested
+y$counts <- y$counts[c(paired@from[gr_peaks$type == "high"],
+                       paired@from[which(gr_peaks$type == "low")[idx]]), ]
 
-de <- decideTestsDGE(lrt)
-summary(de)
+# check whether selected peaks match the ones on heatmap
+coords <- as.character(
+  gr_peaks[c(which(gr_peaks$type == "high"), which(gr_peaks$type == "low")[idx])])
+coords2 <- 
+  unlist(lapply(rownames(lung_mat), function(i){strsplit(i, "_")[[1]][1]}))
+print("Check whether the selected peaks match the ones on heatmap: ")
+length(intersect(coords, coords2)) == (dim(lung_mat)[1]-1)
 
-plotMD(lrt)
-abline(h=c(-1, 1), col="blue")
-result_paired <- as.data.frame(topTags(lrt, n = nrow(counts)))
+# remove sample with all zeros for the selected peaks
+lung_metadata$PredCellType <- gsub("/", ".", lung_metadata$PredCellType)
+rm_idx = which(colSums(y$counts) == 0)
+y$counts <- y$counts[, -rm_idx]
+y$samples <- y$samples[-rm_idx, ]
+lung_metadata <- lung_metadata[-rm_idx, ]
+
+# perform DE tests across status one cell type at a time
+tests <- list()
+for (c in unique(lung_metadata$PredCellType)) {
+  sample_idx = which(lung_metadata$PredCellType == c)
+  covariates = lung_metadata[sample_idx,]
+  d = DGEList(counts = y$counts[, sample_idx])
+  Batch <- factor(covariates$Batch)
+  Status <- factor(covariates$Status)
+  design <- model.matrix(~ Batch + Status)
+  rownames(design) <- colnames(d)
+  d <- estimateDisp(d, design, robust = TRUE)
+  fit <- glmFit(d, design)
+  lrt <- glmLRT(fit)
+  tests[[c]] <-
+    as.data.frame(lrt$table)
+}
+
+# perform multiple testing for selected peaks 
+selected_tests <-list()
+
+for(i in 1:dim(selected)[1]){
+  for(j in colnames(selected)){
+      selected_tests[[j]] <- 
+        rbind(
+          selected_tests[[j]],
+          data.frame(peak = rownames(selected)[i],
+                     tests[[selected[i,j]]][i, ])
+      )
+  }
+}
+
+selected_tests$case_selected$FDR <- 
+  p.adjust(selected_tests$case_selected$PValue,
+           method = "fdr")
+selected_tests$ctrl_selected$FDR <- 
+  p.adjust(selected_tests$ctrl_selected$PValue,
+           method = "fdr")
+
+par(mfrow = c(1,2))
+hist(selected_tests$ctrl_selected$FDR,
+     main = "control-selected tests",
+     xlab = "FDR")
+hist(selected_tests$case_selected$FDR,
+     main = "case-selected tests",
+     xlab = "FDR")
 ```
 
 
