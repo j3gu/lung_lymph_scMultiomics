@@ -1,0 +1,549 @@
+---
+title: "Heritability_enrichment_analysis"
+output: html_document
+date: "`r Sys.Date()`"
+author: 'Jing Gu'
+---
+# Objectives
+
+* characterize and compare our identified open chromatin peaks with Wang et al.
+* estimate heritability enrichment for lung-specific immune cells
+
+## Stratified LD-score regression
+
+* `tau*` used to estimate cell-type specific enrichment conditional on other annotations
+* `_prop_h2`*`total_h2` used to estimate heritability enrichment, a robust quantity regardless of annotation groups  
+
+`_prop_h2`: %heritability explained by one annotation $C_c$
+
+$$h(C_c) = \sum_{j \in C_c}\hat {Var}({\beta_j)} 
+         = \sum_{j \in C_c}\sum_{c':j \in C_{c'}} \hat \tau_c$$
+For overlapping annotations, the heritability for each annotation is calculated as the sum of the coefficients $\hat \tau_c$ of all annotations, where each variant j belongs to. 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+source("~/projects/funcFinemapping/code/make_plots.R")
+library(dplyr)
+library(ArchR)
+library(GenomicRanges)
+library(colorRamp2)
+library(data.table)
+library(rtracklayer)
+library(ComplexHeatmap)
+ch=import.chain("~/resources/genomes/chain_files/hg38ToHg19.over.chain")
+trait_snp_h2g <- 
+  data.frame(
+    trait = c("Height", "BMI", "Allergy", "AOA", "COA"),
+    perSNPh2g = c(0.53, 0.217, 0.0804, 0.03, 0.0422)/5961159)
+proj <- loadArchRProject("output/u19_analysis/u19_peaks_tissue/")
+```
+
+## Characterize peaks and compare with blood datasets
+
+* snATAC-seq from PBMC samples: Benaglio et al 2023
+* bulk ATAC-seq for FACS sorted Hematopoietic cells: Calderon et al. 
+
+```{r eval = F}
+peakDIR = "/home/jinggu/cluster/projects/u19_multiomics/analyses/u19_peaks_status/PeakCalls"
+bedDIR = "/home/jinggu/cluster/data/features/formatted/u19_multiomics"
+peaks<-list()
+for(i in list.files(peakDIR, pattern = ".rds")){
+  term <- strsplit(i, "-")[[1]][1]
+  peaks[[term]] <- readRDS(paste0(peakDIR, i))
+}
+
+peak_T <- Reduce(union, peaks[grep("T", names(peaks))])
+peak_B <-union(peaks$Lung_Memory_B, peaks$Lung_Naive_B)
+peak_NK <- peaks$Lung_NK
+
+peakDIR <-"~/cluster/projects/u19_multiomics/analyses/u19_peaks_major/PeakCalls/"
+peak_files<-list.files(peakDIR, pattern = ".rds")[c(1, 11, 12, 22)]
+# liftover to hg19
+for(i in peak_files){
+  cur <- readRDS(paste0(peakDIR, i))
+  print(i)
+  print(length(cur))
+  cur <- cur[1:30000,]
+  seqlevelsStyle(cur) <- "UCSC"  # necessary
+  cur19 <- unlist(liftOver(cur, ch))
+  bed <- data.frame(cur19)
+  bed$names <- as.character(cur19)
+  bed$seqnames <- gsub("chr", "", bed$seqnames)
+  write.table(bed %>% select(seqnames, start, end), #names, score, strand),
+              sprintf("%s/full_30K/%s.bed", bedDIR, strsplit(i, "-")[[1]][1]), quote = F,
+              row.names = FALSE, sep='\t', col.names = FALSE)
+}
+
+
+ch=import.chain("~/resources/genomes/chain_files/hg38ToHg19.over.chain")
+
+# liftover to hg19
+for(i in 1:12){
+  cur <- GRanges(tbl[,i])
+  seqlevelsStyle(cur) <- "UCSC"  # necessary
+  cur19 <- unlist(liftOver(cur, ch))
+  bed <- data.frame(cur19)
+  write.table(bed %>% select(seqnames, start, end),
+              sprintf("~/cluster/data/features/formatted/u19_multiomics/topics/top50K_partial/topic%s.bed", i), quote = F,
+              row.names = FALSE, sep='\t', col.names = FALSE)
+}
+```
+
+
+## Compare with single-cell lung datasets (Wang et al2020)
+
+A barplot of summarizing peak counts by types show Wang et al. identified more peaks in distal and exonic regions but fewer ones in promoters compared to our dataset. The color indicates whether each query peak in U19 overlaps with the one in Wang et al. We see more than 50% peaks in U19 overlapped with ones in Wang et al., while these overlapped peaks take up less than 50% of peaks in Wang et al.
+```{r}
+#proj<-loadArchRProject("~/cluster/projects/u19_multiomics/analyses/all_sample_DA_cross_tissues/")
+ref.T<-readRDS("data/Wang_2020_T_cell_peaks_metadata.RDS")
+data.T<-readRDS("data/U19_T_cell_peaks_metadata.RDS")
+
+# check peak overlapping (defined by overlapping at least ~half of min peak length)
+overlaps<-findOverlaps(data.T, ref.T, minoverlap = 100)
+data.T$overlapped<-FALSE
+data.T$overlapped[overlaps@from]<-TRUE
+ref.T$overlapped<-FALSE
+ref.T$overlapped[overlaps@to]<-TRUE
+
+peak.tbl<-rbind(cbind(data.T$peakType, data.T$overlapped, "U19"),
+                cbind(ref.T$peakType, ref.T$overlapped, "Wang2020"))
+colnames(peak.tbl)<-c("PeakType", "Overlapped", "Dataset")
+
+
+p <- ggplot(data.frame(peak.tbl),
+            aes(x = PeakType, fill = Overlapped)) +
+  geom_bar() + facet_wrap( ~ Dataset) + labs(fill = "Peaks Overlapped")
+p
+
+#TODO: compare B cells and NK cells 
+```
+
+## Different approaches for selecting peaks for enrichment test
+
+### Peak overlapping across cell types 
+
+We first grouped cells by tissue and cell-type pair and then called peaks separately. This allows us to identify peaks specific to each pair of tissue and cell type, as shown in the heatmap. The highest overlap percent across all is 50%, and some spleen T subsets show more distinct peaks compared to all other cell types.
+
+```{r}
+# prepare inputs for LDSC
+dataDIR <-"~/cluster/projects/u19_multiomics/analyses/u19_peaks_tissue/PeakCalls/"
+pfiles <-list.files(dataDIR, pattern = ".rds")
+d_peaks <- list()
+for(p in pfiles){
+  fname = strsplit(p, "-")[[1]][1]
+  f <- readRDS(paste0(dataDIR, p))
+  d_peaks[[fname]] <- f
+}
+
+# union set of peaks
+union_peaks <- proj@peakSet
+
+# quantify peak overlapping 
+print("Check whether all peaks called from individual cell types overlap with joint peak set:")
+unlist(lapply(d_peaks, function(i){
+  paired  = findOverlaps(i, union_peaks)
+  return(length(unique(paired@from)) == length(i))
+}))
+
+k = length(d_peaks)
+mat <- matrix(nrow = k, ncol = k)
+for(i in 1:k){
+  for(j in 1:k){
+    numOverlaps <-length(intersect(d_peaks[[i]], d_peaks[[j]]))
+    mat[i, j] <- numOverlaps/sum(length(d_peaks[[i]]),
+                                 length(d_peaks[[j]]))
+  }
+}
+
+lung_mat <- mat[1:9, 1:9]
+colnames(lung_mat) <- gsub("Lung_", "", names(d_peaks)[1:9])
+rownames(lung_mat) <- gsub("Lung_", "", names(d_peaks)[1:9])
+spleen_mat <- mat[10:18, 10:18]
+colnames(spleen_mat) <- gsub("Spleen_", "", names(d_peaks)[10:18])
+rownames(spleen_mat) <- gsub("Spleen_", "", names(d_peaks)[10:18])
+
+    
+col_fun = colorRamp2(c(0.2, 0.5), c("white", "red"))
+#col_fun = colorRamp2(c(0, 10, max(mat[mat != 100])), c("blue", "white", "red"))
+
+lung_heatmap <-
+  Heatmap(lung_mat,
+          name = "percent of peaks overlapped",
+          col = col_fun,
+          column_title = "Lung") 
+
+spleen_heatmap <-
+  Heatmap(spleen_mat,
+          name = "percent of peaks overlapped",
+          col = col_fun,
+          column_title = "Spleen") 
+
+lung_heatmap
+spleen_heatmap
+```
+
+```{r, eval = F, fig.height = 8}
+colnames(mat) <- names(d_peaks)
+rownames(mat) <- names(d_peaks)
+joint_heatmap <-
+  Heatmap(mat,
+          name = "percent of peaks overlapped",
+          col = col_fun,
+          cluster_columns = T,
+          cluster_rows = T,
+          column_title = "cross-tissue comparison") 
+joint_heatmap
+```
+### Cell-type specific peaks 
+
+- identify marker peaks for B, T, NK cells only
+  - criteria: FDR <= 0.2 & Log2FC >= 0.5
+- pair-wise comparison between lymphocytes of lungs and spleens 
+- Lower overlapping of marker peaks for T cells with other cell types and across tissues
+```{r}
+markerPeaks <- readRDS("output/u19_output/diff_peak_analysis/by_celltype/major_lymph_markerPeaks.RDS")
+markerList <- getMarkers(markerPeaks, 
+                         cutOff = "FDR <= 0.2 & Log2FC >= 0.5",
+                         returnGR = TRUE)
+mat <- matrix(nrow = length(markerList),
+              ncol = length(markerList))
+for(i in 1:length(markerList)){
+  for(j in 1:length(markerList)){
+    mat[i, j] = length(intersect(markerList[[i]],
+                                 markerList[[j]]))
+  }
+}
+colnames(mat) <- names(markerList)
+rownames(mat) <- colnames(mat)
+print("A table of number of overlapping marker peaks between cell types:")
+mat
+# for(i in names(markerList)){
+#   cur <- markerList[[i]]
+#   cur19 <- unlist(liftOver(cur, ch)) 
+#   bed <- data.frame(cur19 + 250)
+#   bed$seqnames <- gsub("chr", "", bed$seqnames)
+#   write.table(
+#     bed[, 1:3], 
+#     sprintf("~/cluster/data/features/formatted/u19_multiomics/CellTypeSpecific/unsorted/%s.bed", i),
+#     quote = F, row.names = F, sep = "\t", col.names = F)
+# }
+```
+### Preparing inputs for LDSC
+
+1. Map peaks called from individual cell type to the joint peak set
+    - Using the same set of peaks for all the analyses
+2. Concatenate peaks from CD4 T subsets 
+    - all peaks from the joint peak set are disjoint
+```{r eval = F}
+outDIR = "/home/jinggu/cluster/data/features/formatted/u19_multiomics/joint_set/"
+# Map individually called peak to joint peak set
+d_jointPeaks <- list()
+for(i in names(d_peaks)){
+  paired <- findOverlaps(d_peaks[[i]], union_peaks)
+  d_jointPeaks[[i]] <- unique(union_peaks[paired@to])
+}
+
+# Merge peaks by major cell types 
+# all peaks from the joint peak set are disjoint
+idx <- 
+  sort(c(grep("CD4", names(d_jointPeaks)),
+         grep("Treg", names(d_jointPeaks))))
+
+d_major <- d_jointPeaks
+d_major[["Lung_CD4_T_all"]] <- d_jointPeaks[[idx[1]]]
+d_major[["Spleen_CD4_T_all"]] <- d_jointPeaks[[idx[5]]]
+
+for(i in 2:4){
+  d_major[["Lung_CD4_T_all"]] <- union(d_major[["Lung_CD4_T_all"]], d_jointPeaks[[idx[i]]])
+  d_major[["Spleen_CD4_T_all"]] <- union(d_major[["Spleen_CD4_T_all"]], d_jointPeaks[[idx[i+4]]])
+}
+
+# convert to hg19
+d_major_hg19 <- list()
+for(i in names(d_major)){
+  cur = d_major[[i]]
+  seqlevelsStyle(cur) = "UCSC"
+  d_major_hg19[[i]] = unlist(liftOver(cur, ch))
+}
+
+for(i in names(d_major_hg19)){
+  bed <- data.frame(d_major_hg19[[i]])[, 1:3]
+  bed[, 1] <- gsub("chr", "", bed[, 1])
+  write.table(bed, paste0(outDIR, sprintf("%s.bed", i)),
+              row.names = F, quote = F, col.names = F, sep = "\t")
+}
+
+
+```
+
+### Examine the peaks before/after liftover
+
+The union set of peaks from U19 atac-seq data were first lifted over to hg19. The following table shows the change in genome builds only made 1% of peaks have inconsistent width.
+```{r eval = FALSE}
+sumstats<-c()
+for(i in unique(names(subPeaks))){
+  #print(i)
+  cur<-subPeaks[names(subPeaks) == i]
+  seqlevelsStyle(cur) = "UCSC"  # necessary
+  cur19 = unlist(liftOver(cur, ch))
+  percentPeaks<-c(round(sum(data.frame(ranges(cur19))$width != 501)/
+                          length(cur19), 3))
+  sumstats<-rbind(sumstats, 
+                  c(length(cur19)-length(cur),
+                  length(cur19),
+                  percentPeaks))
+
+  #write.table(data.frame(seqnames(cur19), ranges(cur19)), 
+            #  sprintf("/home/jinggu/cluster/data/features/processed/u19_multiomics/GRN_batch/%s.bed", i), quote = F, row.names = FALSE, sep='\t')
+}
+
+colnames(sumstats)<-c("nPeak_difference", "nPeak_hg19", "percentPeak_unequal_width")
+DT::datatable(data.frame(unique(names(subPeaks)), sumstats, row.names = 1))
+```
+
+
+## Enrichment results
+
+```{r}
+# make a summary table for LDSC outputs from individual test
+make_summary_table <- 
+  function(traits, 
+           referenceTab, # a table of two columns: input annotations and displayed annotations
+           baseline="baseline_v1.2"
+           ){
+  
+  output_df<-c()
+  for (trait in traits){
+    for (annot in referenceTab[,1]){
+      f<-read.table(
+        sprintf("~/cluster/projects/ldsc_enrichment/%s/%s/%s.results", 
+              trait, baseline, annot), header = T)
+      output_df<-rbind(output_df, cbind(trait, f[!grepl("L2_0", f$Category),]))
+      }
+  }
+  
+  # trim off suffix of labels
+  output_df$Category <- unlist(
+      lapply(output_df$Category, function(i){strsplit(i, "L2")[[1]][1]})
+      )
+  
+  # change order and labels
+  output_df$Category <- factor(output_df$Category,
+                      levels = referenceTab[, 1],
+                      labels = referenceTab[, 2])
+  # change trait name and order
+  output_df$trait<-
+  factor(output_df$trait,
+        levels = c("height", "bmi", "LDL", "HDL", "scz", "allergy", "aoa_ukb", "coa_ukb"),
+        labels = c("Height", "BMI", "LDL", "HDL", "SCZ", "Allergy", "AOA", "COA"))
+    
+  return(output_df) 
+  }
+
+```
+
+### Individual enrichment test across all cell types
+
+For individual test, the quantity of heritability enrichment is used to demonstrate overall contribution of each annotation. We can use p-values for cell-type specific coefficients to compare their contributions across cell types. 
+
+Legends:
+
+* x-axis: heritability enrichment 
+* p-values on top of the data points: p-values for tau
+
+**Peaks called from individual cell type**
+
+All lung and spleen lymphocytes show significant enrichment for genetic risks of asthma and related diseases, but not for BMI and height. B cells are less significant than T and NK cells.
+```{r fig.width = 10, fig.height = 4}
+tissues <- c("Lung", "Spleen")
+ct_order <- c("B", "NK", "T")
+trait_list <- c("height", "bmi", "allergy", "aoa_ukb", "coa_ukb")
+annotations <- unlist(lapply(ct_order, function(i){paste(tissues, i, sep="_")}))
+annotations <- cbind(annotations, annotations)
+  
+ldsc_tbl<-make_summary_table(traits = trait_list, 
+                             referenceTab = annotations,
+                             baseline="baseline_v1.2")
+
+snp_enrichment_plot(ldsc_tbl, 
+                    log.based = F, dot.size = 2, textVjust = -0.8,
+                    label.size = 4, tolabel = "pval") + 
+  xlim(c(-5, 35)) + 
+  facet_grid(. ~ trait) 
+```
+
+**cell-type specific peaks**
+
+To avoid unstable estimation, we extended each cell-type specific peak by 250bp. Spleen T cells were not shown due to very low number of cell-type specific peaks. Among all cell-type specific peaks, Only lung T cells show significant enrichment for Allergy and COA, but not others.  
+
+```{r fig.width = 10, fig.height = 4}
+annotations <- unlist(lapply(ct_order, function(i){paste(tissues, i, sep="_")}))
+annotations <- cbind(paste0(annotations, "_ct250"), annotations)
+  
+ldsc_tbl<-make_summary_table(traits = trait_list, 
+                             referenceTab = annotations,
+                             baseline="baseline_v1.2")
+
+snp_enrichment_plot(ldsc_tbl %>% 
+                      filter(Category != "Spleen_T") %>%
+                      mutate(Enrichment_p = 2*pnorm(-abs(Coefficient_z.score))), 
+                    log.based = F, dot.size = 2, textVjust = -0.8,
+                    label.size = 4, tolabel = "pval") + 
+  facet_grid(. ~ trait) 
+```
+
+### Joint test for all major lymphocytes
+
+Legends:
+
+* x-axis: tau* enrichment calculated based on cell-type specific coefficients (tau)
+* p-values on top of the data points: p-values for tau
+
+**Individual called peaks** 
+
+Lung T cells remain significant conditional on all other major lymphocytes.
+```{r fig.width = 14, fig.height = 4}
+ldsc_tbl <- c()
+for (trait in trait_list) {
+    f <- read.table(sprintf("~/cluster/projects/ldsc_enrichment/%s/baseline_v1.2/Joint_lymph.results", trait), 
+                    header = T)
+    f <- f[!grepl("L2_0", f$Category), ]
+    f$Category <- unlist(
+      lapply(f$Category, function(i){strsplit(i, "L2")[[1]][1]})
+      )
+    ldsc_tbl<- 
+      rbind(ldsc_tbl, cbind(trait, f))
+}
+
+# change trait name and order
+ldsc_tbl$trait<-
+  factor(ldsc_tbl$trait,
+        levels = c("height", "bmi", "allergy", "aoa_ukb", "coa_ukb"),
+        labels = c("Height", "BMI",  "Allergy", "AOA", "COA"))
+
+# change order and labels
+ldsc_tbl$Category <- factor(ldsc_tbl$Category,
+                      levels = annotations[, 2])
+# compute tau*
+
+sd_annot <-
+  data.frame(Category = annotations[, 2],
+             annot_std_error = unlist(lapply(annotations[,2], function(i){get_sd_annot(i)})))
+
+ldsc_tbl <- left_join(ldsc_tbl, trait_snp_h2g)
+ldsc_tbl <- left_join(ldsc_tbl, sd_annot)
+ldsc_tbl$tau_star <-  ldsc_tbl$Coefficient/ldsc_tbl$perSNPh2g * ldsc_tbl$annot_std_error
+
+corr_ldsc_tbl <-
+  ldsc_tbl %>% mutate(Enrichment = tau_star,
+                      Enrichment_std_error = Coefficient_std_error/perSNPh2g*annot_std_error,
+                      Enrichment_p = pnorm(-abs(Coefficient_z.score))*2,
+                      trait = factor(trait, levels = c("Height", "BMI",  "Allergy", "AOA", "COA")))
+  
+snp_enrichment_plot(
+  corr_ldsc_tbl, log.based = F, dot.size = 2, 
+  label.size = 4, textVjust = -0.8, tolabel = "pval") + 
+  xlab("tau* enrichment") + 
+  facet_grid(. ~ trait) #+ xlim(-4, 10)
+```
+**Cell-type specific peaks**
+
+To estimate cell-type specific heritability, we need to sum up the coefficients for SNPs uniquely contained in the annotation. The approximate way is to estimate with cell-type specific peaks. Here we estimated lung T specific peaks explain around 5% heritability of Allergy and COA risks.
+```{r fig.width = 14, fig.height = 3}
+ldsc_tbl <- c()
+for (trait in trait_list) {
+    f <- read.table(sprintf("~/cluster/projects/ldsc_enrichment/%s/baseline_v1.2/Joint_ct250.results", trait), 
+                    header = T)
+    f <- f[!grepl("L2_0", f$Category), ]
+    f$Category <- unlist(
+      lapply(f$Category, function(i){strsplit(i, "L2")[[1]][1]})
+      )
+    ldsc_tbl<- 
+      rbind(ldsc_tbl, cbind(trait, f))
+}
+
+# change trait name and order
+ldsc_tbl$trait<-
+  factor(ldsc_tbl$trait,
+        levels = c("height", "bmi", "allergy", "aoa_ukb", "coa_ukb"),
+        labels = c("Height", "BMI",  "Allergy", "AOA", "COA"))
+
+annotations <- unlist(lapply(ct_order, function(i){paste(tissues, i, sep="_")}))
+annotations <- cbind(paste0(annotations, "_ct250"), annotations)
+# change order and labels
+ldsc_tbl$Category <- factor(ldsc_tbl$Category,
+                      levels = annotations[, 1],
+                      labels = annotations[, 2])
+# compute tau*
+
+sd_annot <-
+  data.frame(Category = annotations[, 2],
+             annot_std_error = unlist(lapply(annotations[, 1], function(i){get_sd_annot(i)})))
+
+ldsc_tbl <- left_join(ldsc_tbl, trait_snp_h2g)
+ldsc_tbl <- left_join(ldsc_tbl, sd_annot)
+ldsc_tbl$tau_star <-  ldsc_tbl$Coefficient/ldsc_tbl$perSNPh2g * ldsc_tbl$annot_std_error
+
+corr_ldsc_tbl <-
+  ldsc_tbl %>% mutate(Enrichment = tau_star,
+                      Enrichment_std_error = Coefficient_std_error/perSNPh2g*annot_std_error,
+                      Enrichment_p = pnorm(-abs(Coefficient_z.score))*2,
+                      trait = factor(trait, levels = c("Height", "BMI",  "Allergy", "AOA", "COA")))
+  
+snp_enrichment_plot(
+  corr_ldsc_tbl, log.based = F, dot.size = 2,
+  label.size = 4, nudgeX = 0, textVjust = -0.8, tolabel = "h2g") + 
+  xlab("tau* enrichment") + 
+  facet_grid(. ~ trait) #+ xlim(-4, 10)
+```
+
+### Joint test for Lung T subsets
+
+I used peaks called from individual cell type to run joint enrichment analyse. Regulatory T cells remain significantly enriched for genetic risks for allergy and AOA, conditional on all other lung T subsets.
+```{r fig.width = 12, fig.height = 4}
+ldsc_tbl <- c()
+for (trait in trait_list) {
+    f <- read.table(sprintf("~/cluster/projects/ldsc_enrichment/%s/baseline_v1.2/Joint_lung.results", trait), 
+                    header = T)
+    f <- f[!grepl("L2_0", f$Category), ]
+    f$Category <- unlist(
+      lapply(f$Category, function(i){strsplit(i, "L2")[[1]][1]})
+      )
+    ldsc_tbl<- 
+      rbind(ldsc_tbl, cbind(trait, f))
+    }
+
+# change trait name and order
+ldsc_tbl$trait<-
+  factor(ldsc_tbl$trait,
+        levels = c("height", "bmi", "allergy", "aoa_ukb", "coa_ukb"),
+        labels = c("Height", "BMI",  "Allergy", "AOA", "COA"))
+
+annotations <- paste0("Lung_", c("CD8_T", "CD4_T", "CD8.CD4_T", "Th17_T", "Treg_T"))
+annotations <- cbind(annotations, gsub("Lung_", "", annotations))
+
+# change order and labels
+ldsc_tbl$Category <- factor(ldsc_tbl$Category,
+                      labels = annotations[, 2])
+# compute tau*
+
+sd_annot <-
+  data.frame(Category = annotations[, 2],
+             annot_std_error = unlist(lapply(annotations[,1], function(i){get_sd_annot(i)})))
+
+ldsc_tbl <- left_join(ldsc_tbl, trait_snp_h2g)
+ldsc_tbl <- left_join(ldsc_tbl, sd_annot)
+ldsc_tbl$tau_star <-  ldsc_tbl$Coefficient/ldsc_tbl$perSNPh2g * ldsc_tbl$annot_std_error
+
+corr_ldsc_tbl <-
+  ldsc_tbl %>% mutate(Enrichment = tau_star,
+                      Enrichment_std_error = Coefficient_std_error/perSNPh2g*annot_std_error,
+                      Enrichment_p = pnorm(-abs(Coefficient_z.score))*2,
+                      trait = factor(trait, levels = c("Height", "BMI",  "Allergy", "AOA", "COA")))
+  
+snp_enrichment_plot(
+  corr_ldsc_tbl, log.based = F, tolabel = "pval",
+  dot.size = 1, label.size = 4,
+  textVjust = -0.8) + xlab("tau* enrichment") + 
+  facet_grid(. ~ trait) #+ xlim(-6, 10)
+```
+
