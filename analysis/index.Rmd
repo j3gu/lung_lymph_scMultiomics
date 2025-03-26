@@ -25,7 +25,7 @@ TBD
 
 ### Heritability enrichment
 
-[test heritability enrichment and identify the relevant cell type or tissue](u19_h2g_enrichment.html)
+[test heritability enrichment for lung immune subsets](h2g_enrichment_u19.html)
 
 
 ### Topic analysis
