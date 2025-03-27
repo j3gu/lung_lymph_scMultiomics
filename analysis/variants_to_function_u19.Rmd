@@ -496,6 +496,7 @@ spleen_heatmap<-
 ### Heatmaps for accessibiltiy across cell types
 
 **Legends** 
+
 - Top: AOA
 - Bottom: COA
 - average accessibility across peaks near equal number of confidently fine-mapped SNPs and random SNPs
@@ -516,6 +517,7 @@ We see different patterns of open chromatin across immune subsets:
 ### Heatmaps for accessibiltiy across cell types in case and control
 
 **Legends** 
+
 - Top: AOA
 - Bottom: COA
 - average accessibility across peaks near equal number of confidently fine-mapped SNPs and random SNPs
@@ -950,7 +952,7 @@ DT::datatable(
 
 ### Examining specific examples
 
-```{r fig.width = 8}
+```{r fig.width = 8, warning = F}
 selected <- 
   pData %>%
       mutate(adjP = p.adjust(pval, method = "fdr")) %>%
@@ -1078,7 +1080,7 @@ for (c in unique(metadata$MajorCellType)) {
 }
 ```
 
-```{r, fig.height = 10}
+```{r, fig.height = 10, fig.width = 8}
 load("output/u19_output/diff_peak_analysis/cross_status_immune_subsets.RData")
 
 # filter out cell types with less than 200 cells in each group
