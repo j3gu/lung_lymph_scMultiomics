@@ -1,0 +1,1253 @@
+---
+title: "Linking asthma fine-mapped regions with lung immune OCRs"
+output: html_document
+date: '`r Sys.Date()`'
+---
+
+# Objective
+
+For asthma fine-mapped regions, what cell types have open chromatin at these regions?
+
+* Shared or cell-type specific?
+* Present In lungs or spleens?
+
+For the selected regions, what genes are differentially expressed for cell types with open chromatin?
+
+## Peak selections
+
+What we have: 
+
+  * asthma fine-mapped variants grouped by enhancers using multiple functional data
+  * normalized CA and GE matrix (Feature x cell)
+    - TMM and log-normalization (column-wise)
+    - scaled to zscore within each tissue (row-wise)
+
+### Approach One
+
+- Overlapping with confident variants that contribute to asthma risk enhancers 
+  * confident enhancer sequences: ePIPs $\ge$ 0.5
+  * peaks need to be within 250 bp from confidently fine-mapped variants (PIP $\ge$ 0.3)
+  * average chromatin accessibility overlapping enhancers as negative controls 
+
+### Approach Two (selected)
+
+- Identify peaks near confidently fine-mapped variants 
+  * peaks need to be within 250 bp from confidently fine-mapped variants (PIP $\ge$ 0.3)
+  * average chromatin accessibility overlapping across a set of peaks as negative controls
+    + 67 variants with PIP $\ge 0.3$
+    + 67 randomly chosen variants
+ 
+## Differential accessibility test 
+
+1. Wilcoxon test with ArchR
+  - corrected for number of fragments and TSS enrichment
+  - pseudobulk level test
+  
+2. Negative binomial tests with EdgeR
+  - corrected for batch effects (2 instead of 5 batches)
+  - Spurious p-values occur when overly correct for batch effects
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+
+library(ArchR)
+library(dplyr)
+library(tidyr)
+library(rtracklayer)
+library(GenomicRanges)
+library(colorRamp2)
+library(scales)
+library(edgeR)
+library(ggrepel)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(ComplexHeatmap)
+#library(plotly)
+#source("~/projects/lung_immune_fine_mapping/code/archR_helper.r")
+set.seed(1)
+options(repr.plot.width=11,.plot.height=8)
+
+addArchRGenome("hg38")
+work.dir<-"~/projects/u19_multiomics/data/cellranger_outs"
+
+proj <- loadArchRProject("~/cluster/projects/u19_multiomics/analyses/u19_peaks_tissue/")
+ct_order <-
+  c(
+  "Naive_B",
+  "Memory_B",
+  "NK",
+  "CD8_T",
+  "CD8/CD4_T",
+  "CD4_T",
+  "Th17/CD4_T",
+  "Treg",
+  "Other"
+)
+```
+
+```{r eval = F}
+# group count matrix by pseudo-bulk
+peakMatrix <- readRDS("output/u19_output/u19_full_atac_by_tissue-celltype_peakMatrixRSE.RDS")
+peakMatrix$CellGroup2 <-
+  paste(peakMatrix$Sample,
+        peakMatrix$PredCellType,
+        sep = "_")
+
+countBySample <- 
+  sapply(unique(peakMatrix$CellGroup2), function(i) {
+  rowSums(assays(peakMatrix[, peakMatrix$CellGroup2 == i])$PeakMatrix)
+})
+
+countBySample <- 
+  sapply(unique(peakMatrix$CellGroup2), function(i) {
+  colSums(binary[peakMatrix$CellGroup2 == i, ])/sum(peakMatrix$CellGroup2 == i)
+})
+
+metadata <-
+  data.frame(colData(peakMatrix), row.names = NULL) %>%
+  select(Sample, PredCellType, Tissue, Batch, Sex, Age, Race, Status) %>% distinct()
+metadata$Status <-
+  factor(metadata$Status, levels = c("control", "case"))
+```
+
+```{r}
+
+aggregate_counts <- function(counts, aggr_by){
+  # aggregate by taking an average
+   aggr <-
+     sapply(levels(aggr_by), function(j) {
+        sub_counts <-
+          counts[, grepl(j, colnames(counts))] 
+        return(rowMeans(sub_counts))
+    })
+   return(aggr)
+}
+
+normalize_counts <- function(input, logNorm = TRUE){
+  # build a DGEList with EdgeR
+  d <- DGEList(counts = input, 
+               remove.zeros = TRUE)
+  
+  # compute effective library size through TMM
+  d <- calcNormFactors(d)
+  
+  # convert to CPM (without log normalization)
+  counts <- cpm(d, normalized.lib.sizes = TRUE, log = logNorm)
+  
+  return(counts)
+}
+
+peak_boxplot <- function(DGEList, peak_idx){
+  # remove samples with all zeros
+  if(sum(colSums(DGEList$counts) == 0) > 0){
+    idx = which(colSums(DGEList$counts) == 0)
+    DGEList$counts <- DGEList$counts[, -idx]
+    DGEList$samples <- DGEList$samples[-idx, ]
+    cpms = cpm(DGEList$counts, normalized.lib.sizes = TRUE)
+  }else{
+    cpms = cpm(DGEList$counts, normalized.lib.sizes = TRUE)
+  }
+  mat = cpms[match(peak_idx, rownames(DGEList$counts)), ]
+  
+  if(is.null(dim(mat))){
+    mat  = data.frame(t(mat))
+  }
+  gginput <-
+    data.frame(mat,
+               peaks = gr_peaks$labels[match(peak_idx, gr_peaks$peakID)]) %>%
+    pivot_longer(cols = !peaks, 
+                 names_to = "Sample",
+                 values_to = "counts") %>%
+    mutate(feature = rep(DGEList$samples$group, dim(mat)[1]),
+           sample_id = rep(DGEList$samples$Sample, dim(mat)[1]))
+  
+  ggplot(
+    gginput,
+    aes(y = counts,
+        x = feature,
+        fill = peaks,  
+        label = sample_id)) +
+        # label = gsub("_Treg", "", Sample))) + 
+    geom_boxplot(outliers = FALSE, width = 0.5) + 
+    theme_bw() + ylab("Counts per million") + 
+    #geom_text_repel(size = 2, nudge_x = 0.3, nudge_y = 0.5) + 
+    geom_jitter(width = 0.1, size = 0.5) +
+    facet_grid( ~ peaks)
+}
+
+```
+### Procedures
+
+1. Overlap our joint set of peaks with candidate enhancers
+2. Compute the distances from our peaks to variants contributing to ePIPs
+3. Filter out peaks not within 250 bp from any variant contributing to ePIPs
+  
+```{r eval = F}
+f <- fread("/project/xinhe/ethan/shared_files/jinggu/CRE_0_summary.txt")
+
+# separate by age on-set
+f_aoa <- f %>% filter(aoa_epip > 0) %>%
+  select(-c(peak_cell_type, lineage, coa_epip, coa_snps_pip, coa_snps, snps)) %>%
+  separate_longer_delim(c(aoa_snps, aoa_snps_pip), delim = ",") %>%
+  mutate(epip = aoa_epip, snps_pip = aoa_snps_pip, 
+         snps = aoa_snps, trait = "aoa")
+
+f_coa <- f %>% filter(coa_epip > 0) %>%
+  select(-c(peak_cell_type, lineage, aoa_epip, aoa_snps_pip, aoa_snps, snps)) %>%
+  separate_longer_delim(c(coa_snps, coa_snps_pip), delim = ",") %>%
+  mutate(epip = coa_epip, snps_pip = coa_snps_pip, 
+         snps = coa_snps, trait = "coa")
+
+f_aoa$pos <- ukbb_snps$pos[match(f_aoa$aoa_snps, ukbb_snps$id)]
+f_coa$pos <- ukbb_snps$pos[match(f_coa$coa_snps, ukbb_snps$id)]
+f_coa$pos[is.na(f_coa$pos)] <- 137605991
+
+f_comb <- rbind(f_coa %>% select(-c(coa_snps, coa_snps_pip, coa_epip)),
+                f_aoa %>% select(-c(aoa_snps, aoa_snps_pip, aoa_epip)))
+                
+saveRDS(f_comb, "../data/CRE_0_asthma_fine-mapping_summary.RDS")
+```
+
+```{r}
+f_comb <- readRDS("data/CRE_0_asthma_fine-mapping_summary.RDS")
+
+# Overlap asthma fine-mapped regions with OCRs in our dataset
+gr <- GRanges(seqnames=paste0("chr", f_comb$chr),
+              IRanges(start = f_comb$start,
+                      end = f_comb$end),
+              epip = f_comb$epip,
+              snps_pip = f_comb$snps_pip,
+              snps = f_comb$snps,
+              pos = f_comb$pos,
+              trait = f_comb$trait)
+
+# liftover to hg38
+ch=import.chain("~/resources/genomes/chain_files/hg19ToHg38.over.chain")
+
+seqlevelsStyle(gr) <- "UCSC"
+gr_hg38 <- unlist(liftOver(gr, ch))
+gr_hg38$labels <- paste(as.character(gr_hg38))
+                        
+gr_hg38$type <- ifelse(gr_hg38$epip >= 0.5, "high", "low")
+gr_hg38$snp_type <- ifelse(gr_hg38$snps_pip >= 0.3, "high", "low")
+
+union_peaks <- GRanges(seqnames(proj@peakSet),
+                       IRanges(start = start(proj@peakSet),
+                               end = end(proj@peakSet)),
+                       nearestGene = proj@peakSet$nearestGene)
+
+# overlap with high ePIP enhancers
+paired <- findOverlaps(union_peaks, gr_hg38)
+gr_peaks <-union_peaks[paired@from]
+
+# calculate the distances btw fine-mapped SNPs and the overlapped peak sets
+gr_peaks$distToSNP <- unlist(
+    lapply(1:length(paired), function(i){
+      gr_snps <- 
+        GRanges(seqnames = as.character(gr_hg38[paired@to[i]]@seqnames), 
+                IRanges(start = gr_hg38[paired@to[i]]$pos))
+      dist_gr = distanceToNearest(union_peaks[paired@from[i]], gr_snps)
+      return(dist_gr@elementMetadata$distance)
+  }))
+
+# add metadata
+mcols(gr_peaks) <- 
+  cbind(mcols(gr_peaks),
+        mcols(gr_hg38[paired@to]))
+gr_peaks$peakID <- as.character(gr_peaks)
+gr_hg38_paired <- gr_hg38[paired@to]
+gr_peaks_paired <- gr_peaks
+
+# filter out peaks that are not near any SNPs
+paired <- paired[gr_peaks$distToSNP <= 250]
+gr_peaks <- gr_peaks[gr_peaks$distToSNP <= 250]
+```
+# Result
+
+## Raw counts
+
+### Pearson correlation for peak counts for major cell types across samples
+
+* Peaks from the same major cell type of both tissues cluster together 
+* Major cell types in COB-8 Spleen samples have low correlation with others
+
+```{r eval = F, fig.width=12, fig.height = 12}
+load("output/u19_output/u19_full_atac_by_tissue-celltype_pseudobulk.RData")
+metadata$PredCellType <-
+  factor(metadata$PredCellType,
+         levels = ct_order)
+
+# avoid over-correction of batch effects (correct for two batches)
+metadata$batch <- ifelse(grepl("COB", metadata$Sample), 1, 0)
+metadata$MajorCellType <- 
+  factor(metadata$PredCellType,
+         labels = c("B", "B",
+                    "NK", "T", 
+                    "T", "T", "T", "T",
+                    "Other"))
+metadata$SampleID <- paste(metadata$Sample,
+                            metadata$MajorCellType,
+                            sep = "_")
+# compute correlations for raw counts across major cell types
+major_counts <-
+  sapply(unique(metadata$SampleID), function(i){
+    counts = countBySample[, metadata$SampleID == i]
+    if(is.null(dim(counts))){
+      return(counts)
+    }else{
+      return(rowSums(counts))
+    }
+  })
+
+d <- DGEList(counts = major_counts)
+d <- calcNormFactors(d)
+counts <- cpm(d, normalized.lib.sizes = TRUE, log = TRUE)
+heatmap(cor(counts, method="spearman"), 
+        main = "Clustering of pearson correlation", 
+        cexRow = 0.8, cexCol = 0.8,
+        scale = "none")
+```
+
+## Directly overlapping peaks with fine-mapped variants
+
+* 49 peaks within 250bp from 67 confidently fine-mapped SNPs 
+* confidently fine-mapped SNPs defined as PIP >= 0.3 for either aoa or coa
+
+```{r, eval = F}
+coa <- readRDS("~/cluster/projects/u19_multiomics/data/coa_gp3_finemapping_gwas_L5.rds")
+aoa <- readRDS("~/cluster/projects/u19_multiomics/data/aoa_gp3_finemapping_gwas_L5.rds")
+
+aoa_gr <- GRanges(seqnames = paste0("chr", aoa$chr),
+                IRanges(start = aoa$pos,
+                        end = aoa$pos+1))
+mcols(aoa_gr) <- data.frame(aoa[, -4:-1], trait = "aoa")
+coa_gr <- GRanges(seqnames = paste0("chr", coa$chr),
+                IRanges(start = coa$pos,
+                        end = coa$pos+1))
+mcols(coa_gr) <- data.frame(coa[, -4:-1], trait = "coa")
+merge_gr <- c(coa_gr, aoa_gr)
+#liftOver to hg38
+ch=import.chain("~/resources/genomes/chain_files/hg19ToHg38.over.chain")
+seqlevelsStyle(merge_gr) <- "UCSC"
+snp_gr <- unlist(liftOver(merge_gr, ch))
+
+
+confSNPs <- snp_gr[snp_gr$CS > 0 & snp_gr$susie_pip >= 0.3]
+# select random SNPs 
+set.seed(108)
+randomSNPs <- snp_gr[sample(1:length(snp_gr), size = length(confSNPs))]
+paired <- findOverlaps(proj@peakSet + 250, c(confSNPs, randomSNPs))
+
+gr_peaks <- proj@peakSet[paired@from]
+gr_peaks$labels <- paste(as.character(gr_peaks),
+                         gr_peaks$nearestGene,
+                         sep = "_")
+gr_peaks$peakID <- paired@from
+mcols(gr_peaks) <- data.frame(mcols(gr_peaks), 
+                              mcols(c(confSNPs, randomSNPs))[paired@to, c("susie_pip", "trait")])
+gr_peaks$type <- ifelse(gr_peaks$susie_pip >=0.3, "high", "low")
+saveRDS(gr_peaks, "../output/u19_output/u19_full_peaks_near_confSNPs.RDS")
+
+```
+
+Comparing the peaks selected with two approaches:
+
+A: peaks near confidently fine-mapped SNPs that fall in asthma putitative enhancer sequences
+
+B: directly overlap peaks with confidently fine-mapped SNPs
+
+Approach B was selected as it includes more peaks and filter out some peaks annotated as long intergenic non-coding RNAs. 
+```{r}
+# load peaks overlapping confidently fine-mapped variants
+ref_peaks <- gr_peaks
+gr_peaks<- readRDS("output/u19_output/u19_full_peaks_near_confSNPs.RDS")
+ref <- unique(paired@from[ref_peaks$snp_type == "high"])
+library(eulerr)
+x <- list(A = ref,
+          B = unique(gr_peaks$peakID))
+plot(euler(x), quantities = TRUE)
+```
+
+
+```{r}
+load("output/u19_output/u19_full_atac_by_tissue-celltype_pseudobulk.RData")
+metadata$PredCellType <-
+  factor(metadata$PredCellType,
+         levels = ct_order)
+
+# avoid over-correction of batch effects (correct for two batches)
+metadata$batch <- ifelse(grepl("COB", metadata$Sample), 1, 0)
+# obtain count data with selected peaks 
+counts <- normalize_counts(countBySample, logNorm = TRUE)
+
+# compute z-scores across tissue
+zscores <- t(scale(t(counts)))
+
+lung_counts<- zscores[, metadata$Tissue == "Lung"]
+lung_counts <- t(scale(t(lung_counts)))
+
+spleen_counts <- zscores[, metadata$Tissue == "Spleen"]
+spleen_counts <- t(scale(t(spleen_counts)))
+
+aggr_lung <- 
+  aggregate_counts(
+    lung_counts[gr_peaks$peakID, ], metadata$PredCellType)
+aggr_spleen <- 
+  aggregate_counts(spleen_counts[gr_peaks$peakID, ], 
+                   metadata$PredCellType)
+```
+
+
+```{r }
+aggrDF <- rbind(
+  data.frame(feature = "lungs", aggr_lung),
+  data.frame(feature = "spleens", aggr_spleen))
+
+gginput <-
+  data.frame(
+    aggrDF, 
+    labels = gr_peaks$labels,
+    type = gr_peaks$type,    
+    trait = gr_peaks$trait,
+   # snps_pip = gr_peaks$snps_pip,
+    row.names = NULL) %>% distinct()
+```
+
+## Examining chromatin accessibility for asthma fine-mapped regions 
+
+```{r fig.width = 12, fig.height = 8}
+gginput_avg <-
+  gginput %>%
+    pivot_longer(
+      cols = !c(labels, type, feature, trait),
+      names_to = "cell_type",
+      values_to = "counts") %>%
+      group_by(cell_type, feature) %>%
+      dplyr::summarise(counts = mean(counts)) %>%
+      mutate(labels = "average_accessibility",
+             type = "average",
+             trait = "average") %>%
+      pivot_wider(
+        names_from = cell_type,
+        values_from = counts) %>%
+      mutate(labels = paste(labels, sep="_"))
+
+gginput <-
+  rbind(gginput,
+        gginput_avg[, colnames(gginput)])
+
+# Assign the maximum PIP values among all nearby SNPs to the peak
+lung_sub <- gginput[gginput$feature == "lungs" & gginput$type != "low", ] %>%
+  arrange(trait)
+lung_sub$snp_pips <-
+  unlist(lapply(lung_sub$labels,
+                function(i) {
+                  if (!i %in% gr_peaks$labels) {
+                    return(NA)
+                  } else{
+                    max(gr_peaks$susie_pip[gr_peaks$labels == i])
+                  }
+                }))
+
+lung_mat <-
+  as.matrix(lung_sub[, match(gsub("/", ".", ct_order), colnames(lung_sub))])
+rownames(lung_mat) <- lung_sub$labels
+
+row_ha = rowAnnotation(snp_pips = anno_barplot(as.numeric(lung_sub$snp_pips)))
+col_fun = colorRamp2(c(-1.5, 0, 1.5), c("blue", "white", "red"))
+
+lung_heatmap<-
+  Heatmap(lung_mat, 
+          row_split = paste(lung_sub$trait, lung_sub$type, sep="_"),
+          cluster_columns = FALSE,
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          name = "lungs",
+          column_title = "lungs",
+          row_title = NULL,
+          col = col_fun,
+          width = nrow(lung_mat)*unit(2, "mm"))
+
+spleen_sub <- 
+  gginput %>% 
+    filter(feature == "spleens" & 
+             labels %in% rownames(lung_mat) &
+              type != "low") %>%
+  arrange(trait)
+
+spleen_sub$snp_pips <- lung_sub$snp_pips
+spleen_mat <-
+  as.matrix(spleen_sub[, match(gsub("/", ".", ct_order), colnames(spleen_sub))])
+rownames(spleen_mat) <- spleen_sub$labels
+
+
+spleen_heatmap<-
+  Heatmap(spleen_mat, 
+          row_split = paste(spleen_sub$trait, spleen_sub$type, sep="_"),
+          cluster_columns = FALSE,
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          name = "spleen",
+          column_title = "spleen",
+          row_title = NULL,
+          right_annotation = row_ha,
+          width = nrow(spleen_mat)*unit(2, "mm"),
+          col = col_fun)
+
+```
+### Heatmaps for accessibiltiy across cell types
+
+**Legends** 
+- Top: AOA
+- Bottom: COA
+- average accessibility across peaks near equal number of confidently fine-mapped SNPs and random SNPs
+- Y-axis: peak coordinates in hg38, nearest gene
+- Chromatin accessibility normalized within each tissue
+```{r fig.height = 10, fig.width = 14}
+lung_heatmap + spleen_heatmap
+```
+
+We see different patterns of open chromatin across immune subsets:   
+
+1. shared across B cells only: LRP1, CXCR5
+2. shared across NK and CD8+ T: TBX21, GAL3ST2, IRF1
+3. shared across B, NK and CD8+ T
+4. shared across CD4+T subsets: CCL20, CCR4
+5. unique to CD4+T subset: TNFRSF11A
+
+### Heatmaps for accessibiltiy across cell types in case and control
+
+**Legends** 
+- Top: AOA
+- Bottom: COA
+- average accessibility across peaks near equal number of confidently fine-mapped SNPs and random SNPs
+- Y-axis: peak coordinates in hg38, nearest gene
+- Chromatin accessibility normalized within each tissue
+
+```{r}
+# compute z-scores across case and control
+#norm_counts <- t(scale(t(counts[, metadata$Tissue == "Lung"])))
+lung_metadata <- metadata[metadata$Tissue == "Lung", ]
+lung_metadata$PredCellType <- factor(gsub("/", ".", lung_metadata$PredCellType))
+ctrl_counts <- counts[, metadata$Tissue == "Lung"][, lung_metadata$Status == "control"]
+ctrl_counts <- t(scale(t(ctrl_counts)))
+case_counts <- counts[, metadata$Tissue == "Lung"][, lung_metadata$Status == "case"]
+case_counts <- t(scale(t(case_counts)))
+
+aggr_ctrl <- aggregate_counts(ctrl_counts[gr_peaks$peakID, ], lung_metadata$PredCellType)
+aggr_case <- aggregate_counts(case_counts[gr_peaks$peakID, ], lung_metadata$PredCellType)
+
+aggrDF <- 
+  rbind(data.frame(feature = "control", aggr_ctrl),
+        data.frame(feature = "case", aggr_case))
+
+gginput <- 
+  data.frame(
+    aggrDF,
+    labels = rep(gr_peaks$labels, 2),
+    type = rep(gr_peaks$type, 2),    
+    trait = rep(gr_peaks$trait, 2),
+    row.names = NULL) %>% 
+    distinct()
+```
+
+```{r fig.width = 12, fig.height = 8}
+gginput_avg <-
+  gginput %>%
+    pivot_longer(
+      cols = !c(labels, type, trait, feature),
+      names_to = "cell_type",
+      values_to = "counts") %>%
+      group_by(cell_type, feature) %>%
+      dplyr::summarise(counts = mean(counts)) %>%
+      mutate(labels = "average_accessibility",
+             type = "average",
+             trait = "average") %>%
+      pivot_wider(
+        names_from = cell_type,
+        values_from = counts) 
+
+gginput <- rbind(gginput,
+                 gginput_avg[, colnames(gginput)])
+
+
+# Assign the maximum PIP values among all nearby SNPs to the peak
+gginput_sub <-
+  gginput %>% filter(labels %in% rownames(lung_mat) & 
+                       type != "low")
+
+gginput_sub$snp_pips <-
+    unlist(lapply(gginput_sub$labels,
+                function(i) {
+                  if(i == "average_accessibility"){
+                    return(NA)
+                  }else{
+                  max(gr_peaks$susie_pip[gr_peaks$labels == i])
+                  }
+                }))
+
+ctrl_mat <-
+  as.matrix(
+    gginput_sub[gginput_sub$feature == "control",
+                match(gsub("/", ".", ct_order), colnames(gginput_sub))])
+rownames(ctrl_mat) <- gginput_sub$labels[gginput_sub$feature == "control"]
+
+case_mat <-
+  as.matrix(
+    gginput_sub[gginput_sub$feature == "case",
+                match(gsub("/", ".", ct_order), colnames(gginput_sub))])
+rownames(case_mat) <- gginput_sub$labels[gginput_sub$feature == "case"]
+
+row_ha = 
+  rowAnnotation(snp_pips = anno_barplot(as.numeric(gginput_sub$snp_pips[gginput_sub$feature == "control"])))
+
+ctrl_heatmap <-
+  Heatmap(ctrl_mat, 
+          row_split = gginput_sub$trait[gginput_sub$feature == "control"],
+          cluster_columns = FALSE,
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          name = "control",
+          column_title = "control",
+          row_title = NULL,
+          #right_annotation = row_ha,
+          width = nrow(ctrl_mat)*unit(2, "mm"))
+  
+
+case_heatmap<-
+  Heatmap(case_mat, 
+          row_split = gginput_sub$trait[gginput_sub$feature == "case"],
+          cluster_columns = FALSE,
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          name = "case",
+          column_title = "case",
+          row_title = NULL,
+          right_annotation = row_ha,
+          width = nrow(case_mat)*unit(2, "mm"))
+
+```
+```{r fig.width = 14, fig.height = 10}
+ctrl_heatmap + case_heatmap
+```
+Overall, chromatin levels in control are more open than those in case. Majoriy of CD4 subsets have lower chromatin accessibility in case samples. B, NK and CD8 T cells have more regions with open chromatin in case samples.
+
+
+## Validate cell-type specific OCRs near asthma risk enhancers
+
+Do their nearby genes show differential expression?
+```{r}
+rna_counts <- readRDS("output/fastTopics/aggregated_lymph_scRNA_counts.RDS")
+rna_metadata <- readRDS("output/u19_output/u19_rna/u19_rna_cell_metadata.RDS")
+
+rna_metadata$CellGroup <- paste(rna_metadata$core_ID, rna_metadata$major, sep="_")
+# group count matrix by pseudo-bulk
+countBySample <- 
+  sapply(unique(rna_metadata$CellGroup), function(i) {
+    if(sum(rna_metadata$CellGroup == i) < 2){
+      return(rna_counts[rna_metadata$CellGroup == i, ])
+    }else{
+      return(colSums(rna_counts[rna_metadata$CellGroup == i, ]))
+    }
+})
+
+metadata <- left_join(
+  data.frame(CellGroup = colnames(countBySample)),
+  rna_metadata %>% mutate(Sample = core_ID) %>%
+    dplyr::select(CellGroup, batch, major, Sample, tissue.ident) %>% 
+    distinct(),
+  by = "CellGroup")
+
+d <- DGEList(counts=countBySample[, metadata$tissue.ident == "lungs" &
+                                    metadata$Sample != "SMO-8"], 
+             remove.zeros = TRUE)
+
+d <- calcNormFactors(d) # for differential analysis
+```
+
+```{r}
+rna_counts <- cpm(d, normalized.lib.sizes = TRUE, log = TRUE)#FALSE)
+rna_counts <- t(scale(t(rna_counts)))
+row_idx <- match(gr_peaks[gr_peaks$type == "high"]$nearestGene, rownames(rna_counts))
+row_idx <- unique(row_idx[!is.na(row_idx)])
+rna_mat <- 
+  data.frame(
+    aggregate_counts(
+      counts = rna_counts[row_idx, ], 
+      aggr_by = metadata$major))
+```
+
+### Heatmap for the expression of cell-type specific genes 
+
+The scaling of gene expression was performed separately for each tissue, which agrees with the differential GE analyses done for lungs only. As a result, we see consistency in the differential expression and the heatmap of normalized expression. 
+```{r fig.height = 8, fig.width = 8}
+### make a heatmap plot
+
+GE_heatmap<-
+  Heatmap(rna_mat, 
+          cluster_columns = FALSE,
+          row_dend_side = "right",
+          row_names_side = "left",
+          show_row_dend = TRUE,
+          name = "Gene Expression",
+          column_title = "Gene expression",
+          width = nrow(rna_mat)*unit(5, "mm"))
+GE_heatmap
+```
+
+### Overlapping DE genes across cell types with the nearest genes from cell-type specific OCRs
+
+Cell-type specific OCRs are defined as those have higher accessibility in CD4 T subsets.
+
+```{r}
+fpath <-"~/projects/lung_immune_fine_mapping/output/DE_analysis_mast_minpct_0.1/marker_genes_batch_corrected.csv"
+f <- fread(fpath) %>%
+  filter(p_val_adj < 0.05 & avg_log2FC > 0.58)
+colnames(f)[1] <- c("Gene")
+sharedOCR_genes <- c("BACH2", "IL2RA", "RPS26")
+specific_genes <- setdiff(gr_peaks[gr_peaks$type == "high"]$nearestGene,
+                          sharedOCR_genes)
+DT::datatable(
+  f %>% 
+    filter(Gene %in% specific_genes) %>%
+    mutate(avg_log2FC = round(avg_log2FC, 2),
+           p_val_adj = format(p_val_adj, scientific = T, digits = 2)) %>%
+    select(-c(p_val, gene)), 
+  caption = "Cell-type marker genes with cell-type specific open chromains")
+```
+
+## Test peak to gene association across cells 
+
+### Do RNA counts show over-dispersion
+
+* 40 peaks are nearby SNPs with high PIPs
+* identified 480 genes within 500KB of each selected peaks
+```{r}
+library(TidyDensity)
+
+# identify all genes within 500Kb of each selected peaks
+geneSets <- 
+  subsetByOverlaps(proj@geneAnnotation$genes,
+                   gr_peaks[gr_peaks$snp_type  == "high"] + 500000)
+
+```
+
+```{r eval = F}
+d <- DGEList(counts= t(rna_counts[rna_metadata$tissue.ident == "lungs" &
+                                  rna_metadata$core_ID != "SMO-8" &
+                                  rna_metadata$CellType == "Th17", ]),
+             remove.zeros = TRUE)
+d <- calcNormFactors(d)
+#d$counts <- d$counts[rownames(d$counts) %in% selected_genes, ]
+d1 <- estimateCommonDisp(d, verbose = T, rowsum.filter = 100) 
+d1 <- estimateTagwiseDisp(d1)
+names(d1)
+plotBCV(d1)
+```
+```{r}
+d1 <- readRDS("output/u19_output/u19_rna/edgeR_lung_Th17_dispersion.RDS")
+plotBCV(d1) + 
+  points(x = d1$AveLogCPM[rownames(d1$counts) %in% geneSets$symbol],
+         y = d1$tagwise.dispersion[rownames(d1$counts) %in% geneSets$symbol],
+         cex = 0.5, pch = 1,
+         col = "blue")
+```
+Check distribution for the selected peaks
+
+Peak levels in CPMs show overdispersion across cell types. 
+```{r eval =F}
+libSizes <- colSums(assays(peakMatrix)$PeakMatrix)
+# sample 5 genes and plot mean and average for all peaks near the genes.
+colsNum <- which(peakMatrix$Tissue == "Lung" & 
+                   grepl("SMO", peakMatrix$Sample))
+peakCounts <- 
+  assays(peakMatrix)$PeakMatrix[unique(paired@from[gr_peaks$snp_type == "high"]), colsNum]
+peakCounts <- rbind(libSizes[colsNum], peakCounts)
+cpms <- apply(peakCounts, 2, function(i){i[-1] * 1000000/i[1]})                                            
+#peakCounts <- assays(peakMatrix)$PeakMatrix[paired@from[paired@to], ]
+params_list <- 
+  lapply(unique(peakMatrix$PredCellType), function(i) {
+  mean_vec = rowMeans(cpms[, peakMatrix$PredCellType[colsNum] == i])
+  std_vec = rowSds(cpms[, peakMatrix$PredCellType[colsNum] == i])
+  return(
+    data.frame(mean = mean_vec, 
+               std = std_vec,
+               CellType = i))
+})
+
+paramsDF <- do.call(rbind, params_list)
+ggplot(
+  paramsDF, 
+  aes(x = mean, 
+      y = std,
+      color = CellType)
+) + geom_point() + geom_abline(color = "red")
+```
+
+```{r eval = F}
+# prepare inputs for co-accessibility analyses
+rna_metadata$rna_id <- rownames(rna_counts)
+rna_metadata$atac_id <- unlist(lapply(rna_metadata$rna_id, function(i){strsplit(i, "-")[[1]][1]}))
+
+rna_metadata <- rna_metadata %>% filter(tissue.ident == "lungs")
+rna_metadata$atac_id <- 
+  paste0(
+    paste(rna_metadata$core_ID,
+          rna_metadata$atac_id, 
+          sep = "#"), "-1")
+peakMatrix <- readRDS("output/u19_output/u19_full_atac_by_tissue-celltype_peakMatrixRSE.RDS")
+matched <- intersect(rna_metadata$atac_id,
+                     colnames(peakMatrix))
+matched_rna <- match(matched, rna_metadata$atac_id)
+rna <- t(rna_counts[match(matched, rna_metadata$atac_id), 
+                  colnames(rna_counts) %in% geneSets$symbol])
+
+# log(CPM) of atac-seq (natural log)
+atac <- assays(peakMatrix)$PeakMatrix[, match(matched, colnames(peakMatrix))]   
+libSizes <- colSums(atac)
+atac <- rbind(libSizes, atac[unique(paired@from[gr_peaks$snp_type == "high"]), ])
+cpms <- apply(atac, 2, function(i){i[-1] * 1000000/i[1]})                                            
+cpms_add_mean <- log(cpms + rowMeans(cpms))
+cpms_add_c <- log(cpms + 1)
+colnames(cpms) <- colnames(rna)
+rownames(cpms) <- as.character(proj@peakSet[unique(paired@from[gr_peaks$snp_type == "high"])])
+atac <- cpms
+
+# metadata 
+metadata <- rna_metadata[match(colnames(rna), rna_metadata$rna_id), ] %>%
+  mutate(total_counts = rowSums(rna_counts)[match(colnames(rna), names(rowSums(rna_counts)))],
+         barcode = rna_id) %>%
+  select(barcode, total_counts, CellType, batch, donor_id, Age, Sex, Race)
+
+overlaps <- 
+  findOverlaps(proj@geneAnnotation$genes,
+               gr_peaks[gr_peaks$snp_type  == "high"] + 500000)
+
+test_pairs <- unique(data.frame(
+  gene = proj@geneAnnotation$genes[overlaps@from]$symbol,
+  peak = as.character(gr_peaks[gr_peaks$snp_type == "high"][overlaps@to]))
+) %>% filter(gene %in% rownames(rna))
+
+save(rna, atac, metadata, test_pairs, file = "/project2/xinhe/jinggu/share/peak_to_gene/peak_to_gene_assoc_input.RData")
+```
+
+## Differential accessibility test between lung and spleen
+
+```{r eval = F}
+library(edgeR)
+
+# build DGEList for EdgeR
+d = DGEList(counts = countBySample,
+            samples = metadata,
+            group = metadata$Tissue,
+            remove.zeros = TRUE)
+
+d <- calcNormFactors(d)
+# perform DE tests across status one cell type at a time
+tests <- list()
+outputs <- list()
+for (c in unique(metadata$MajorCellType)) {
+  sample_idx = which(metadata$MajorCellType == c)
+  covariates = metadata[sample_idx, ]
+  y = d
+  y$counts <- y$counts[, sample_idx]
+  y$samples <- y$samples[sample_idx, ]
+  Batch <- factor(covariates$batch) # only two batches
+  Tissue <- factor(covariates$Tissue)
+  design <- model.matrix(~ Batch + Tissue)
+  rownames(design) <- colnames(y)
+  y <- estimateDisp(y, design, robust = TRUE)
+  fit <- glmFit(y, design)
+  lrt <- glmLRT(fit)
+  tests[[c]] <-
+    as.data.frame(lrt$table)
+  outputs[[c]] <- y
+}
+```
+
+### wilcoxon test with ArchR
+
+Cross-tissue DA tests on peaks within asthma fine-mapped regions show three peaks pass the threshold under FDR = 0.1.
+
+```{r}
+load("~/cluster/projects/u19_multiomics/analyses/u19_peaks_tissue/u19_peaks_by_tissue_celltype_DA.RData")
+load("output/u19_output/diff_peak_analysis/cross_tissue_immune_subsets_asthma_risk_loci.RData")
+
+# pmat <- 
+#   sapply(btw_tissue, function(i) {
+#     peaks <- getMarkers(i, cutOff = "FDR <= 1")
+#     vals <- 
+#       peaks[[1]]$FDR[match(unique(gr_peaks[gr_peaks$type == "high"]$peakID),
+#                     rownames(peaks[[1]]))]
+#     })
+# rownames(pmat) <- 
+#   gr_peaks$labels[match(unique(gr_peaks[gr_peaks$type == "high"]$peakID),
+#                         gr_peaks$peakID)] 
+pmat <- readRDS("output/u19_output/diff_peak_analysis/cross_tissue_subsets_wilcoxon_asthma_loci.RDS")
+hist(pmat, main = "", 
+     xlab = "FDR values")
+```
+
+```{r, warning = F}
+selected <-
+  data.frame(
+    FDR = unlist(apply(pmat, 1, function(i){return(i[i < 0.1 & !is.na(i)])})))
+selected <- 
+  data.frame(selected,
+             peakID = gr_peaks$peakID[match(gsub(".Th17/CD4_T", "", rownames(selected)), 
+                                            gr_peaks$labels)])
+peaks <- getMarkers(btw_tissue$`Th17/CD4_T`, cutOff = "FDR <= 1")
+peaks$`Lung_Th17/CD4_T`[as.character(selected$peakID), ]
+
+
+peak_boxplot(
+      DGEList = outputs[[gsub("[.]", "/", "Th17/CD4_T")]], 
+      peak_idx = selected$peakID) + 
+    theme(legend.position = "none") + 
+  geom_text_repel(size = 2, nudge_x = 0.3, nudge_y = 0.5)
+
+```
+
+### Negative Binomial test with EdgeR
+
+```{r fig.height = 8, fig.width = 10}
+
+#ct_order <- gsub("/", ".", ct_order)
+# filter out cell types with less than 200 cells in each group
+pmat <- sapply(tests, function(i) {i$PValue[unique(gr_peaks[gr_peaks$type == "high"]$peakID)]})
+rownames(pmat) <- 
+  gr_peaks$labels[match(unique(gr_peaks[gr_peaks$type == "high"]$peakID),
+                        gr_peaks$peakID)] 
+
+# make a heatmap for DE results 
+library(circlize)
+col_fun = colorRamp2(c(0, 1, 2), c("blue", "white", "red"))
+pval_heatmap <-
+  Heatmap(-log10(pmat[, ct_order]), 
+          row_split = gr_peaks$trait[match(rownames(pmat), gr_peaks$labels)],
+          cluster_columns = FALSE,
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          name = "-log10(P-value)",
+          na_col = "grey",
+          #column_title = "control",
+          row_title = NULL,
+          #right_annotation = row_ha,
+          width = nrow(pmat)*unit(2, "mm"))
+          #col = col_fun)
+
+pval_heatmap
+
+pData <- data.frame(pmat) %>% mutate(Peak = rownames(pmat)) %>%
+     pivot_longer(!Peak, names_to = "CellType", values_to = "pval")
+
+# perform multiple testing for all peaks
+DT::datatable(
+  pData %>%
+    mutate(FDR = round(p.adjust(pval, method = "fdr"), 2),
+           pval = format(pval, scientific = T, digits = 2)) %>%
+    dplyr::filter(FDR < 0.5), 
+  caption = "Selected peaks with FDR < 0.5")
+```
+
+### Examining specific examples
+
+```{r fig.width = 8}
+selected <- 
+  pData %>%
+      mutate(adjP = p.adjust(pval, method = "fdr")) %>%
+      filter(adjP < 0.5)
+plots <- list()
+for(c in unique(selected$CellType)){
+  plots[[c]] <- 
+    peak_boxplot(
+      DGEList = outputs[[gsub("[.]", "/", c)]], 
+      peak_idx = gr_peaks$peakID[gr_peaks$labels %in% selected$Peak[selected$CellType == c]]) + 
+    theme(legend.position = "none") + ggtitle(c)
+}
+plots
+```
+Two examples of peaks in Treg
+```{r fig.width = 10, warning = F}
+selected <- c(
+  "chr18:62339513-62340013_TNFRSF11A",
+  "chr19:33235558-33236058_SLC7A10",
+  "chr11:76588363-76588863_LRRC32",
+  "chr3:33005974-33006474_CCR4")
+peak_boxplot(
+      DGEList = outputs[[gsub("[.]", "/", "Treg")]], 
+      peak_idx = gr_peaks$peakID[gr_peaks$labels %in% selected]) + 
+    theme(legend.position = "none")
+
+tests$Treg[gr_peaks$peakID[match(selected, gr_peaks$labels)], ]
+```
+
+## Differential accessibility test between case and control
+
+
+### wilcoxon test with ArchR
+
+Cross-status DA tests on peaks within asthma fine-mapped regions show none of the peaks pass thresholds under FDR control.
+```{r}
+pmat <- readRDS("output/u19_output/diff_peak_analysis/cross_status_subsets_wilcoxon_asthma_loci.RDS")
+# pmat <- 
+#   sapply(btw_status, function(i) {
+#     peaks <- getMarkers(i, cutOff = "FDR <= 1")
+#     vals <- 
+#       peaks[[1]]$FDR[match(unique(gr_peaks[gr_peaks$type == "high"]$peakID),
+#                     rownames(peaks[[1]]))]
+#     })
+# rownames(pmat) <- 
+#   gr_peaks$labels[match(unique(gr_peaks[gr_peaks$type == "high"]$peakID),
+#                         gr_peaks$peakID)] 
+
+hist(pmat, main = "", 
+     xlab = "FDR values")
+```
+
+```{r eval = F}
+# Testing DE on CD4 T cells
+# compare different approaches for DE test
+ct = "CD4_T"
+lung_counts <- countBySample[, metadata$Tissue == "Lung"]
+d <- DGEList(counts = lung_counts[, lung_metadata$PredCellType == ct], 
+             remove.zeros = TRUE,
+             samples = lung_metadata[lung_metadata$PredCellType == ct,], 
+             group = lung_metadata$Status[lung_metadata$PredCellType == ct])
+keep <- unique(paired@from[gr_peaks$snp_type == "high"])
+#keep <- rowSums(cpm(d) > 0.5) >= 2
+d <- d[keep, ]
+dim(d)
+d$samples$lib.size <- colSums(d$counts)
+d <- calcNormFactors(d)
+d
+
+d1 <- estimateCommonDisp(d, verbose=T)
+d1 <- estimateTagwiseDisp(d1)
+par(mfrow = c(1,2))
+plotMDS(d, col=as.numeric(d$samples$group))
+plotBCV(d1, cex = 0.5)
+
+design.mat <- model.matrix(~ d$samples$Batch + d$samples$group)
+#colnames(design.mat) <- levels(d$samples$group)
+d2 <- estimateGLMCommonDisp(d,design.mat)
+d2 <- estimateGLMTrendedDisp(d2,design.mat, method="power")
+# You can change method to "auto", "bin.spline", "power", "spline", "bin.loess".
+# The default is "auto" which chooses "bin.spline" when > 200 tags and "power" otherwise.
+d2 <- estimateGLMTagwiseDisp(d2,design.mat)
+plotBCV(d2, cex = 0.5)
+
+library("DESeq2")
+countData <- data.frame(peak = as.character(proj@peakSet)[as.numeric(rownames(d$counts))],
+                        d$counts)
+rownames(countData) = NULL
+metaData <- d$samples
+rownames(metaData) = NULL
+dds <- DESeqDataSetFromMatrix(countData=countData, 
+                              colData=metaData, 
+                              design= ~ Batch + Status, tidy = TRUE)
+
+dds <- DESeq(dds)
+res <- results(dds)
+head(results(dds, tidy=TRUE))
+summary(res)
+```
+
+```{r eval = F, fig.height = 10, fig.width = 8}
+library(edgeR)
+# perform DE tests across status one cell type at a time
+tests <- list()
+outputs <- list()
+for (c in unique(metadata$MajorCellType)) {
+  sample_idx = which(metadata$MajorCellType == c &
+                       metadata$Tissue == "Lung")
+  covariates = metadata[sample_idx, ]
+  y = d
+  y$samples$group <- d$samples$Status
+  y$counts <- y$counts[,#gr_peaks$peakID[gr_peaks$type == "high"], 
+                       sample_idx]
+  y$samples <- y$samples[sample_idx, ]
+  Batch <- factor(covariates$batch)
+  Status <- factor(covariates$Status)
+  design <- model.matrix(~ Batch + Status)
+  rownames(design) <- colnames(y)
+  y <- estimateDisp(y, design, robust = TRUE)
+  fit <- glmFit(y, design)
+  lrt <- glmLRT(fit)
+  tests[[c]] <-
+    as.data.frame(lrt$table)
+  outputs[[c]] <- y
+}
+```
+
+```{r, fig.height = 10}
+load("output/u19_output/diff_peak_analysis/cross_status_immune_subsets.RData")
+
+# filter out cell types with less than 200 cells in each group
+pmat <- sapply(tests, function(i) {
+  i$PValue[unique(gr_peaks$peakID[gr_peaks$type == "high"])]})
+
+rownames(pmat) <- 
+  gr_peaks$labels[match(unique(gr_peaks$peakID[gr_peaks$type == "high"]),
+                        gr_peaks$peakID,)]
+
+# make a heatmap for DE results 
+library(circlize)
+col_fun = colorRamp2(c(0, 1, 3), c("blue", "white", "red"))
+pval_heatmap <-
+  Heatmap(-log10(pmat[, ct_order]),#c("B", "NK", "T", "Other")]), 
+          row_split = gr_peaks$trait[match(rownames(pmat), gr_peaks$labels)],
+          cluster_columns = FALSE,
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          name = "-log10(P-value)",
+          na_col = "grey",
+          #column_title = "control",
+          row_title = NULL,
+          #right_annotation = row_ha,
+          width = nrow(pmat)*unit(2, "mm"))
+          #col = col_fun)
+
+pval_heatmap
+
+# perform multiple testing for cell type specific peaks
+pData <- 
+  data.frame(pmat) %>% 
+    mutate(Peak = rownames(pmat)) %>%
+     pivot_longer(!Peak, names_to = "CellType", values_to = "pval") #%>%
+      #filter(!CellType %in% c("Th17.CD4_T", "Other"))
+
+DT::datatable(
+  pData %>%
+    mutate(adjP = p.adjust(pval, method = "fdr")) %>%
+    dplyr::filter(adjP < 0.5) %>%
+    mutate(
+      pval = format(pval, scientific = TRUE, digit = 2),
+      adjP = round(adjP, 2)))
+
+```
+
+### Show examples of peaks passing threshold
+```{r, fig.width = 8, fig.height = 4, warning = F}
+selected <- 
+  pData %>% #filter(pval < 0.02)
+      mutate(adjP = p.adjust(pval, method = "fdr")) %>%
+      filter(adjP < 0.6)
+selected
+plots <- list()
+for(c in unique(selected$CellType)){
+  plots[[c]] <- peak_boxplot(DGEList = outputs[[gsub("[.]", "/", c)]], 
+               peak_idx = gr_peaks$peakID[gr_peaks$labels %in% selected$Peak[selected$CellType == c]]) + theme(legend.position = "None")
+
+}
+plots
+```
+```{r}
+### Genomic tracks for peaks near CCR4
+
+library(GenomicFeatures) #  Making and manipulating annotations
+library(rtracklayer) # Import annotation data
+library(Gviz) # R package used to visualize track plots
+library(GenomicInteractions) # visualize HiC loops
+library(AnnotationDbi) # match gene ID to gene symbol
+library(org.Hs.eg.db) # match gene ID to gene symbol
+library(mapgen)
+```
+```{r, eval = F}
+f <- readRDS("~/cluster/projects/u19_multiomics/data/coa_gp3_finemapping_gwas_L5.rds")
+f_gr <- GRanges(seqnames = paste0("chr", f$chr),
+                IRanges(start = f$pos,
+                        end = f$pos+1))
+mcols(f_gr) <- f[, -4:-1]
+#liftOver to hg38
+ch=import.chain("~/resources/genomes/chain_files/hg19ToHg38.over.chain")
+seqlevelsStyle(f_gr) <- "UCSC"
+f_hg38_gr<- unlist(liftOver(f_gr, ch))
+f_input <- data.frame(f_hg38_gr) %>%
+  mutate(chr = as.integer(gsub("chr", "", seqnames)),
+         pos = start) %>%
+  dplyr::select(snp, chr, pos, pval, zscore, susie_pip, locus, CS)
+  
+
+finemapstats <- process_finemapping_sumstats(f_input, 
+                                             snp = 'snp', 
+                                             chr = 'chr', 
+                                             pos = 'pos', 
+                                             pip = 'susie_pip', 
+                                             pval = 'pval', 
+                                             zscore = 'zscore', 
+                                             cs = 'CS', 
+                                             locus = 'locus',  
+                                             pip.thresh = 0)
+
+
+
+gtf_file <- '/project2/xinhe/shared_data/gencode/GRCh38/gencode.v21.annotation.gtf.gz'
+genomic.annots <- make_genomic_annots(gtf_file)
+gene.annots <- genomic.annots$genes
+txdb <- loadDb("~/cluster/projects/u19_multiomics/mapgen/gencode.v21.hg38.annotation.gtf.sqlite")
+# txdb <- makeTxDbFromGFF(gtf_file, format = "gtf")
+# saveDb(txdb, "~/cluster/projects/u19_multiomics/mapgen/gencode.v21.hg38.annotation.gtf.sqlite")
+
+p2gene <- GRanges(p2g$peakName)
+mcols(p2gene) <- 
+  data.frame(p2g) %>% 
+    dplyr::mutate(score = Correlation * 100,
+           promoter_start = geneCoord,
+           promoter_end = promoter_start,
+           gene_name = geneName) %>%
+  dplyr::select(promoter_start, promoter_end, gene_name, score)
+
+ABC <- data.table::fread(system.file("extdata", "heart_ventricle-ENCODE_ABC.tsv.gz", package = "mapgen"))
+ABC <- process_ABC(ABC, full.element = TRUE)
+
+rna_counts <- cpm(d, normalized.lib.sizes = TRUE, log = TRUE)
+rna <- data.frame(
+    aggregate_counts(
+      rna_counts[rownames(rna_counts) %in% geneSets$symbol, ],
+                 unique(rna_metadata$CellType)))
+
+rna_list <- lapply(unique(rna_metadata$CellType), function(i){
+  rna_gr <- proj@geneAnnotation$genes[match(rownames(rna), proj@geneAnnotation$genes$symbol)]
+  rna_gr$score <- rna[match(rna_gr$symbol, rownames(rna)), i]
+  return(rna_gr)
+})
+names(rna_list) <- unique(rna_metadata$CellType)
+
+counts <- list(
+  rnaPos = rna_list$Th17[strand(rna_list$Th17) == "+"],
+  rnaNeg = rna_list$Th17[strand(rna_list$Th17) == "-"]
+)
+
+bedDIR  = "output/u19_analysis/u19_peaks_tissue/PeakCalls"
+peaks <- lapply(gsub("/", ".", ct_order), function(i){
+  peak_gr <- readRDS(sprintf("%s/Lung_%s-reproduciblePeaks.gr.rds", bedDIR, i))
+  return(peak_gr)
+})
+names(peaks) <- c("NaiveB", "MemB", "NK", "CD8T", "CD8TCD4T", "CD4T", 
+                  "Th17", "Treg", "Other")
+```
+
+```{r, eval = F, fig.height = 12}
+
+loops <- list(p2g = process_loop_data(p2gene))
+
+focal_gr <- gr_peaks[as.character(gr_peaks) == "chr3:33005974-33006474"]
+
+track_plot(finemapstats,
+           region = as.character(focal_gr + 100000),
+           gene.annots,
+           #bigSNP = bigSNP,
+           txdb = txdb,
+           counts = counts,
+           peaks = peaks,
+           loops = loops,
+           genome = "hg38",
+           filter_loop_genes = "CCR4",
+           highlight_snps = "topSNP", 
+           #counts.color = c("red", "green", "purple"),
+           #peaks.color = c("black", "navy", "blue"),
+           loops.color = "gray", 
+           genelabel.side = "above",
+           
+           verbose = TRUE)
+```
+
