@@ -53,6 +53,7 @@ Topic models on lung scATAC-seq data
 
 [Identify cell-types with open chromatin in asthma fine-mapped regions](variants_to_function_u19.html)
 
+[differential analyses at genome-wide and specific loci](differential_peak_analysis_u19.html)
 
 ### Slides download
 

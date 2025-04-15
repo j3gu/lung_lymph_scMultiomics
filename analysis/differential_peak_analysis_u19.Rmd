@@ -1,0 +1,745 @@
+---
+title: "Differential peak analyses"
+output: html_document
+date: '`r Sys.Date()`'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(ArchR)
+library(dplyr)
+library(tidyr)
+library(rtracklayer)
+library(GenomicRanges)
+library(colorRamp2)
+library(scales)
+library(rGREAT)
+library(edgeR)
+library(ggrepel)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(ComplexHeatmap)
+#library(plotly)
+#source("~/projects/lung_immune_fine_mapping/code/archR_helper.r")
+set.seed(1)
+options(repr.plot.width=11,.plot.height=8)
+
+addArchRGenome("hg38")
+work.dir<-"~/projects/u19_multiomics/data/cellranger_outs"
+
+#proj <- loadArchRProject("~/cluster/projects/u19_multiomics/analyses/u19_peaks_tissue/")
+ct_order <-
+  c(
+  "Naive_B",
+  "Memory_B",
+  "NK",
+  "CD8_T",
+  "CD8/CD4_T",
+  "CD4_T",
+  "Th17/CD4_T",
+  "Treg",
+  "Other"
+)
+```
+
+# Objective
+
+* Identify genomic regions with differential accessibility across tissue or disease status
+* Fine-mapped variants within cell-type specific peaks may suggest specific roles of immune subsets in asthma
+* Fine-mapped variants within cross-tissue/status DA peaks in specific immune subsets may further provide the direction of the effects on genetic risks of asthma
+
+## Cell composition by donor
+
+Since COB-8 sample has nearly no lymphocytes, we decided to remove COB-8 from analyses. 
+```{r}
+metadata <- readRDS("output/u19_output/u19_full_atac_cell_metadata.RDS")
+gginput <- 
+  data.frame(metadata) %>%
+  mutate(major = 
+           factor(PredCellType,
+                  labels = c("T", "T", "T",
+                             "B", "NK", "B",
+                             "Other", "T", "T")))
+  
+ggplot(
+  gginput,
+  aes( y = paste(Tissue, Sample, sep="_"),
+      fill = major)) + ylab("") +
+  geom_bar()
+
+totCounts <- 
+  data.frame(
+    table(metadata$Sample)) %>%
+    mutate(Sample = Var1,
+           nCells = Freq)
+totCounts$Tissue <- metadata$Tissue[match(totCounts$Sample,
+                                          metadata$Sample)]
+tbl <- 
+  left_join(
+    data.frame(table(metadata$PredCellType,
+                   metadata$Sample)) %>%
+    mutate(
+      CellType = Var1,
+      Sample = Var2,
+      Counts = Freq),
+    totCounts, by = "Sample")
+
+
+ggplot(tbl %>%
+         mutate(CellType =
+                  factor(CellType,
+                         labels = c("T", "T", "T",
+                                     "B", "NK", "B",
+                                    "Other", "T", "T"))),
+       aes(
+         y = paste(Tissue, Sample, sep = "_"),
+         x = Counts / nCells,
+         fill = CellType
+       )) +
+  xlab("Cell Proportion") + ylab("") +
+  geom_col()
+```
+
+```{r eval = F }
+# differential analyses with Libra package
+atac_input <- readRDS("u19_full_atac_by_tissue-celltype_raw_counts.RDS")
+metadata <- readRDS("u19_full_atac_cell_metadata.RDS")
+rownames(atac_input) <- as.character(1:dim(atac_input)[1])
+metadata$major <- 
+  factor(metadata$PredCellType,
+         labels = c("B", "B", "NK",
+                    "T", "T", "T", "T", "T", "Other"))
+metadata$batch <- ifelse(grepl("SMO", metadata$Sample), 1, 0)
+cross_tissue <- 
+  run_de(
+    input = atac_input,
+    meta = data.frame(metadata),
+    replicate_col = "Sample",
+    cell_type_col = "major",
+    label_col = "Tissue",
+    min_cells = 3,
+    min_reps = 2,
+    min_features = 2,
+    de_family = "singlecell",
+    de_method = "permutation",
+   # de_type = "LRT",
+    input_type = "scATAC",
+    normalization = "log_tp10k",
+    binarization = FALSE,
+    latent_vars = "batch",
+    n_threads = 6
+  )
+```
+
+## Approach
+
+**Models for EdgeR**
+
+Modeling mean-variance relationship using a quasi-NB GLM
+$$
+\begin{eqnarray*} {\rm var}(y_{gi}) = \sigma ^2_g\mu _{gi} + \psi _g \mu _{gi}^2 \end{eqnarray*}
+
+$$
+**MDS plot**
+distances between samples correspond to leading biological coefficient of variation (BCV) between those samples
+
+```{r eval = F}
+library(edgeR)
+load("output/u19_output/u19_full_atac_by_tissue-celltype_pseudobulk.RData")
+metadata$PredCellType <-
+  factor(metadata$PredCellType,
+         levels = ct_order)
+
+# avoid over-correction of batch effects (correct for two batches)
+metadata$batch <- ifelse(grepl("COB", metadata$Sample), 1, 0)
+metadata$major <- 
+  factor(metadata$PredCellType,
+         labels = c("B", "B", "NK", "T", "T", "T", "T", "T", "Other"))
+
+metadata$majorID <- 
+  paste(metadata$Sample,
+        metadata$major,
+        sep = "_")
+metadata$PredCellType <- gsub("/", ".", metadata$PredCellType)
+colnames(countBySample) <- gsub("/", ".", colnames(countBySample))
+countByMajor <- 
+  sapply(unique(metadata$majorID), function(i){
+    if(sum(metadata$majorID == i) > 1){
+      return(rowSums(countBySample[, metadata$majorID == i]))
+    }else{
+      return(countBySample[, metadata$majorID == i])
+    }
+  })
+# build DGEList for EdgeR
+
+d = DGEList(counts = countBySample,
+            samples = metadata,
+            group = metadata$Tissue,
+            remove.zeros = TRUE)
+
+summary(d$samples$lib.size)
+keep.samples <- d$samples$lib.size > 200000
+table(keep.samples)
+
+d <- d[, keep.samples]
+keep.genes <- filterByExpr(d, group=d$samples$PredCellType)
+table(keep.genes)
+d <- d[keep.genes, , keep = FALSE]
+#d <- calcNormFactors(d)
+# plot MDS
+cluster <- as.factor(d$samples$PredCellType)
+plotMDS(d, pch=16, col = c(2:10)[cluster], main="MDS")
+legend("topright", legend=levels(cluster),
+pch=16, col=2:10, cex=0.8)
+
+# perform DE tests across status one cell type at a time
+tests <- list()
+outputs <- list()
+for (c in c("CD4_T", "CD8_T", "Memory_B", "Naive_B", "NK")) { #c("T", "B", "NK")) {
+  sample_idx = which((d$samples$PredCellType == c) & (d$samples$Sample != "COB-8"))
+  covariates = d$samples[sample_idx, ]
+  y = d
+  y$counts <- y$counts[, sample_idx]
+  y$samples <- y$samples[sample_idx, ]
+  Batch <- factor(covariates$batch) # only two batches
+  Tissue <- factor(covariates$Tissue)
+  design <- model.matrix(~ Batch + Tissue)
+  rownames(design) <- colnames(y)
+  y <- estimateDisp(y, design, robust = TRUE)
+  fit <- glmQLFit(y, design, robust = TRUE)
+  lrt <- glmQLFTest(fit)
+  tests[[c]] <-
+    as.data.frame(lrt$table)
+  outputs[[c]] <- y
+}
+```
+
+## Cross-tissue comparison
+
+Different models for cross-tissue comparison:
+
+* Y ~ group + batch
+* Y ~ 0 + group + batch
+
+Procedures:
+1. Filtered out samples with total libray size < 20K (107/143 samples retained)
+2. Filtered out peaks with low read counts (70% of reads retained)
+3. Computed the scaling factor to normalize read depth by TMM
+4. Estimated dispersion based on model design
+5. Performed NB regression
+
+```{r eval = F}
+group <- factor(
+  paste0(d$samples$major, ".",
+         d$samples$Tissue))
+colnames(d$counts) <- gsub("/", ".", colnames(d$counts))
+y <- DGEList(d$counts, group=group)
+keep <- filterByExpr(y)
+summary(keep)
+y <- y[keep, , keep.lib.sizes=FALSE]
+y <- calcNormFactors(y)
+
+plotMD(cpm(y, log=TRUE), column=3)
+abline(h=0, col="red", lty=2, lwd=2)
+
+plotMDS(y, pch=16, col = c(2:10)[group], main="MDS")
+legend("topright", legend=levels(group),
+pch=16, col=2:10, cex=0.8)
+
+batch <- factor(d$samples$batch)
+donor <- factor(d$samples$Donor)
+design <- model.matrix(~ 1 + batch + group)
+#colnames(design) <- gsub("donor", "", colnames(design))
+#colnames(design) <- levels(group)
+design
+y <- estimateDisp(y, design, robust=TRUE)
+plotBCV(y)
+```
+
+```{r eval = F}
+### Replicate previous results
+# TBD why including intercept makes the results so different?
+y <- DGEList(d$counts[, d$samples$major == "B"], 
+             group = d$samples$Tissue[d$samples$major == "B"])
+keep <- filterByExpr(y)
+summary(keep)
+y <- y[keep, , keep.lib.sizes=FALSE]
+y <- calcNormFactors(y)
+batch <- factor(d$samples$batch[d$samples$major == "B"])
+group <- factor(y$samples$group)
+design <- model.matrix(~ batch + group)
+y <- estimateDisp(y, design, robust=TRUE)
+plotBCV(y)
+```
+
+```{r eval = F}
+fit <- glmQLFit(y, design, robust=TRUE)
+plotQLDisp(fit)
+qlf <- glmQLFTest(fit)#, contrast=con)
+
+cluster <- as.factor(d$samples$major)
+qlf <- list()
+for(i in 1:nlevels(cluster)){
+  focalCT <- levels(cluster)[i]
+  con <- makeContrasts(
+    paste(glue::glue("group", focalCT, ".Lung"),
+          glue::glue("group", focalCT, ".Spleen"), 
+          sep = "-"),
+    levels=design)
+  qlf[[i]] <- glmQLFTest(fit, contrast=con)
+}
+```
+
+```{r}
+qlf <- readRDS("output/u19_output/diff_peak_analysis/cross_tissue_subsets_lymph_edgeR.RDS")
+count_tbl <-
+  sapply(qlf, function(i){
+    topTags(i)
+    plotMD(i)
+    summary(decideTests(i))})
+```
+
+Notes:  
+Memory B cells show more cross-tissue differences, while T subsets seem to violate model assumptions due to large variation
+
+### Genomic region enrichment with rGREAT
+
+```{r}
+## A function to identify overlapped genes with selected GO terms
+get_overlapping_sets <- function(res, GO_sets){
+  library(org.Hs.eg.db)
+  gr <- getRegionGeneAssociations(res)
+  assoc_genes <- unlist(gr$annotated_genes)
+  overlapped <- 
+    lapply(GO_sets, function(i) {
+        paste(unique(assoc_genes[names(assoc_genes) %in% res@gene_sets[[i]]]), 
+              collapse = ",")
+      })
+  names(overlapped) <- GO_sets
+  return(overlapped)
+}
+```
+
+
+```{r eval = F}
+# Genomic region enrichment with rGREAT
+
+## default hg19
+library(rGREAT)
+set.seed(123)
+gr <- proj@peakSet[as.numeric(rownames(qlf_lungs[[3]])[which(decideTests(qlf_lungs[[3]]) == -1)])]
+
+res<- lapply(c("GO:BP", "GO:CC", "GO:MF", "msigdb:C7:IMMUNESIGDB",
+                     "msigdb:C2:CP:KEGG", "msigdb:C5:HPO"), function(i) {
+  return(great(gr, i, "hg38", background = proj@peakSet))
+})
+
+library(simplifyEnrichment)
+sig_go_ids <- 
+  res_list[[2]] %>% 
+    filter(p_adjust < 0.001) %>%
+      pull(id)
+cl = simplifyGO(sig_go_ids)
+```
+**Clustering of GO terms**
+
+![MemB GO BP terms](https://github.com/user-attachments/assets/c204a6dd-f905-4c63-a41a-412749cfe8dc)
+
+![MemB GO MF terms](https://github.com/user-attachments/assets/886cdbf0-2c4a-477b-99c0-29c94aa1798d)
+
+
+**A table of significant GO terms**
+
+Differential peaks from lung memB cells are enriched for neuron fate commitment, T cell recombination and apoptotic processes
+
+Differential peaks from lung memB cells are also enriched for immune receptor binding, metabolism, oxysterol binding, etc
+```{r}
+#res <- readRDS("output/u19_output/GO_enrichment/lung_control_specific_T_GO.RDS")
+res <- readRDS("output/u19_output/GO_enrichment/lung_specific_memB_GO.RDS")
+res_list <- lapply(res, function(i){getEnrichmentTable(i)})
+res_genes <- lapply(res, function(i){getRegionGeneAssociations(i)})
+
+titles <- c("GO: Biological Process", "GO: Molecular Functions")
+for(idx in 1:2){
+  
+  selected <- 
+    res_list[[idx]] %>% 
+      filter(p_adjust < 0.05) %>%
+        arrange(desc(fold_enrichment)) %>%
+          pull(id)
+  
+  gene_set <- unlist(get_overlapping_sets(res[[idx]], selected[1:15]))
+
+  print(
+    DT::datatable(
+      res_list[[idx]] %>% dplyr::select(id, description,
+                    fold_enrichment, 
+                    p_adjust, 
+                    mean_tss_dist, 
+                    gene_set_size) %>%
+        filter(p_adjust < 0.05) %>%
+        arrange(desc(fold_enrichment)) %>% slice_head(n = 15) %>%
+        mutate(fold_enrichment = round(fold_enrichment, 1),
+               p_adjust = format(p_adjust, scientific = TRUE, digit = 2),
+               overlapped_genes = gene_set) %>%
+        filter(duplicated(overlapped_genes) == FALSE),
+        caption = titles[idx])
+  )
+}
+```
+
+### Cross-tissue comparison for asthma fine-mapped regions
+
+```{r fig.height = 8, fig.width = 10}
+qlf <- readRDS("output/u19_output/diff_peak_analysis/cross_tissue_subsets_lymph_edgeR.RDS")
+gr_peaks<- readRDS("output/u19_output/u19_full_peaks_near_confSNPs.RDS")
+
+gginput <- 
+  sapply(qlf, function(i) {
+    i$table[match(unique(gr_peaks$peakID[gr_peaks$type == "high"]),
+                         rownames(i$table)), ]$PValue})
+colnames(gginput) <- names(qlf)
+rownames(gginput) <- 
+  gr_peaks$labels[match(unique(gr_peaks$peakID[gr_peaks$type == "high"]),
+                        gr_peaks$peakID)]
+# remove NAs
+gginput <- gginput[rowSums(is.na(gginput)) == 0, ]
+# make a heatmap for DE results 
+library(circlize)
+col_fun = colorRamp2(c(0, 1, 2.5), c("blue", "white", "red"))
+pval_heatmap <-
+  Heatmap(-log10(gginput[, gsub("/", ".", ct_order)]), 
+          row_split = gr_peaks$trait[match(rownames(gginput), gr_peaks$labels)],
+          cluster_columns = FALSE,
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          name = "-log10(P-value)",
+          na_col = "grey",
+          #column_title = "control",
+          row_title = NULL,
+          #right_annotation = row_ha,
+          width = nrow(gginput)*unit(2, "mm"),
+          col = col_fun)
+
+pval_heatmap
+```
+```{r}
+pData <- 
+  data.frame(gginput) %>% 
+    dplyr::mutate(Peak = rownames(gginput)) %>%
+      pivot_longer(!Peak, names_to = "CellType", values_to = "pval") %>%
+        dplyr::filter(!CellType %in% c("Other", 
+                              "Th17.CD4_T", 
+                              "CD8.CD4_T"))
+
+# perform multiple testing for all peaks
+DT::datatable(
+  pData %>%
+    mutate(FDR = round(p.adjust(pval, method = "fdr"), 2),
+           pval = format(pval, scientific = T, digits = 2)) %>%
+    dplyr::filter(FDR < 0.1), 
+  caption = "Selected peaks with FDR < 0.1")
+```
+
+## cross-status comparison for lung immune major lymphocytes
+
+Lung T cells display hundreds of peaks with less chromatin accessibility in case than control.
+
+```{r eval = F}
+group <- factor(
+  paste0(d$samples$PredCellType, ".",
+         d$samples$Tissue, ".",
+         d$samples$Status))
+
+y <- DGEList(d$counts, group=group)
+
+keep <- filterByExpr(y)
+summary(keep)
+y <- y[keep, , keep.lib.sizes=FALSE]
+y <- calcNormFactors(y)
+
+batch <- factor(d$samples$batch)
+design <- model.matrix(~ 0 + group + batch)
+#colnames(design) <- gsub("donor", "", colnames(design))
+#colnames(design) <- levels(group)
+
+y <- estimateDisp(y, design, robust=TRUE)
+plotBCV(y)
+fit <- glmQLFit(y, design, robust=TRUE)
+plotQLDisp(fit)
+```
+
+```{r eval = F}
+qlf_lungsub <- list()
+cluster <- factor(d$samples$PredCellType)
+for(i in 1:nlevels(cluster)){
+  focalCT <- levels(cluster)[i]
+  con <- makeContrasts(
+    paste(glue::glue("group",focalCT, ".Lung.control"),
+          glue::glue("group", focalCT, ".Lung.case"), 
+          sep = "-"),
+    levels=design)
+  qlf_lungsub[[i]] <- glmQLFTest(fit, contrast=con)
+}
+saveRDS(qlf_lungsub, "../output/u19_output/diff_peak_analysis/cross_status_lung_subsets_lymph_edgeR.RDS")
+qlf_spleens <- list()
+cluster <- factor(d$samples$major)
+for(i in 1:nlevels(cluster)){
+  focalCT <- levels(cluster)[i]
+  con <- makeContrasts(
+    paste(glue::glue("group",focalCT, ".Spleen.control"),
+          glue::glue("group", focalCT, ".Spleen.case"),
+          sep = "-"),
+    levels=design)
+  qlf_spleens[[i]] <- glmQLFTest(fit, contrast=con)
+}
+saveRDS(qlf_spleens, "../output/u19_output/diff_peak_analysis/cross_status_spleen_major_lymph_edgeR.RDS")
+```
+```{r}
+qlf_lungs <- readRDS("output/u19_output/diff_peak_analysis/cross_status_lung_major_lymph_edgeR.RDS")
+count_tbl <-
+  sapply(qlf_lungs, function(i){
+    topTags(i)
+    plotMD(i)
+    summary(decideTests(i))})
+```
+
+### Genomic regions enrichment results
+
+Differential peaks from control lung Tregs are enriched for multiple terms related to regulation of chemokine production.
+
+```{r}
+res <- readRDS("output/u19_output/GO_enrichment/lung_control_specific_T_GO.RDS")
+res_list <- lapply(res, function(i){getEnrichmentTable(i)})
+res_genes <- lapply(res, function(i){getRegionGeneAssociations(i)})
+
+titles <- c("GO: Biological Process", 
+            "GO: Cellular Component",
+            "GO: Molecular Functions")
+for(idx in c(1,3)){
+  
+  selected <- 
+    res_list[[idx]] %>% 
+      filter(p_adjust < 0.05) %>%
+        arrange(desc(fold_enrichment)) %>%
+          pull(id)
+  
+  gene_set <- unlist(get_overlapping_sets(res[[idx]], selected[1:length(selected)]))
+
+  print(
+    DT::datatable(
+      res_list[[idx]] %>% dplyr::select(id, description,
+                    fold_enrichment, 
+                    p_adjust, 
+                    mean_tss_dist, 
+                    gene_set_size) %>%
+        filter(p_adjust < 0.05) %>%
+        arrange(desc(fold_enrichment)) %>% 
+        mutate(fold_enrichment = round(fold_enrichment, 1),
+               p_adjust = format(p_adjust, scientific = TRUE, digit = 2),
+               overlapped_genes = gene_set) %>%
+        filter(duplicated(overlapped_genes) == FALSE),
+        caption = titles[idx])
+  )
+}
+```
+
+### Cross-status comparison for asthma fine-mapped regions
+
+None of the peaks show significant differences in chromatin accessibility between case and control.
+
+```{r fig.height = 8, fig.width = 10}
+gginput <- 
+  sapply(qlf_lungs, function(i) {
+    i$table[match(unique(gr_peaks$peakID[gr_peaks$type == "high"]),
+                         rownames(i$table)), ]$PValue})
+#cluster <- factor(d$samples$major)
+colnames(gginput) <- c("B", "NK", "T", "Other")
+rownames(gginput) <- 
+  gr_peaks$labels[match(unique(gr_peaks$peakID[gr_peaks$type == "high"]),
+                        gr_peaks$peakID)]
+# remove NAs
+gginput <- gginput[rowSums(is.na(gginput)) == 0, ]
+# make a heatmap for DE results 
+library(circlize)
+col_fun = colorRamp2(c(0, 1, 2.5), c("blue", "white", "red"))
+pval_heatmap <-
+  Heatmap(-log10(gginput),#[, gsub("/", ".", ct_order)]), 
+          row_split = gr_peaks$trait[match(rownames(gginput), gr_peaks$labels)],
+          cluster_columns = FALSE,
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          name = "-log10(P-value)",
+          na_col = "grey",
+          #column_title = "control",
+          row_title = NULL,
+          #right_annotation = row_ha,
+          width = nrow(gginput)*unit(2, "mm"))
+          #col = col_fun)
+
+pval_heatmap
+```
+
+## Cell-type specific analyses
+
+* Model: Y ~ group + batch + donor
+* COB-8 sample and non-lymphocyte cells removed
+* Almost half of peaks filtered due to relatively low read counts compared to others 
+* Normalized by TMM
+
+```{r eval = F}
+d$samples$Donor <- 
+  unlist(
+    lapply(d$samples$Sample, function(i){
+      sample_cov$ROBI[match(i, sample_cov$core_ID)]}))
+# no Other group and COB-8 included in cell-type comparison
+sample_idx <- which(d$samples$PredCellType != "Other" &
+                 d$samples$Sample != "COB-8")
+y <- DGEList(
+  counts = d$counts[, sample_idx],
+  samples = d$samples[sample_idx, ])
+
+keep <- filterByExpr(y)
+summary(keep)
+y <- y[keep, , keep.lib.sizes=FALSE]
+y <- calcNormFactors(y)
+
+donor <- factor(y$samples$Donor)
+cluster <- factor(y$samples$PredCellType)
+batch <- factor(y$samples$batch)
+design <- model.matrix(~ cluster + batch + donor)
+colnames(design) <- gsub("donor", "", colnames(design))
+colnames(design)[1] <- "Int"
+ncls <- nlevels(factor(y$samples$PredCellType))
+contr <- rbind( matrix(1/(1-ncls), ncls, ncls),
+        matrix(0, ncol(design)-ncls, ncls) )
+diag(contr) <- 1
+contr[1,] <- 0
+rownames(contr) <- colnames(design)
+colnames(contr) <- paste0("cluster", levels(cluster))
+contr
+```
+
+```{r eval = F}
+y <- estimateDisp(y, design, robust=TRUE)
+plotBCV(y)
+fit <- glmQLFit(y, design, robust=TRUE)
+plotQLDisp(fit)
+qlf <- list()
+for(i in 1:ncls){
+  qlf[[i]] <- glmQLFTest(fit, contrast=contr[,i])
+  qlf[[i]]$comparison <- paste0("cluster", levels(cluster)[i], "_vs_others")
+}
+```
+```{r}
+load("output/cross_celltypes_lymphOnly_edgeR.RData")
+count_tbl <-
+  sapply(new_qlf, function(i){
+    topTags(i)
+    plotMD(i)
+    summary(decideTests(i))})
+```
+
+### Cell-type comparison for asthma fine-mapped regions
+
+**EdgeR pseudobulk NB approch**
+
+
+```{r eval = F}
+lcpm <- cpm(y, log=TRUE)
+annot <- data.frame(cluster=cluster)
+rownames(annot) <- colnames(y)
+ann_colors <- list(cluster=2:9)
+names(ann_colors$cluster) <- levels(cluster)
+row_idx <- gr_peaks$peakID[gr_peaks$type == "high"]
+row_idx <- match(intersect(row_idx, rownames(lcpm)), rownames(lcpm))
+top <- 10
+topMarkers <- list()
+for(i in 1:ncls) {
+  ord <- order(qlf[[i]]$table$PValue, decreasing=FALSE)
+  up <- qlf[[i]]$table$logFC[ord] > 0
+  topMarkers[[i]] <- rownames(y)[ord[up][1:top]]
+}
+topMarkers <- unique(unlist(topMarkers))
+pheatmap::pheatmap(lcpm[topMarkers, ], 
+                   breaks=seq(-2,2,length.out=101),
+  color=colorRampPalette(c("blue","white","red"))(100), scale="row",
+  cluster_cols=TRUE, border_color="NA", fontsize_row=5,
+  treeheight_row=70, treeheight_col=70, cutree_cols=7,
+  clustering_method="ward.D2", show_colnames=FALSE,
+  annotation_col=annot, annotation_colors=ann_colors)
+```
+
+
+Heatmap plot for comparison p-values
+```{r fig.height = 8, fig.width = 10}
+
+logfc_mat <- 
+  sapply(new_qlf, function(i) {
+    tbl = i$table[match(unique(gr_peaks$peakID[gr_peaks$type == "high"]),
+                         rownames(i$table)), ]
+    return(tbl$logFC/tbl$logCPM)})
+pval_mat <- sapply(new_qlf, function(i) {
+    i$table[match(unique(gr_peaks$peakID[gr_peaks$type == "high"]),
+                         rownames(i$table)), ]$PVal})
+#cluster <- factor(y$samples$PredCellType)
+colnames(logfc_mat) <- names(new_qlf)
+rownames(logfc_mat) <- 
+  gr_peaks$labels[match(unique(gr_peaks$peakID[gr_peaks$type == "high"]),
+                        gr_peaks$peakID)]
+colnames(pval_mat) <- colnames(logfc_mat)
+rownames(pval_mat) <- rownames(logfc_mat)
+
+pval_mat <- pval_mat[rowSums(is.na(pval_mat)) == 0, ]
+logfc_mat <- logfc_mat[rowSums(is.na(logfc_mat)) == 0, ]
+# make a heatmap for DE results 
+library(circlize)
+#col_fun = colorRamp2(c(-0.5, 0, 0.5), c("blue", "white", "red"))
+#mean_expr <- rowMeans(cpm(y, log = TRUE))
+fc_heatmap <-
+  Heatmap(#-log10([, gsub("/", ".", ct_order[ct_order != 'Other'])]), 
+          logfc_mat[, gsub("/", ".", ct_order[ct_order != 'Other'])], 
+          row_split = gr_peaks$trait[match(rownames(logfc_mat), gr_peaks$labels)],
+          cluster_columns = FALSE,
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          #name = "-log10(P-value)",
+          name = "logFC",
+          na_col = "grey",
+          #column_title = "control",
+          row_title = NULL,
+          #right_annotation = row_ha,
+          width = nrow(logfc_mat)*unit(3, "mm"))
+          #col = col_fun)
+
+
+row_idx = 
+  gr_peaks$peakID[match(rownames(logfc_mat)[unlist(row_order(fc_heatmap))], gr_peaks$labels)]
+row_ha = 
+  rowAnnotation(AvgCPMs = anno_barplot(mean_expr[match(row_idx, names(mean_expr))]))
+col_fun = colorRamp2(c(0, 2, 10), c("blue", "white", "red"))
+pval_heatmap <-
+  Heatmap(-log10(pval_mat[, gsub("/", ".", ct_order[ct_order != 'Other'])]), 
+          #logfc_mat[, gsub("/", ".", ct_order[ct_order != 'Other'])], 
+          row_split = gr_peaks$trait[match(rownames(pval_mat), gr_peaks$labels)],
+          cluster_columns = FALSE,
+          #row_order = unlist(row_order(fc_heatmap)),
+          row_names_side = "left",
+          show_row_dend = FALSE,
+          name = "-log10(P-value)",
+          #name = "logFC",
+          na_col = "grey",
+          #column_title = "control",
+          row_title = NULL,
+          right_annotation = row_ha,
+          width = nrow(pval_mat)*unit(3, "mm"),
+          col = col_fun)
+
+```
+
+```{r, fig.height = 8, fig.width = 12}
+fc_heatmap + pval_heatmap
+```
+
+
+
