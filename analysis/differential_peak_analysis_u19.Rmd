@@ -27,7 +27,7 @@ options(repr.plot.width=11,.plot.height=8)
 addArchRGenome("hg38")
 work.dir<-"~/projects/u19_multiomics/data/cellranger_outs"
 
-#proj <- loadArchRProject("~/cluster/projects/u19_multiomics/analyses/u19_peaks_tissue/")
+proj <- loadArchRProject("~/cluster/projects/u19_multiomics/analyses/u19_peaks_tissue/")
 ct_order <-
   c(
   "Naive_B",
@@ -131,7 +131,7 @@ cross_tissue <-
   )
 ```
 
-## Approach
+# NB-based tests at pseudobulk level
 
 **Models for EdgeR**
 
@@ -140,8 +140,6 @@ $$
 \begin{eqnarray*} {\rm var}(y_{gi}) = \sigma ^2_g\mu _{gi} + \psi _g \mu _{gi}^2 \end{eqnarray*}
 
 $$
-**MDS plot**
-distances between samples correspond to leading biological coefficient of variation (BCV) between those samples
 
 ```{r eval = F}
 library(edgeR)
@@ -218,10 +216,48 @@ for (c in c("CD4_T", "CD8_T", "Memory_B", "Naive_B", "NK")) { #c("T", "B", "NK")
 
 Different models for cross-tissue comparison:
 
-* Y ~ group + batch
-* Y ~ 0 + group + batch
+* Model 1: Y ~ 1 + group + batch
+  - subset samples only including B cells
+  - perform differential tests with intercept 
+  
+* Model 2: Y ~ 0 + group + batch + donor
+  - define a contrast matrix without intercept
+  - specifically test for the contrast between tissue 
+  
+The coefficients for two models that comparing lung vs spleen are highly correlated (r2 = 0.95)
+```{r}
+# comparing two models
+qlf_m1 <- readRDS("output/u19_output/diff_peak_analysis/cross_tissue_B_edgeR_intercept_model.RDS")
+qlf_m2 <- readRDS("output/u19_output/diff_peak_analysis/cross_tissue_major_lymph_edgeR.RDS")
 
+print("Design matrix for model one:")
+head(qlf_m1$design)
+print("Design matrix for model two:")
+head(qlf_m2[[1]]$design)
+
+peak_idx <- intersect(rownames(qlf_m1$coefficients),
+                      rownames(qlf_m2[[1]]$coefficients))
+plot(
+  x = qlf_m1$coefficients[match(peak_idx, rownames(qlf_m1$coefficients)), dim(qlf_m1$coefficients)[2]],
+  y = qlf_m2[[1]]$coefficients[match(peak_idx, rownames(qlf_m2[[1]]$coefficients)), 1] - qlf_m2[[1]]$coefficients[match(peak_idx, rownames(qlf_m2[[1]]$coefficients)), 2],
+  xlab = "Model 1 (intercept)",
+  ylab = "Model 2 (no intercept)",
+  main = "Comparing coefficients of test variables")
+abline(a = 0, b = 1, col = "red")
+```
+
+However, model 2 has more peaks with significant p-values. 
+```{r}
+plot(
+  x = -log10(qlf_m1$table[match(peak_idx, rownames(qlf_m1$coefficients)), 4]),
+  y = -log10(qlf_m2[[1]]$table[match(peak_idx, rownames(qlf_m2[[1]])), 4]),
+  xlab = "Model 1 (intercept)",
+  ylab = "Model 2 (no intercept)",
+  main = "Comparing p-values")
+abline(a = 0, b = 1, col = "red")
+```
 Procedures:
+
 1. Filtered out samples with total libray size < 20K (107/143 samples retained)
 2. Filtered out peaks with low read counts (70% of reads retained)
 3. Computed the scaling factor to normalize read depth by TMM
@@ -229,47 +265,26 @@ Procedures:
 5. Performed NB regression
 
 ```{r eval = F}
-group <- factor(
-  paste0(d$samples$major, ".",
-         d$samples$Tissue))
-colnames(d$counts) <- gsub("/", ".", colnames(d$counts))
-y <- DGEList(d$counts, group=group)
-keep <- filterByExpr(y)
-summary(keep)
-y <- y[keep, , keep.lib.sizes=FALSE]
-y <- calcNormFactors(y)
-
-plotMD(cpm(y, log=TRUE), column=3)
-abline(h=0, col="red", lty=2, lwd=2)
-
-plotMDS(y, pch=16, col = c(2:10)[group], main="MDS")
-legend("topright", legend=levels(group),
-pch=16, col=2:10, cex=0.8)
-
-batch <- factor(d$samples$batch)
-donor <- factor(d$samples$Donor)
-design <- model.matrix(~ 1 + batch + group)
-#colnames(design) <- gsub("donor", "", colnames(design))
-#colnames(design) <- levels(group)
-design
-y <- estimateDisp(y, design, robust=TRUE)
-plotBCV(y)
-```
-
-```{r eval = F}
 ### Replicate previous results
 # TBD why including intercept makes the results so different?
 y <- DGEList(d$counts[, d$samples$major == "B"], 
              group = d$samples$Tissue[d$samples$major == "B"])
-keep <- filterByExpr(y)
-summary(keep)
-y <- y[keep, , keep.lib.sizes=FALSE]
+#keep <- filterByExpr(y)
+#summary(keep)
+#y <- y[keep, , keep.lib.sizes=FALSE]
 y <- calcNormFactors(y)
 batch <- factor(d$samples$batch[d$samples$major == "B"])
-group <- factor(y$samples$group)
-design <- model.matrix(~ batch + group)
+group <- factor(y$samples$group,
+                levels = c("Spleen", "Lung"))
+donor <- factor(d$samples$Donor[d$samples$major == "B"])
+design <- model.matrix(~ batch + donor + group)
 y <- estimateDisp(y, design, robust=TRUE)
 plotBCV(y)
+fit <- glmQLFit(y, design, robust=TRUE)
+plotQLDisp(fit)
+qlf <- glmQLFTest(fit)#, contrast=con)
+plotMD(qlf)
+summary(decideTests(qlf))
 ```
 
 ```{r eval = F}
@@ -299,7 +314,7 @@ count_tbl <-
     summary(decideTests(i))})
 ```
 
-Notes:  
+Notes:   
 Memory B cells show more cross-tissue differences, while T subsets seem to violate model assumptions due to large variation
 
 ### Genomic region enrichment with rGREAT
@@ -341,12 +356,12 @@ sig_go_ids <-
       pull(id)
 cl = simplifyGO(sig_go_ids)
 ```
+
 **Clustering of GO terms**
 
-![MemB GO BP terms](https://github.com/user-attachments/assets/c204a6dd-f905-4c63-a41a-412749cfe8dc)
+![MemB GO BP terms](assets/MemB_GO_BP_clustering.png)
 
-![MemB GO MF terms](https://github.com/user-attachments/assets/886cdbf0-2c4a-477b-99c0-29c94aa1798d)
-
+![MemB GO MF terms]("assets/MemB_GO_MF_clustering.png)
 
 **A table of significant GO terms**
 
@@ -423,6 +438,7 @@ pval_heatmap <-
 
 pval_heatmap
 ```
+
 ```{r}
 pData <- 
   data.frame(gginput) %>% 
@@ -441,7 +457,9 @@ DT::datatable(
   caption = "Selected peaks with FDR < 0.1")
 ```
 
-## cross-status comparison for lung immune major lymphocytes
+## cross-status comparison 
+
+### Lung immune major lymphocytes
 
 Lung T cells display hundreds of peaks with less chromatin accessibility in case than control.
 
@@ -495,6 +513,7 @@ for(i in 1:nlevels(cluster)){
 }
 saveRDS(qlf_spleens, "../output/u19_output/diff_peak_analysis/cross_status_spleen_major_lymph_edgeR.RDS")
 ```
+
 ```{r}
 qlf_lungs <- readRDS("output/u19_output/diff_peak_analysis/cross_status_lung_major_lymph_edgeR.RDS")
 count_tbl <-
@@ -584,6 +603,7 @@ pval_heatmap
 
 * Model: Y ~ group + batch + donor
 * COB-8 sample and non-lymphocyte cells removed
+* Both lungs and spleens were included
 * Almost half of peaks filtered due to relatively low read counts compared to others 
 * Normalized by TMM
 
@@ -632,7 +652,7 @@ for(i in 1:ncls){
 }
 ```
 ```{r}
-load("output/cross_celltypes_lymphOnly_edgeR.RData")
+load("output/u19_output/diff_peak_analysis/cross_celltypes_lymphOnly_edgeR.RData")
 count_tbl <-
   sapply(new_qlf, function(i){
     topTags(i)
@@ -669,10 +689,9 @@ pheatmap::pheatmap(lcpm[topMarkers, ],
   clustering_method="ward.D2", show_colnames=FALSE,
   annotation_col=annot, annotation_colors=ann_colors)
 ```
+### Heatmap plots for comparison results
 
-
-Heatmap plot for comparison p-values
-```{r fig.height = 8, fig.width = 10}
+```{r fig.height = 8, fig.width = 10, warning = F}
 
 logfc_mat <- 
   sapply(new_qlf, function(i) {
@@ -737,9 +756,53 @@ pval_heatmap <-
 
 ```
 
+Left: colored by log2 fold change
+Right: colored by -log10(p-value)
+barplot: average CPM for each peak across cell types 
+
+Cell-type specific peaks upregulated in AOA:
+
+* NK/T - GAL3ST2
+
+Cell-type specific peaks upregulated in COA:
+
+* B - LRRC32, TLR10, OVOL1
+* NK - LINC00299
+* CD8+ T/NK - IRF1, TBX21
+* CD4+ T - CCR4
+* Th17 - CCL20
+* Treg - SLC7A10
+* PRKCQ-AS1
 ```{r, fig.height = 8, fig.width = 12}
 fc_heatmap + pval_heatmap
 ```
 
+# Wilcoxon-based tests at single cell level
+
+## Cross-tissue/status comparison
+
+A table that summarizes DA peaks with FDR <= 0.1 and log2FC >= 1
+
+* very few peaks show significant difference except for cross-tissue comparison for Th17
+* Th17 cells are largely unbalanced across tissue 
+```{r}
+load("output/u19_analysis/u19_peaks_tissue/u19_peaks_by_tissue_celltype_DA.RData")
+
+markerTissue <- 
+  unlist(lapply(btw_tissue, function(i){
+     getMarkers(i, cutOff = "FDR <= 0.1 & Log2FC >= 1")
+   }))
+markerStatus <- 
+  unlist(lapply(btw_status, function(i){
+     getMarkers(i, cutOff = "FDR <= 0.1 & Log2FC >= 1")
+   }))
+
+output <-
+  data.frame(cross_tissue = sapply(markerTissue, function(i){dim(unlist(i))[1]}),
+             cross_status = sapply(markerStatus, function(i){dim(unlist(i))[1]}))
+  
+DT::datatable(output,
+              caption = "significant DA peaks with log2FC >=1")
+```
 
 
