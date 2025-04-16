@@ -373,7 +373,7 @@ Differential peaks from lung memB cells are also enriched for immune receptor bi
 res <- readRDS("output/u19_output/GO_enrichment/lung_specific_memB_GO.RDS")
 res_list <- lapply(res, function(i){getEnrichmentTable(i)})
 res_genes <- lapply(res, function(i){getRegionGeneAssociations(i)})
-DT::datatable(matrix())
+#DT::datatable(matrix())
 titles <- c("GO: Biological Process", "GO: Molecular Functions")
 lapply(1:2, function(idx){
     selected <- 
@@ -534,7 +534,7 @@ res_genes <- lapply(res, function(i){getRegionGeneAssociations(i)})
 titles <- c("GO: Biological Process", 
             "GO: Cellular Component",
             "GO: Molecular Functions")
-DT::datatable(matrix())
+
 lapply(c(1,3), function(idx){
     selected <- 
     res_list[[idx]] %>% 
