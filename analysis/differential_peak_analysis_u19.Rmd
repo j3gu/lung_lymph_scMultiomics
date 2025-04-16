@@ -526,7 +526,7 @@ count_tbl <-
 
 Differential peaks from control lung Tregs are enriched for multiple terms related to regulation of chemokine production.
 
-```{r}
+```{r, results='asis'}
 res <- readRDS("output/u19_output/GO_enrichment/lung_control_specific_T_GO.RDS")
 res_list <- lapply(res, function(i){getEnrichmentTable(i)})
 res_genes <- lapply(res, function(i){getRegionGeneAssociations(i)})
