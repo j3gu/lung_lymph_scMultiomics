@@ -535,30 +535,37 @@ titles <- c("GO: Biological Process",
             "GO: Cellular Component",
             "GO: Molecular Functions")
 
-lapply(c(1,3), function(idx){
-    selected <- 
-    res_list[[idx]] %>% 
-      filter(p_adjust < 0.05) %>%
-        arrange(desc(fold_enrichment)) %>%
-          pull(id)
+lapply(c(1, 3), function(idx) {
+  selected <-
+    res_list[[idx]] %>%
+    filter(p_adjust < 0.05) %>%
+    arrange(desc(fold_enrichment)) %>%
+    pull(id)
   
-    gene_set <- unlist(get_overlapping_sets(res[[idx]], selected[1:length(selected)]))
-
-    htmltools::tagList(
-        DT::datatable(
-          res_list[[idx]] %>% dplyr::select(id, description,
-                        fold_enrichment, 
-                        p_adjust, 
-                        mean_tss_dist, 
-                        gene_set_size) %>%
-            filter(p_adjust < 0.05) %>%
-            arrange(desc(fold_enrichment)) %>%
-            mutate(fold_enrichment = round(fold_enrichment, 1),
-                   p_adjust = format(p_adjust, scientific = TRUE, digit = 2),
-                   overlapped_genes = gene_set) %>%
-            filter(duplicated(overlapped_genes) == FALSE),
-            caption = titles[idx])
-        )
+  gene_set <-
+    unlist(get_overlapping_sets(res[[idx]], selected[1:length(selected)]))
+  
+  htmltools::tagList(
+    DT::datatable(
+      res_list[[idx]] %>% dplyr::select(
+        id,
+        description,
+        fold_enrichment,
+        p_adjust,
+        mean_tss_dist,
+        gene_set_size
+      ) %>%
+        filter(p_adjust < 0.05) %>%
+        arrange(desc(fold_enrichment)) %>%
+        mutate(
+          fold_enrichment = round(fold_enrichment, 1),
+          p_adjust = format(p_adjust, scientific = TRUE, digit = 2),
+          overlapped_genes = gene_set
+        ) %>%
+        filter(duplicated(overlapped_genes) == FALSE),
+      caption = titles[idx]
+    )
+  )
 })
 
 # for(idx in c(1,3)){
