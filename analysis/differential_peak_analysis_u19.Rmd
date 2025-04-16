@@ -361,46 +361,45 @@ cl = simplifyGO(sig_go_ids)
 
 ![MemB GO BP terms](assets/MemB_GO_BP_clustering.png)
 
-![MemB GO MF terms]("assets/MemB_GO_MF_clustering.png)
+![MemB GO MF terms](assets/MemB_GO_MF_clustering.png)
 
 **A table of significant GO terms**
 
 Differential peaks from lung memB cells are enriched for neuron fate commitment, T cell recombination and apoptotic processes
 
 Differential peaks from lung memB cells are also enriched for immune receptor binding, metabolism, oxysterol binding, etc
-```{r}
+```{r, results='asis'}
 #res <- readRDS("output/u19_output/GO_enrichment/lung_control_specific_T_GO.RDS")
 res <- readRDS("output/u19_output/GO_enrichment/lung_specific_memB_GO.RDS")
 res_list <- lapply(res, function(i){getEnrichmentTable(i)})
 res_genes <- lapply(res, function(i){getRegionGeneAssociations(i)})
-
+DT::datatable(matrix())
 titles <- c("GO: Biological Process", "GO: Molecular Functions")
-for(idx in 1:2){
-  
-  selected <- 
+lapply(1:2, function(idx){
+    selected <- 
     res_list[[idx]] %>% 
       filter(p_adjust < 0.05) %>%
         arrange(desc(fold_enrichment)) %>%
           pull(id)
   
-  gene_set <- unlist(get_overlapping_sets(res[[idx]], selected[1:15]))
+    gene_set <- unlist(get_overlapping_sets(res[[idx]], selected[1:15]))
 
-  print(
-    DT::datatable(
-      res_list[[idx]] %>% dplyr::select(id, description,
-                    fold_enrichment, 
-                    p_adjust, 
-                    mean_tss_dist, 
-                    gene_set_size) %>%
-        filter(p_adjust < 0.05) %>%
-        arrange(desc(fold_enrichment)) %>% slice_head(n = 15) %>%
-        mutate(fold_enrichment = round(fold_enrichment, 1),
-               p_adjust = format(p_adjust, scientific = TRUE, digit = 2),
-               overlapped_genes = gene_set) %>%
-        filter(duplicated(overlapped_genes) == FALSE),
-        caption = titles[idx])
-  )
-}
+    htmltools::tagList(
+        DT::datatable(
+          res_list[[idx]] %>% dplyr::select(id, description,
+                        fold_enrichment, 
+                        p_adjust, 
+                        mean_tss_dist, 
+                        gene_set_size) %>%
+            filter(p_adjust < 0.05) %>%
+            arrange(desc(fold_enrichment)) %>% slice_head(n = 15) %>%
+            mutate(fold_enrichment = round(fold_enrichment, 1),
+                   p_adjust = format(p_adjust, scientific = TRUE, digit = 2),
+                   overlapped_genes = gene_set) %>%
+            filter(duplicated(overlapped_genes) == FALSE),
+            caption = titles[idx])
+        )
+})
 ```
 
 ### Cross-tissue comparison for asthma fine-mapped regions
@@ -535,32 +534,59 @@ res_genes <- lapply(res, function(i){getRegionGeneAssociations(i)})
 titles <- c("GO: Biological Process", 
             "GO: Cellular Component",
             "GO: Molecular Functions")
-for(idx in c(1,3)){
-  
-  selected <- 
+DT::datatable(matrix())
+lapply(c(1,3), function(idx){
+    selected <- 
     res_list[[idx]] %>% 
       filter(p_adjust < 0.05) %>%
         arrange(desc(fold_enrichment)) %>%
           pull(id)
   
-  gene_set <- unlist(get_overlapping_sets(res[[idx]], selected[1:length(selected)]))
+    gene_set <- unlist(get_overlapping_sets(res[[idx]], selected[1:length(selected)]))
 
-  print(
-    DT::datatable(
-      res_list[[idx]] %>% dplyr::select(id, description,
-                    fold_enrichment, 
-                    p_adjust, 
-                    mean_tss_dist, 
-                    gene_set_size) %>%
-        filter(p_adjust < 0.05) %>%
-        arrange(desc(fold_enrichment)) %>% 
-        mutate(fold_enrichment = round(fold_enrichment, 1),
-               p_adjust = format(p_adjust, scientific = TRUE, digit = 2),
-               overlapped_genes = gene_set) %>%
-        filter(duplicated(overlapped_genes) == FALSE),
-        caption = titles[idx])
-  )
-}
+    htmltools::tagList(
+        DT::datatable(
+          res_list[[idx]] %>% dplyr::select(id, description,
+                        fold_enrichment, 
+                        p_adjust, 
+                        mean_tss_dist, 
+                        gene_set_size) %>%
+            filter(p_adjust < 0.05) %>%
+            arrange(desc(fold_enrichment)) %>%
+            mutate(fold_enrichment = round(fold_enrichment, 1),
+                   p_adjust = format(p_adjust, scientific = TRUE, digit = 2),
+                   overlapped_genes = gene_set) %>%
+            filter(duplicated(overlapped_genes) == FALSE),
+            caption = titles[idx])
+        )
+})
+
+# for(idx in c(1,3)){
+#   
+#   selected <- 
+#     res_list[[idx]] %>% 
+#       filter(p_adjust < 0.05) %>%
+#         arrange(desc(fold_enrichment)) %>%
+#           pull(id)
+#   
+#   gene_set <- unlist(get_overlapping_sets(res[[idx]], selected[1:length(selected)]))
+# 
+#   print(
+#     DT::datatable(
+#       res_list[[idx]] %>% dplyr::select(id, description,
+#                     fold_enrichment, 
+#                     p_adjust, 
+#                     mean_tss_dist, 
+#                     gene_set_size) %>%
+#         filter(p_adjust < 0.05) %>%
+#         arrange(desc(fold_enrichment)) %>% 
+#         mutate(fold_enrichment = round(fold_enrichment, 1),
+#                p_adjust = format(p_adjust, scientific = TRUE, digit = 2),
+#                overlapped_genes = gene_set) %>%
+#         filter(duplicated(overlapped_genes) == FALSE),
+#         caption = titles[idx])
+#   )
+# }
 ```
 
 ### Cross-status comparison for asthma fine-mapped regions
