@@ -1,0 +1,168 @@
+---
+title: "understand_lung_specific_peaks"
+output: html_document
+date: '2025-04-22'
+---
+
+```{r setup, include=FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ArchR)
+library(ggVennDiagram)
+library(liftOver)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(ggrepel)
+source("code/link_variant_to_function.R")
+proj <- loadArchRProject("output/u19_analysis/u19_peaks_tissue/")
+```
+
+## Objectives
+
+The objective is to understand why lung-specific peaks in enrichment results do not show differential accessibility. What drives the differences in heritabiltiy enrichment between tissues? We have several hypotheses as below.
+
+1. Peak calling may be too conservative for spleens  
+2. Less variability in pooling samples to call peaks   
+3. Peaks do not pass FDR threshold with multiple testing burdens 
+
+We will use some positive controls to test these hypotheses: 1) Lung peaks with high peak calling scores  2) Lung peaks that contain GWAS SNPs for childhood-onset asthma with high z scores
+
+
+### Summarizing peaks uniquely detected in each tissue 
+```{r}
+load("output/u19_output/peakCalling/peaks_called_by_TissueCellType.RData")
+union_peaks <- proj@peakSet
+d_main <- list()
+d_main[["Lung_NK"]] <- d_major$Lung_NK
+d_main[["Spleen_NK"]] <- d_major$Spleen_NK
+d_main[["Lung_B"]] <- 
+  unique(GRanges(
+    as.character(c(d_major[["Lung_Naive_B"]], 
+                 d_major[["Lung_Memory_B"]]))
+  ))
+      
+d_main[["Spleen_B"]] <- 
+  unique(GRanges(
+    as.character(c(d_major[["Spleen_Naive_B"]], 
+                 d_major[["Spleen_Memory_B"]]))
+  ))
+```
+
+```{r message = F }
+ggVennDiagram(
+  lapply(d_main[c(1,2)], as.character)) + 
+  coord_flip()
+
+ggVennDiagram(
+  lapply(d_main[c(3,4)], as.character)) + 
+  coord_flip()
+```
+Out of 168K peaks unique to lung B cells, we focused on ~7K peaks with the highest normalized p-values in B cells compared to other cell types. 
+
+### Preparing positive control peaks 
+
+Set 1: top 5 lung-specific peaks with high peak calling quality
+```{r pressure, echo=FALSE}
+# get a set of lung-specific peaks with high peak calling quality
+lung_specificB <- 
+  setdiff(as.character(d_main$Lung_B),
+            as.character(d_main$Spleen_B))
+
+spleen_specificB <- 
+  setdiff(as.character(d_main$Spleen_B),
+          as.character(d_main$Lung_B))
+
+gr_sub <- proj@peakSet[na.omit(match(lung_specificB, as.character(proj@peakSet)))]
+spleenB <- proj@peakSet[na.omit(match(spleen_specificB, as.character(proj@peakSet)))]
+# check if any lung specific B cell peaks in spleens
+findOverlaps(gr_sub, d_main$Spleen_B)
+
+# subset peaks by retaining only those with the highest normalized p-values in B cells
+gr_B <- gr_sub[grepl("Lung_Memory_B", names(gr_sub))|
+                 grepl("Lung_Naive_B", names(gr_sub))]
+
+spleenB <- spleenB[grepl("Spleen_Memory_B", names(spleenB)) | 
+                     grepl("Spleen_Naive", names(spleenB))]
+
+# top 5 peaks ranked by peak score
+pset1 <- gr_B[order(gr_B$score, decreasing = T)[1:5],]
+pset1
+```
+**Comparing zscores for SNPs within peaks vs. peak scores** 
+
+Peak scores were defined as -log10(p-value) output from MACS2 normalized by sequencing depth across cell types. 
+
+We found ~400 out of 168K peaks contain COA GWAS SNPs and their z-scores mostly center around zero. For those with more deviated z scores, they tend to locate in peaks with low quality. 
+
+Comparing lung and spleen specific peaks, we found more COA GWAS SNPs in lung peaks have z scores deviated from zero. 
+
+```{r}
+# get a set of lung-specific peaks with SNPs in high z scores 
+f <- readRDS("~/cluster/projects/u19_multiomics/data/coa_gp3_finemapping_gwas_L5.rds")
+f_gr <- GRanges(seqnames = paste0("chr", f$chr),
+                IRanges(start = f$pos,
+                        end = f$pos+1))
+mcols(f_gr) <- f[, -4:-1]
+#liftOver to hg38
+ch=import.chain("~/resources/genomes/chain_files/hg19ToHg38.over.chain")
+seqlevelsStyle(f_gr) <- "UCSC"
+f_hg38_gr<- unlist(liftOver(f_gr, ch))
+
+overlapped <- mergeByOverlaps(gr_B, f_hg38_gr)
+overlapped_sp <- mergeByOverlaps(spleenB, f_hg38_gr)
+
+gginput <- rbind(data.frame(type = "LungOnly", score = overlapped$zscore),
+             data.frame(type = "SpleenOnly", score = overlapped_sp$zscore))
+
+plot(sort(overlapped$zscore),
+      main = "GWAS SNPs in specific peaks to lung (black) or spleen (red)",
+         ylab = "Sorted Z scores") + 
+  points(sort(overlapped_sp$zscore), col = "red")
+
+plot(y = overlapped$score,
+     x = overlapped$zscore,
+     ylab = "Peak score",
+     xlab = "SNP z-score")
+```
+
+Set 2: top 50 peaks ranked by absolute z-scores (|Z| > 2.3) of asthma GWAS SNPs within peaks 
+
+```{r}
+pset2 <- overlapped[order(abs(overlapped$zscore), decreasing = TRUE)[1:50], ]$gr_B
+head(pset2)
+```
+
+### Checking differential results for the selected peaks
+
+Set 1
+
+From the table of differential peak analyses, we see the five peaks only called in lung B cells with high quality do not have large fold change compared with spleen. 
+```{r, message = F}
+qlf <- readRDS("output/u19_output/diff_peak_analysis/cross_tissue_B_edgeR.RDS")
+print("Positive set 1:")
+top5_out <- qlf$table[na.omit(match(findOverlaps(pset1, union_peaks)@to, rownames(qlf$table))), ]
+top5_out
+```
+We further looked into how read counts in CPMs differ in those peaks across samples for each tissue. You can see there are reads mapped to those peak regions in spleen, but somehow they were not called as peaks. 
+```{r warning = F}
+y <- readRDS("output/u19_output/diff_peak_analysis/u19_B_DGEList_edgeR.RDS")
+
+peak_boxplot(y, peak_idx = rownames(top5_out))
+```
+Set 2
+
+Similar results were seen in the Set 2 peak. 
+```{r}
+print("Positive set 2:")
+qlf$table[na.omit(match(findOverlaps(pset2, union_peaks)@to, rownames(qlf$table))), ]
+```
+```{r warning=F, fig.width = 4}
+peak_boxplot(y, peak_idx = "205004")
+```
+
+### Review peak calling process
+
+ArchR makes pseudo-bulk replicates by bootstrapping and then call peaks with MACS2. It requires at least 2 pseudo-bulk replicates to have a peak call at each locus and the numeric significance cutoff for peaks to be at least 0.1. There could be bias from pseudo-bulk replicates that somehow calls many tissue specific peaks that are false positives. 
+
+
+
