@@ -519,15 +519,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeffabeb8ec8ea62df42ac1276f9a95f70c19c507dtargetblankffabeb8a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree7102fb601585ede25fee0d29ebf2ff037a3d1cdftargetblank7102fb6a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/ffabeb8ec8ea62df42ac1276f9a95f70c19c507d" target="_blank">ffabeb8</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/7102fb601585ede25fee0d29ebf2ff037a3d1cdf" target="_blank">7102fb6</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeffabeb8ec8ea62df42ac1276f9a95f70c19c507dtargetblankffabeb8a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree7102fb601585ede25fee0d29ebf2ff037a3d1cdftargetblank7102fb6a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -537,7 +537,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/ffabeb8ec8ea62df42ac1276f9a95f70c19c507d" target="_blank">ffabeb8</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/7102fb601585ede25fee0d29ebf2ff037a3d1cdf" target="_blank">7102fb6</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -691,6 +691,40 @@ Message
 Rmd
 </td>
 <td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/7102fb601585ede25fee0d29ebf2ff037a3d1cdf/analysis/lung_specific_peaks_vs_DA_analyses.Rmd" target="_blank">7102fb6</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+<td>
+bias in peak calling
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/lung_specific_peaks_vs_DA_analyses.html" target="_blank">a4592e7</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
 <a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/ffabeb8ec8ea62df42ac1276f9a95f70c19c507d/analysis/lung_specific_peaks_vs_DA_analyses.Rmd" target="_blank">ffabeb8</a>
 </td>
 <td>
@@ -729,32 +763,84 @@ for childhood-onset asthma with high z scores</p>
 <div id="summarizing-peaks-uniquely-detected-in-each-tissue"
 class="section level3">
 <h3>Summarizing peaks uniquely detected in each tissue</h3>
-<pre class="r"><code>load(&quot;output/u19_output/peakCalling/peaks_called_by_TissueCellType.RData&quot;)
-union_peaks &lt;- proj@peakSet
-d_main &lt;- list()
-d_main[[&quot;Lung_NK&quot;]] &lt;- d_major$Lung_NK
-d_main[[&quot;Spleen_NK&quot;]] &lt;- d_major$Spleen_NK
-d_main[[&quot;Lung_B&quot;]] &lt;- 
-  unique(GRanges(
-    as.character(c(d_major[[&quot;Lung_Naive_B&quot;]], 
-                 d_major[[&quot;Lung_Memory_B&quot;]]))
-  ))
-      
-d_main[[&quot;Spleen_B&quot;]] &lt;- 
-  unique(GRanges(
-    as.character(c(d_major[[&quot;Spleen_Naive_B&quot;]], 
-                 d_major[[&quot;Spleen_Memory_B&quot;]]))
-  ))</code></pre>
-<pre class="r"><code>ggVennDiagram(
-  lapply(d_main[c(1,2)], as.character)) + 
-  coord_flip()</code></pre>
 <p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>ggVennDiagram(
-  lapply(d_main[c(3,4)], as.character)) + 
-  coord_flip()</code></pre>
-<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-2-2.png" width="672" style="display: block; margin: auto;" />
-Out of 168K peaks unique to lung B cells, we focused on ~7K peaks with
-the highest normalized p-values in B cells compared to other cell
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-2-1">
+Past versions of unnamed-chunk-2-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-2-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-2-1.png" target="_blank">a4592e7</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-2-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-2-2">
+Past versions of unnamed-chunk-2-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-2-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-2-2.png" target="_blank">a4592e7</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Out of 168K peaks unique to lung B cells, we focused on ~7K peaks
+with the highest normalized p-values in B cells compared to other cell
 types.</p>
 </div>
 <div id="preparing-positive-control-peaks" class="section level3">
@@ -805,38 +891,85 @@ z-scores mostly center around zero. For those with more deviated z
 scores, they tend to locate in peaks with low quality.</p>
 <p>Comparing lung and spleen specific peaks, we found more COA GWAS SNPs
 in lung peaks have z scores deviated from zero.</p>
-<pre class="r"><code># get a set of lung-specific peaks with SNPs in high z scores 
-f &lt;- readRDS(&quot;~/cluster/projects/u19_multiomics/data/coa_gp3_finemapping_gwas_L5.rds&quot;)
-f_gr &lt;- GRanges(seqnames = paste0(&quot;chr&quot;, f$chr),
-                IRanges(start = f$pos,
-                        end = f$pos+1))
-mcols(f_gr) &lt;- f[, -4:-1]
-#liftOver to hg38
-ch=import.chain(&quot;~/resources/genomes/chain_files/hg19ToHg38.over.chain&quot;)
-seqlevelsStyle(f_gr) &lt;- &quot;UCSC&quot;
-f_hg38_gr&lt;- unlist(liftOver(f_gr, ch))
-
-overlapped &lt;- mergeByOverlaps(gr_B, f_hg38_gr)
-overlapped_sp &lt;- mergeByOverlaps(spleenB, f_hg38_gr)
-
-gginput &lt;- rbind(data.frame(type = &quot;LungOnly&quot;, score = overlapped$zscore),
-             data.frame(type = &quot;SpleenOnly&quot;, score = overlapped_sp$zscore))
-
-plot(sort(overlapped$zscore),
-      main = &quot;GWAS SNPs in specific peaks to lung (black) or spleen (red)&quot;,
-         ylab = &quot;Sorted Z scores&quot;) + 
-  points(sort(overlapped_sp$zscore), col = &quot;red&quot;)</code></pre>
 <p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-1">
+Past versions of unnamed-chunk-3-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-3-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-3-1.png" target="_blank">a4592e7</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre><code>integer(0)</code></pre>
-<pre class="r"><code>plot(y = overlapped$score,
-     x = overlapped$zscore,
-     ylab = &quot;Peak score&quot;,
-     xlab = &quot;SNP z-score&quot;)</code></pre>
 <p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-3-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-2">
+Past versions of unnamed-chunk-3-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-3-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-3-2.png" target="_blank">a4592e7</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <p>Set 2: top 50 peaks ranked by absolute z-scores (|Z| &gt; 2.3) of
 asthma GWAS SNPs within peaks</p>
-<pre class="r"><code>pset2 &lt;- overlapped[order(abs(overlapped$zscore), decreasing = TRUE)[1:50], ]$gr_B
-head(pset2)</code></pre>
 <pre><code>GRanges object with 6 ranges and 13 metadata columns:
                 seqnames              ranges strand |     score
                    &lt;Rle&gt;           &lt;IRanges&gt;  &lt;Rle&gt; | &lt;numeric&gt;
@@ -880,12 +1013,8 @@ class="section level3">
 <p>From the table of differential peak analyses, we see the five peaks
 only called in lung B cells with high quality do not have large fold
 change compared with spleen.</p>
-<pre class="r"><code>qlf &lt;- readRDS(&quot;output/u19_output/diff_peak_analysis/cross_tissue_B_edgeR.RDS&quot;)
-print(&quot;Positive set 1:&quot;)</code></pre>
 <pre><code>[1] &quot;Positive set 1:&quot;</code></pre>
-<pre class="r"><code>top5_out &lt;- qlf$table[na.omit(match(findOverlaps(pset1, union_peaks)@to, rownames(qlf$table))), ]</code></pre>
 <pre><code>Warning: package &#39;limma&#39; was built under R version 4.3.1</code></pre>
-<pre class="r"><code>top5_out</code></pre>
 <pre><code>             logFC   logCPM           F     PValue
 62816 -0.041441023 5.143313 0.332383890 0.79223709
 14742  0.168538507 4.445024 3.166543964 0.08326005
@@ -894,21 +1023,88 @@ print(&quot;Positive set 1:&quot;)</code></pre>
 14621  1.758545986 2.058012 4.610849044 0.04054034</code></pre>
 <p>We further looked into how read counts in CPMs differ in those peaks
 across samples for each tissue. You can see there are reads mapped to
-those peak regions in spleen, but somehow they were not called as
-peaks.</p>
-<pre class="r"><code>y &lt;- readRDS(&quot;output/u19_output/diff_peak_analysis/u19_B_DGEList_edgeR.RDS&quot;)
-
-peak_boxplot(y, peak_idx = rownames(top5_out))</code></pre>
-<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" />
-Set 2</p>
+those peak regions in spleen, but somehow they were not called as peaks.
+<img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-6-1">
+Past versions of unnamed-chunk-6-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-6-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-6-1.png" target="_blank">a4592e7</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Set 2</p>
 <p>Similar results were seen in the Set 2 peak.</p>
-<pre class="r"><code>print(&quot;Positive set 2:&quot;)</code></pre>
 <pre><code>[1] &quot;Positive set 2:&quot;</code></pre>
-<pre class="r"><code>qlf$table[na.omit(match(findOverlaps(pset2, union_peaks)@to, rownames(qlf$table))), ]</code></pre>
 <pre><code>            logFC   logCPM          F    PValue
 205004 -0.0291875 2.162244 0.02736533 0.8694975</code></pre>
-<pre class="r"><code>peak_boxplot(y, peak_idx = &quot;205004&quot;)</code></pre>
 <p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-8-1.png" width="384" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-8-1">
+Past versions of unnamed-chunk-8-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-8-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-8-1.png" target="_blank">a4592e7</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="review-peak-calling-process" class="section level3">
 <h3>Review peak calling process</h3>
@@ -925,7 +1121,6 @@ Session information
 </button>
 </p>
 <div id="workflowr-sessioninfo" class="collapse">
-<pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>R version 4.2.0 (2022-04-22)
 Platform: x86_64-pc-linux-gnu (64-bit)
 Running under: CentOS Linux 7 (Core)
