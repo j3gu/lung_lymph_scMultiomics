@@ -4,8 +4,8 @@ output: html_document
 date: '2025-04-22'
 ---
 
-```{r setup, include=FALSE, echo = FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
 library(ArchR)
 library(ggVennDiagram)
 library(liftOver)
