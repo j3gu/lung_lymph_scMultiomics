@@ -86,7 +86,7 @@ spleenB <- spleenB[grepl("Spleen_Memory_B", names(spleenB)) |
 
 # top 5 peaks ranked by peak score
 pset1 <- gr_B[order(gr_B$score, decreasing = T)[1:5],]
-pset1
+#pset1
 ```
 **Comparing zscores for SNPs within peaks vs. peak scores** 
 
@@ -129,7 +129,6 @@ Set 2: top 50 peaks ranked by absolute z-scores (|Z| > 2.3) of asthma GWAS SNPs 
 
 ```{r}
 pset2 <- overlapped[order(abs(overlapped$zscore), decreasing = TRUE)[1:50], ]$gr_B
-head(pset2)
 ```
 
 ### Checking differential results for the selected peaks
