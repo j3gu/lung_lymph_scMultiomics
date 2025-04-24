@@ -310,7 +310,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-04-15
+<strong>Last updated:</strong> 2025-04-23
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -357,15 +357,15 @@ results.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree47dd55f0534f1811f4127d273447de548afa1939targetblank47dd55fa">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeffabeb8ec8ea62df42ac1276f9a95f70c19c507dtargetblankffabeb8a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/47dd55f0534f1811f4127d273447de548afa1939" target="_blank">47dd55f</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/ffabeb8ec8ea62df42ac1276f9a95f70c19c507d" target="_blank">ffabeb8</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree47dd55f0534f1811f4127d273447de548afa1939targetblank47dd55fa"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeffabeb8ec8ea62df42ac1276f9a95f70c19c507dtargetblankffabeb8a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -375,7 +375,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/47dd55f0534f1811f4127d273447de548afa1939" target="_blank">47dd55f</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/ffabeb8ec8ea62df42ac1276f9a95f70c19c507d" target="_blank">ffabeb8</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -395,7 +395,6 @@ Ignored files:
 
 Untracked files:
     Untracked:  ArchRLogs/
-    Untracked:  PBMCSmall.zip
     Untracked:  Rplots.pdf
     Untracked:  analysis/.ipynb_checkpoints/
     Untracked:  analysis/ArchRLogs/
@@ -411,6 +410,7 @@ Untracked files:
     Untracked:  analysis/run_fastTopics_lungOnly.R
     Untracked:  analysis/test.pdf
     Untracked:  analysis/test_GO_enrichment.ipynb
+    Untracked:  analysis/test_differential_accessibility_MAST.ipynb
     Untracked:  analysis/u19_atac_fastTopics.Rmd
     Untracked:  analysis/u19_full_atac_fastTopics.Rmd
     Untracked:  analysis/u19_full_atac_fastTopics_k10.Rmd
@@ -424,28 +424,22 @@ Untracked files:
     Untracked:  code/link_variant_to_function.R
     Untracked:  code/make_plots.R
     Untracked:  code/run_GO_enrichment.R
+    Untracked:  code/run_MAST.R
     Untracked:  code/run_fastTopics.R
     Untracked:  code/run_magma.sh
     Untracked:  code/run_magma/
     Untracked:  code/run_topic_DE_analysis.R
+    Untracked:  ctwas_m6a_joint_m6a_PIP_0.8_genes.txt
     Untracked:  data/CRE_0_asthma_fine-mapping_summary.RDS
     Untracked:  data/CRE_0_asthma_fine-mapping_summary.RData
     Untracked:  data/CRE_0_asthma_fine-mapping_summary.csv
     Untracked:  data/CRE_0_asthma_fine-mapping_summary.txt
     Untracked:  data/DA_peaks_Tsub_vs_others.RDS
     Untracked:  data/DA_peaks_by_cell_type.RDS
-    Untracked:  data/TF_target_sizes_GRN.txt
     Untracked:  data/Tsuo2022_meta_analysis_asthma_risk_genes.csv
-    Untracked:  data/U19_T_cell_peaks_metadata.RDS
-    Untracked:  data/Wang_2020_T_cell_peaks_metadata.RDS
     Untracked:  data/annotated_scRNA_data.RDS
-    Untracked:  data/lung_GRN_CD4_T_edges.txt
-    Untracked:  data/lung_GRN_CD8_T_edges.txt
-    Untracked:  data/lung_GRN_Th17_edges.txt
-    Untracked:  data/lung_GRN_Treg_edges.txt
     Untracked:  output/annotation_reference.txt
     Untracked:  output/cross_celltypes_edgeR.RDS
-    Untracked:  output/cross_celltypes_lymphOnly_edgeR.RData
     Untracked:  output/fastTopics
     Untracked:  output/homer
     Untracked:  output/ldsc_enrichment
@@ -462,9 +456,7 @@ Untracked files:
     Untracked:  output/lung_specific_p2g_Naive_B.txt
     Untracked:  output/lung_specific_p2g_Treg.txt
     Untracked:  output/lung_specific_peak2genes.RDS
-    Untracked:  output/no_bkg/
     Untracked:  output/positions.bed
-    Untracked:  output/topic3/
     Untracked:  output/u19_analysis
     Untracked:  output/u19_output
     Untracked:  test.pdf
@@ -472,6 +464,7 @@ Untracked files:
 Unstaged changes:
     Modified:   analysis/U19_motif_analysis.ipynb
     Modified:   analysis/cross_tissue_DE_u19_fastTopics.Rmd
+    Modified:   analysis/differential_peak_analysis_u19.Rmd
     Modified:   analysis/gene_set_analysis_for_RNA_topics.Rmd
     Modified:   analysis/h2g_enrichment_u19.Rmd
     Modified:   analysis/identify_batch_effects_full_atac.Rmd
@@ -529,6 +522,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/ffabeb8ec8ea62df42ac1276f9a95f70c19c507d/analysis/index.Rmd" target="_blank">ffabeb8</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+<td>
+bias in peak calling
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/1411c56ee9410a5ba323561af2f9e79e7efc5481/docs/index.html" target="_blank">1411c56</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-15
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1712,13 +1739,13 @@ enrichment for TF targets from GRN</a></p>
 </div>
 <div id="linking-to-asthma-genetics" class="section level3">
 <h3>Linking to asthma genetics</h3>
-<p><a href="variants_to_function_u19.html">Identify cell-types with open
+<p><a href="variants_to_function_u19.html">identify cell-types with open
 chromatin in asthma fine-mapped regions</a></p>
 <p><a href="differential_peak_analysis_u19.html">differential analyses
 at genome-wide and specific loci</a></p>
-</div>
-<div id="slides-download" class="section level3">
-<h3>Slides download</h3>
+<p><a href="lung_specific_peaks_vs_DA_analyses.html">understand why
+lung-specific peaks not show differential accessibility</a> ### Slides
+download</p>
 </div>
 <div id="notes" class="section level3">
 <h3>Notes</h3>
