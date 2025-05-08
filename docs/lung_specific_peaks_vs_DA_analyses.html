@@ -12,7 +12,7 @@
 
 <meta name="date" content="2025-04-22" />
 
-<title>understand_lung_specific_peaks</title>
+<title>Converging heritability and differential accessibility analyses</title>
 
 <script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -36,6 +36,15 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/htmltools-fill-0.5.8.1/fill.css" rel="stylesheet" />
+<script src="site_libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<link href="site_libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet" />
+<script src="site_libs/datatables-binding-0.33/datatables.js"></script>
+<link href="site_libs/dt-core-1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="site_libs/dt-core-1.13.6/css/jquery.dataTables.extra.css" rel="stylesheet" />
+<script src="site_libs/dt-core-1.13.6/js/jquery.dataTables.min.js"></script>
+<link href="site_libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet" />
+<script src="site_libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
 <link href="site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet" />
 
@@ -358,7 +367,8 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">understand_lung_specific_peaks</h1>
+<h1 class="title toc-ignore">Converging heritability and differential
+accessibility analyses</h1>
 <h4 class="date">2025-04-22</h4>
 
 </div>
@@ -388,7 +398,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-04-23
+<strong>Last updated:</strong> 2025-05-08
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -519,15 +529,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeac59580d8db59faca8ad9148f0952b6e8e0a35aatargetblankac59580a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree582e66338c5b8eba5183dcb713b89a11cc35771etargetblank582e663a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/ac59580d8db59faca8ad9148f0952b6e8e0a35aa" target="_blank">ac59580</a>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/582e66338c5b8eba5183dcb713b89a11cc35771e" target="_blank">582e663</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstreeac59580d8db59faca8ad9148f0952b6e8e0a35aatargetblankac59580a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomj3gulunglymphscMultiomicstree582e66338c5b8eba5183dcb713b89a11cc35771etargetblank582e663a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -537,7 +547,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/ac59580d8db59faca8ad9148f0952b6e8e0a35aa" target="_blank">ac59580</a>.
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/tree/582e66338c5b8eba5183dcb713b89a11cc35771e" target="_blank">582e663</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -552,6 +562,7 @@ were generated:
 </p>
 <pre><code>
 Ignored files:
+    Ignored:    .RData
     Ignored:    analysis/.RData
     Ignored:    analysis/.Rhistory
 
@@ -563,13 +574,16 @@ Untracked files:
     Untracked:  analysis/GOBP_B_CELL_ACTIVATION_INVOLVED_IN_IMMUNE_RESPONSE.v2024.1.Hs.gmt
     Untracked:  analysis/Rplots.pdf
     Untracked:  analysis/cross_tissue_DE_u19_k10_fastTopics.Rmd
+    Untracked:  analysis/differential_gene expression_u19.Rmd
     Untracked:  analysis/differential_peak_analysis.Rmd
     Untracked:  analysis/full_atac_h2g_enrichment.Rmd
     Untracked:  analysis/identify_T_subsets.Rmd
     Untracked:  analysis/identify_batch_effects_full_atac_k8.Rmd
     Untracked:  analysis/linking_lung_celltype_OCRs_with_asthma_genetics_archive.Rmd
+    Untracked:  analysis/lung_specific_peaks_vs_DA_analyses_v2.Rmd
     Untracked:  analysis/run_fastTopics.R
     Untracked:  analysis/run_fastTopics_lungOnly.R
+    Untracked:  analysis/test.Rmd
     Untracked:  analysis/test.pdf
     Untracked:  analysis/test_GO_enrichment.ipynb
     Untracked:  analysis/test_differential_accessibility_MAST.ipynb
@@ -582,9 +596,11 @@ Untracked files:
     Untracked:  analysis/ukb-a-446.log
     Untracked:  analysis/ukb-a-446_GO_immune.log
     Untracked:  code/.ipynb_checkpoints/
+    Untracked:  code/archR/
     Untracked:  code/compute_pancreas_factors.R
     Untracked:  code/link_variant_to_function.R
     Untracked:  code/make_plots.R
+    Untracked:  code/munge_gwas_sumstats.sh
     Untracked:  code/run_GO_enrichment.R
     Untracked:  code/run_MAST.R
     Untracked:  code/run_fastTopics.R
@@ -621,6 +637,7 @@ Untracked files:
     Untracked:  output/positions.bed
     Untracked:  output/u19_analysis
     Untracked:  output/u19_output
+    Untracked:  test.html
     Untracked:  test.pdf
 
 Unstaged changes:
@@ -686,6 +703,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/582e66338c5b8eba5183dcb713b89a11cc35771e/analysis/lung_specific_peaks_vs_DA_analyses.Rmd" target="_blank">582e663</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-05-08
+</td>
+<td>
+wflow_publish(c("analysis/lung_specific_peaks_vs_DA_analyses.Rmd"))
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/j3gu/lung_lymph_scMultiomics/e849411e663d7426ddc8a5ef5cdc39bb61b1e8a6/docs/lung_specific_peaks_vs_DA_analyses.html" target="_blank">e849411</a>
+</td>
+<td>
+Jing Gu
+</td>
+<td>
+2025-04-23
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -778,25 +829,49 @@ bias in peak calling
 </div>
 </div>
 </div>
-<div id="objectives" class="section level2">
-<h2>Objectives</h2>
+<div id="objectives" class="section level1">
+<h1>Objectives</h1>
 <p>The objective is to understand why lung-specific peaks in enrichment
 results do not show differential accessibility. What drives the
 differences in heritabiltiy enrichment between tissues? We have several
 hypotheses as below.</p>
 <ol style="list-style-type: decimal">
-<li>Peak calling may be too conservative for spleens<br />
-</li>
-<li>Less variability in pooling samples to call peaks<br />
-</li>
-<li>Peaks do not pass FDR threshold with multiple testing burdens</li>
+<li>Peak calling may be too conservative for spleens</li>
 </ol>
+<ul>
+<li>peak calling p-value threshold: 0.1</li>
+<li>Similar percent of unique peaks called in spleen and lung for NK and
+B</li>
+<li>Much lower percent for T cells due to low number of T cells in
+spleens</li>
+</ul>
+<ol start="2" style="list-style-type: decimal">
+<li>Ignoring donor variability in calling peaks over pseudobulks</li>
+</ol>
+<ul>
+<li>Batch effects can potentially cause spurious peaks</li>
+<li>ArchR creates pseudo-replicates and call peaks in a sample-aware
+manner</li>
+</ul>
+<ol start="3" style="list-style-type: decimal">
+<li>Peaks do not pass FDR threshold with multiple testing burdens in
+differential analyses</li>
+</ol>
+</div>
+<div id="method" class="section level1">
+<h1>Method</h1>
 <p>We will use some positive controls to test these hypotheses: 1) Lung
 peaks with high peak calling scores 2) Lung peaks that contain GWAS SNPs
 for childhood-onset asthma with high z scores</p>
-<div id="summarizing-peaks-uniquely-detected-in-each-tissue"
-class="section level3">
-<h3>Summarizing peaks uniquely detected in each tissue</h3>
+</div>
+<div id="results" class="section level1">
+<h1>Results</h1>
+<div id="summarizing-peaks-called-in-each-tissue"
+class="section level2">
+<h2>Summarizing peaks called in each tissue</h2>
+<p>Lung immune cells have lower fraction of peaks overlapped with blood
+than with spleen immune cells.</p>
+<p>Lung vs. Spleen</p>
 <p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-2-1">
@@ -835,65 +910,11 @@ Jing Gu
 </table>
 </div>
 </div>
-<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-2-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-2-2">
-Past versions of unnamed-chunk-2-2.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-2-2" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-2-2.png" target="_blank">a4592e7</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-04-23
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Out of 168K peaks unique to lung B cells, we focused on ~7K peaks
-with the highest normalized p-values in B cells compared to other cell
-types.</p>
-</div>
-<div id="preparing-positive-control-peaks" class="section level3">
-<h3>Preparing positive control peaks</h3>
-<p>Set 1: top 5 lung-specific peaks with high peak calling quality</p>
-<pre><code>Hits object with 0 hits and 0 metadata columns:
-   queryHits subjectHits
-   &lt;integer&gt;   &lt;integer&gt;
-  -------
-  queryLength: 16771 / subjectLength: 140126</code></pre>
-<p><strong>Comparing zscores for SNPs within peaks vs. peak
-scores</strong></p>
-<p>Peak scores were defined as -log10(p-value) output from MACS2
-normalized by sequencing depth across cell types.</p>
-<p>We found ~400 out of 168K peaks contain COA GWAS SNPs and their
-z-scores mostly center around zero. For those with more deviated z
-scores, they tend to locate in peaks with low quality.</p>
-<p>Comparing lung and spleen specific peaks, we found more COA GWAS SNPs
-in lung peaks have z scores deviated from zero.</p>
+<p>Lung vs. Blood</p>
+<p>Lung and Blood peaks were called by different procedures. Lung peaks
+have fixed size (500bp), while blood peaks have sizes ranging from 200
+to 5K bp. To make comparison, I first made a union set of peaks and then
+comparing peaks from each tissue against the union set.</p>
 <p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-1">
@@ -932,110 +953,87 @@ Jing Gu
 </table>
 </div>
 </div>
-<pre><code>integer(0)</code></pre>
-<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-3-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-2">
-Past versions of unnamed-chunk-3-2.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-3-2" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-3-2.png" target="_blank">a4592e7</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-04-23
-</td>
-</tr>
-</tbody>
-</table>
 </div>
-</div>
-<p>Set 2: top 50 peaks ranked by absolute z-scores (|Z| &gt; 2.3) of
-asthma GWAS SNPs within peaks</p>
-</div>
-<div id="checking-differential-results-for-the-selected-peaks"
-class="section level3">
-<h3>Checking differential results for the selected peaks</h3>
-<p>Set 1</p>
+<div
+id="checking-differential-ca-results-for-top-peaks-called-only-in-lungs"
+class="section level2">
+<h2>Checking differential CA results for top peaks called only in
+lungs</h2>
+<p>*CA: chromatin accessibility</p>
+<div id="preparing-positive-control-peaks" class="section level3">
+<h3>Preparing positive control peaks</h3>
+<p>top 5 lung-specific peaks ranked by peak calling significance</p>
+<p>Selected cell types:</p>
+<ul>
+<li>B (Memory_B)</li>
+<li>T (CD8+ T)</li>
+</ul>
 <p>From the table of differential peak analyses, we see the five peaks
-only called in lung B cells with high quality do not have large fold
-change compared with spleen.</p>
-<pre><code>[1] &quot;Positive set 1:&quot;</code></pre>
-<pre><code>Warning: package &#39;limma&#39; was built under R version 4.3.1</code></pre>
-<pre><code>             logFC   logCPM           F     PValue
-62816 -0.041441023 5.143313 0.332383890 0.79223709
-14742  0.168538507 4.445024 3.166543964 0.08326005
-22837 -0.008858412 4.484598 0.006249968 0.93740749
-85884  0.293382484 3.643101 4.797172140 0.03479254
-14621  1.758545986 2.058012 4.610849044 0.04054034</code></pre>
-<p>We further looked into how read counts in CPMs differ in those peaks
-across samples for each tissue. You can see there are reads mapped to
-those peak regions in spleen, but somehow they were not called as peaks.
-<img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-6-1">
-Past versions of unnamed-chunk-6-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-6-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/j3gu/lung_lymph_scMultiomics/blob/a4592e7a7cb6725ec6fe125ce5139e9e8b807352/docs/figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-6-1.png" target="_blank">a4592e7</a>
-</td>
-<td>
-Jing Gu
-</td>
-<td>
-2025-04-23
-</td>
-</tr>
-</tbody>
-</table>
+only called in lung memory B cells with high quality do not have large
+fold change compared with spleen, and did not pass p-value thresholds.
+Noticeably, all five peaks have decent number of read counts in spleen,
+but they were missing in peak calling for spleen samples.</p>
+<pre><code>Loading required package: edgeR</code></pre>
+<pre><code>Loading required package: limma</code></pre>
+<pre><code>
+Attaching package: &#39;limma&#39;</code></pre>
+<pre><code>The following object is masked from &#39;package:BiocGenerics&#39;:
+
+    plotMA</code></pre>
+<pre><code>             logFC   logCPM         F     PValue
+109120 -0.05184564 3.888861 0.1740904 0.78953868
+191182  0.07945834 4.489175 0.6692661 0.41847111
+25479   0.09573716 3.775123 0.4308406 0.51558103
+62816  -0.04144102 5.143313 0.3323839 0.79223709
+14742   0.16853851 4.445024 3.1665440 0.08326005</code></pre>
+<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-5-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<p>From the table of differential peak analyses, we see the five peaks
+only called in lung CD8_T cells with high quality did not pass p-value
+thresholds. Three out of two peaks have comparable or higher mean reads
+in spleen, but they were missing in spleen.</p>
+<pre><code>            logFC   logCPM          F     PValue
+198930 -0.1076247 4.648426 0.50855795 0.48138003
+13336   0.1210320 4.167066 0.44920240 0.50793886
+179651  5.9207691 1.575136 4.21681589 0.06188397
+84783   0.3286604 2.323882 0.06753748 0.79924828
+123952  0.1494897 3.231486 0.27642318 0.60322072</code></pre>
+<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-7-1.png" width="1152" style="display: block; margin: auto;" /></p>
 </div>
 </div>
-<p>Set 2</p>
-<p>Similar results were seen in the Set 2 peak.</p>
-<pre><code>[1] &quot;Positive set 2:&quot;</code></pre>
-<pre><code>            logFC   logCPM          F    PValue
-205004 -0.0291875 2.162244 0.02736533 0.8694975</code></pre>
-<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-8-1.png" width="384" style="display: block; margin: auto;" /></p>
+<div id="reviewing-peak-calling-process" class="section level2">
+<h2>Reviewing peak calling process</h2>
+<p>ArchR makes pseudo-bulk replicates for each cell grouping (cell-type)
+by sampling cells and then pooling the data from each single cell. With
+the pseudo-bulk replicates generated, ArchR call peaks for each cell
+group with MACS2 in a sample-aware manner. Basically, for each cell
+group, ArchR generates a list of peak summits with genomic positions and
+score values using 5 pseudo-bulk replicates, and then extends 250 bp
+from each summit to define peaks, which results in fixed length of 501
+bp. The peaks called from each replicate can overlap with each other, so
+ArchR performs two rounds of filtering to generate non-overlapping
+peaks: 1) removal of peaks overlapping within each replicate 2) remove
+of peaks overlapping across replicates. Lastly, ArchR retain peaks with
+at least 2 pseudo-bulk replicates and above the numeric significance
+cutoff for peak scores (0.1).</p>
+<div id="factors-contributing-to-peaks-not-called-in-spleen"
+class="section level3">
+<h3>Factors contributing to peaks not called in spleen</h3>
+<p>Out of 17.8K peaks only called in lung Memory B cells, ~ 70% (12.8K)
+peaks were found to overlap with peaks originally called in spleen
+Memory B replicates. Half peaks were not detected in at least two
+replicates, while the other half were filtered out during the process of
+removing overlapped peaks.</p>
+<p>The genome tracks for top peaks overlapped with more than two spleen
+replicates show that the peaks at center (lung-specific) have stronger
+peaks nearby.</p>
+<pre><code>[1] &quot;Number of peaks specifically called in spleen Memory B replicates:&quot;</code></pre>
+<pre><code>  Sample nPeaks
+1   Rep1   5835
+2   Rep2   5877
+3   Rep3   3429
+4   Rep4   4940
+5   Rep5   7021</code></pre>
+<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-8-1">
 Past versions of unnamed-chunk-8-1.png
@@ -1073,14 +1071,55 @@ Jing Gu
 </table>
 </div>
 </div>
+<p><strong>CD8_T cells</strong></p>
+<p>Out of 23K peaks only called in lung CD8+ T cells, ~ 67% (15K) peaks
+were found to overlap with peaks originally called in spleen CD8+ T
+replicates. Two thirds of peaks were not detected in at least two
+replicates, while the remaining third were filtered out during the
+process of removing overlapped peaks.</p>
+<pre><code>[1] &quot;Number of peaks specifically called in spleen CD8_T replicates:&quot;</code></pre>
+<pre><code>  Sample nPeaks
+1   Rep1   4985
+2   Rep2   6917
+3   Rep3   5066
+4   Rep4   5659
+5   Rep5   4062</code></pre>
+<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
-<div id="review-peak-calling-process" class="section level3">
-<h3>Review peak calling process</h3>
-<p>ArchR makes pseudo-bulk replicates by bootstrapping and then call
-peaks with MACS2. It requires at least 2 pseudo-bulk replicates to have
-a peak call at each locus and the numeric significance cutoff for peaks
-to be at least 0.1. There could be bias from pseudo-bulk replicates that
-somehow calls many tissue specific peaks that are false positives.</p>
+</div>
+<div id="overlapping-peaks-only-called-in-lungs-with-coa-gwas-snps"
+class="section level2">
+<h2>Overlapping peaks only called in lungs with COA GWAS SNPs</h2>
+<p><strong>Memory B cells</strong></p>
+<p>Two sets of peaks:</p>
+<ol style="list-style-type: decimal">
+<li>lung-ambiguous: peaks found in more than two spleen replicates</li>
+<li>lung-only: peaks with low coverage in spleens or did not pass
+reproducibility</li>
+</ol>
+<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><strong>CD8+ T cells</strong>
+<img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The discrepancy between heritability enrichment and differential CA
+analyses is due to the peak calling process that by selecting smaller
+windows for defining peaks arises many peaks only called in one tissue.
+Comparing lung-only peaks and lung-ambiguous peaks, we see more GWAS
+SNPs with high z-scores in peaks that are clearly only called in lungs.
+For the enrichment analyses, we can add the ambiguous peaks to both
+tissues. Otherwise, we may focus on lung-blood comparison.</p>
+</div>
+<div id="overlapping-lung-specific-peaks-with-coa-gwas-snps"
+class="section level2">
+<h2>Overlapping lung-specific peaks with COA GWAS SNPs</h2>
+<p><strong>Differential CA peaks from wilcoxon ranksum
+tests</strong></p>
+<p>We check differential CA peaks aggregated from different cell types
+at each fdr threshold and plot quantile-quantile plots for GWAS SNPs
+within those peaks. The LD blocks were labeled on SNPs at z-score
+greater than 2.</p>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-f8d4fa1566d403c956dd" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-f8d4fa1566d403c956dd">{"x":{"filter":"none","vertical":false,"caption":"<caption>Number of differential CA peaks above fdr threshold<\/caption>","data":[["1","2","3"],[0.4,0.5,0.6],[609,1058,2412]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>fdr<\/th>\n      <th>nPeaks<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"fdr","targets":1},{"name":"nPeaks","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<p><img src="figure/lung_specific_peaks_vs_DA_analyses.Rmd/unnamed-chunk-12-2.png" width="672" style="display: block; margin: auto;" /></p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1109,9 +1148,9 @@ attached base packages:
 other attached packages:
  [1] edgeR_3.40.2                           
  [2] limma_3.58.0                           
- [3] ggrepel_0.9.6                          
- [4] tidyr_1.3.1                            
- [5] dplyr_1.1.4                            
+ [3] cowplot_1.1.3                          
+ [4] ggrepel_0.9.6                          
+ [5] eulerr_7.0.2                           
  [6] liftOver_1.22.0                        
  [7] Homo.sapiens_1.3.1                     
  [8] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
@@ -1122,64 +1161,66 @@ other attached packages:
 [13] AnnotationDbi_1.60.2                   
 [14] rtracklayer_1.58.0                     
 [15] gwascat_2.30.0                         
-[16] ggVennDiagram_1.5.2                    
-[17] rhdf5_2.42.1                           
-[18] SummarizedExperiment_1.28.0            
-[19] Biobase_2.58.0                         
-[20] MatrixGenerics_1.10.0                  
-[21] Rcpp_1.0.14                            
-[22] Matrix_1.6-5                           
-[23] GenomicRanges_1.50.2                   
-[24] GenomeInfoDb_1.34.9                    
-[25] IRanges_2.32.0                         
-[26] S4Vectors_0.36.2                       
-[27] BiocGenerics_0.44.0                    
-[28] matrixStats_1.5.0                      
-[29] data.table_1.17.0                      
-[30] stringr_1.5.1                          
-[31] plyr_1.8.9                             
-[32] magrittr_2.0.3                         
-[33] ggplot2_3.5.2                          
-[34] gtable_0.3.6                           
-[35] gtools_3.9.5                           
-[36] gridExtra_2.3                          
-[37] ArchR_1.0.2                            
+[16] rhdf5_2.42.1                           
+[17] SummarizedExperiment_1.28.0            
+[18] Biobase_2.58.0                         
+[19] MatrixGenerics_1.10.0                  
+[20] Rcpp_1.0.14                            
+[21] Matrix_1.6-5                           
+[22] GenomicRanges_1.50.2                   
+[23] GenomeInfoDb_1.34.9                    
+[24] IRanges_2.32.0                         
+[25] S4Vectors_0.36.2                       
+[26] BiocGenerics_0.44.0                    
+[27] matrixStats_1.5.0                      
+[28] data.table_1.17.0                      
+[29] stringr_1.5.1                          
+[30] plyr_1.8.9                             
+[31] magrittr_2.0.3                         
+[32] ggplot2_3.5.2                          
+[33] gtable_0.3.6                           
+[34] gtools_3.9.5                           
+[35] gridExtra_2.3                          
+[36] ArchR_1.0.2                            
+[37] dplyr_1.1.4                            
 [38] workflowr_1.7.1                        
 
 loaded via a namespace (and not attached):
- [1] colorspace_2.1-1         rjson_0.2.23             rprojroot_2.0.4         
- [4] XVector_0.38.0           fs_1.6.5                 rstudioapi_0.17.1       
- [7] farver_2.1.2             bit64_4.0.5              xml2_1.3.8              
-[10] codetools_0.2-20         splines_4.2.0            snpStats_1.48.0         
-[13] cachem_1.1.0             knitr_1.50               jsonlite_2.0.0          
-[16] Rsamtools_2.14.0         dbplyr_2.5.0             png_0.1-8               
-[19] graph_1.76.0             BiocManager_1.30.25      readr_2.1.5             
-[22] compiler_4.2.0           httr_1.4.7               fastmap_1.2.0           
-[25] cli_3.6.4                later_1.4.2              htmltools_0.5.8.1       
-[28] prettyunits_1.2.0        tools_4.2.0              glue_1.8.0              
-[31] GenomeInfoDbData_1.2.9   rappdirs_0.3.3           jquerylib_0.1.4         
-[34] vctrs_0.6.5              Biostrings_2.66.0        rhdf5filters_1.10.1     
-[37] xfun_0.52                ps_1.9.0                 lifecycle_1.0.4         
-[40] restfulr_0.0.15          statmod_1.5.0            XML_3.99-0.18           
-[43] getPass_0.2-2            zlibbioc_1.44.0          scales_1.3.0            
-[46] BSgenome_1.66.3          VariantAnnotation_1.44.1 hms_1.1.3               
-[49] promises_1.3.2           RBGL_1.74.0              parallel_4.2.0          
-[52] yaml_2.3.10              curl_6.2.2               memoise_2.0.1           
-[55] sass_0.4.9               biomaRt_2.54.1           stringi_1.8.4           
-[58] RSQLite_2.3.9            BiocIO_1.8.0             filelock_1.0.3          
-[61] BiocParallel_1.32.6      rlang_1.1.5              pkgconfig_2.0.3         
-[64] bitops_1.0-9             evaluate_1.0.3           lattice_0.22-7          
-[67] purrr_1.0.4              Rhdf5lib_1.20.0          labeling_0.4.3          
-[70] GenomicAlignments_1.34.1 bit_4.6.0                processx_3.8.6          
-[73] tidyselect_1.2.1         R6_2.6.1                 generics_0.1.3          
-[76] DelayedArray_0.24.0      DBI_1.2.3                pillar_1.10.2           
-[79] whisker_0.4.1            withr_3.0.2              survival_3.8-3          
-[82] KEGGREST_1.38.0          RCurl_1.98-1.17          tibble_3.2.1            
-[85] crayon_1.5.3             BiocFileCache_2.6.1      tzdb_0.5.0              
-[88] rmarkdown_2.29           progress_1.2.3           locfit_1.5-9.12         
-[91] blob_1.2.4               callr_3.7.3              git2r_0.33.0            
-[94] digest_0.6.37            httpuv_1.6.15            munsell_0.5.1           
-[97] bslib_0.9.0             </code></pre>
+  [1] BiocFileCache_2.6.1      polylabelr_0.3.0         splines_4.2.0           
+  [4] crosstalk_1.2.1          BiocParallel_1.32.6      digest_0.6.37           
+  [7] htmltools_0.5.8.1        memoise_2.0.1            BSgenome_1.66.3         
+ [10] tzdb_0.5.0               Biostrings_2.66.0        readr_2.1.5             
+ [13] prettyunits_1.2.0        colorspace_2.1-1         blob_1.2.4              
+ [16] rappdirs_0.3.3           xfun_0.52                callr_3.7.3             
+ [19] crayon_1.5.3             RCurl_1.98-1.17          jsonlite_2.0.0          
+ [22] graph_1.76.0             survival_3.8-3           VariantAnnotation_1.44.1
+ [25] glue_1.8.0               polyclip_1.10-7          zlibbioc_1.44.0         
+ [28] XVector_0.38.0           DelayedArray_0.24.0      Rhdf5lib_1.20.0         
+ [31] scales_1.3.0             DBI_1.2.3                progress_1.2.3          
+ [34] bit_4.6.0                DT_0.33                  htmlwidgets_1.6.4       
+ [37] httr_1.4.7               pkgconfig_2.0.3          XML_3.99-0.18           
+ [40] farver_2.1.2             sass_0.4.9               dbplyr_2.5.0            
+ [43] locfit_1.5-9.12          tidyselect_1.2.1         labeling_0.4.3          
+ [46] rlang_1.1.5              later_1.4.2              munsell_0.5.1           
+ [49] tools_4.2.0              cachem_1.1.0             cli_3.6.4               
+ [52] generics_0.1.3           RSQLite_2.3.9            evaluate_1.0.3          
+ [55] fastmap_1.2.0            yaml_2.3.10              processx_3.8.6          
+ [58] knitr_1.50               bit64_4.0.5              fs_1.6.5                
+ [61] purrr_1.0.4              KEGGREST_1.38.0          RBGL_1.74.0             
+ [64] whisker_0.4.1            xml2_1.3.8               biomaRt_2.54.1          
+ [67] compiler_4.2.0           rstudioapi_0.17.1        filelock_1.0.3          
+ [70] curl_6.2.2               png_0.1-8                tibble_3.2.1            
+ [73] statmod_1.5.0            bslib_0.9.0              stringi_1.8.4           
+ [76] ps_1.9.0                 lattice_0.22-7           vctrs_0.6.5             
+ [79] pillar_1.10.2            lifecycle_1.0.4          rhdf5filters_1.10.1     
+ [82] BiocManager_1.30.25      jquerylib_0.1.4          snpStats_1.48.0         
+ [85] bitops_1.0-9             httpuv_1.6.15            R6_2.6.1                
+ [88] BiocIO_1.8.0             promises_1.3.2           codetools_0.2-20        
+ [91] rprojroot_2.0.4          rjson_0.2.23             withr_3.0.2             
+ [94] GenomicAlignments_1.34.1 Rsamtools_2.14.0         GenomeInfoDbData_1.2.9  
+ [97] parallel_4.2.0           hms_1.1.3                tidyr_1.3.1             
+[100] rmarkdown_2.29           git2r_0.33.0             getPass_0.2-2           
+[103] restfulr_0.0.15         </code></pre>
 </div>
 </div>
 </div>
