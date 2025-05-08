@@ -428,6 +428,7 @@ z_list[[4]] <-
   mergeByOverlaps(
     proj@peakSet[sample(1:length(proj@peakSet), 2412)], f_hg38_gr)
 
+cutoffs <- c(cutoffs, 0)
 gginput_list <-
   lapply(1:length(z_list), function(i) {
     df = data.frame(

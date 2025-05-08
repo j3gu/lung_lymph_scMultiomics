@@ -23,10 +23,11 @@ TBD
 
 [Detecting GATA3+ subpopulations](DEG_analysis_Tsub.html)
 
-### Heritability enrichment
+### Heritability enrichment vs Differential peak analyses
 
 [test heritability enrichment for lung immune subsets](h2g_enrichment_u19.html)
 
+[converge enrichment and differnetial CA results](lung_specific_peaks_vs_DA_analyses.html)
 
 ### Topic analysis
 
