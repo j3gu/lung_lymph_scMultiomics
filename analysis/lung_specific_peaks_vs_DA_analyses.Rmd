@@ -273,7 +273,7 @@ barplot(table(table(summitDF$peaks)),
         main = "Half peaks were detected in at least two replicates",
         xlab = "Number of replicates", ylab = "Peak counts")
 
-ambigousPeaks <- 
+ambigousPeaksB <- 
   summitDF %>% group_by(peaks) %>% 
   dplyr::summarise(freq = n()) %>% filter(freq > 1) %>%
   dplyr::pull(peaks)
@@ -310,7 +310,7 @@ barplot(table(table(summitDF$peaks)),
         main = "One third peaks were detected in at least two replicates",
         xlab = "Number of replicates", ylab = "Peak counts")
 
-ambigousPeaks <- 
+ambigousPeaksT <- 
   summitDF %>% group_by(peaks) %>% 
   dplyr::summarise(freq = n()) %>% filter(freq > 1) %>%
   dplyr::pull(peaks)
@@ -340,7 +340,7 @@ f_hg38_gr<- unlist(liftOver(f_gr, ch))
 
 # all lung peaks
 lung_B$ambigous <- "lung-only"
-lung_B$ambigous[findOverlaps(lung_B, GRanges(ambigousPeaks))@from] <- "lung-ambiguous"
+lung_B$ambigous[findOverlaps(lung_B, GRanges(ambigousPeaksB))@from] <- "lung-ambiguous"
 #z_spleen <- mergeByOverlaps(spleen_B, f_hg38_gr)
 z_lung <- mergeByOverlaps(lung_B, f_hg38_gr)
 
@@ -362,8 +362,8 @@ ggplot(gginput,
 **CD8+ T cells**
 ```{r}
 # all lung peaks
-lung_T$ambigous <- "lung-ony"
-lung_T$ambigous[findOverlaps(lung_T, GRanges(ambigousPeaks))@from] <- "lung-ambiguous"
+lung_T$ambigous <- "lung-only"
+lung_T$ambigous[findOverlaps(lung_T, GRanges(ambigousPeaksT))@from] <- "lung-ambiguous"
 #z_spleen <- mergeByOverlaps(spleen_B, f_hg38_gr)
 z_lung <- mergeByOverlaps(lung_T, f_hg38_gr)
 
