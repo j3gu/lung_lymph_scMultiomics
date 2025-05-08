@@ -1,37 +1,53 @@
 ---
-title: "understand_lung_specific_peaks"
+title: "Converging heritability and differential accessibility analyses"
 output: html_document
 date: '2025-04-22'
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-library(ArchR)
-library(ggVennDiagram)
-library(liftOver)
-library(ggplot2)
 library(dplyr)
-library(tidyr)
+library(ArchR)
+library(liftOver)
+library(eulerr)
 library(ggrepel)
+library(cowplot)
+#library(IRanges)
 source("code/link_variant_to_function.R")
 proj <- loadArchRProject("output/u19_analysis/u19_peaks_tissue/")
+ch=import.chain("~/resources/genomes/chain_files/hg19ToHg38.over.chain")
 ```
 
-## Objectives
+# Objectives
 
 The objective is to understand why lung-specific peaks in enrichment results do not show differential accessibility. What drives the differences in heritabiltiy enrichment between tissues? We have several hypotheses as below.
 
-1. Peak calling may be too conservative for spleens  
-2. Less variability in pooling samples to call peaks   
-3. Peaks do not pass FDR threshold with multiple testing burdens 
+1. Peak calling may be too conservative for spleens 
+  - peak calling p-value threshold: 0.1 
+  - Similar percent of unique peaks called in spleen and lung for NK and B
+  - Much lower percent for T cells due to low number of T cells in spleens
 
+2. Ignoring donor variability in calling peaks over pseudobulks
+  - Batch effects can potentially cause spurious peaks
+  - ArchR creates pseudo-replicates and call peaks in a sample-aware manner
+  
+3. Peaks do not pass FDR threshold with multiple testing burdens in differential analyses
+
+# Method
 We will use some positive controls to test these hypotheses: 1) Lung peaks with high peak calling scores  2) Lung peaks that contain GWAS SNPs for childhood-onset asthma with high z scores
 
+# Results
 
-### Summarizing peaks uniquely detected in each tissue 
-```{r}
+## Summarizing peaks called in each tissue 
+
+Lung immune cells have lower fraction of peaks overlapped with blood than with spleen immune cells.
+
+Lung vs. Spleen
+```{r echo = F, eval = F}
+# get reproducible peaks, aggregate by major cell types and keep peaks in hg38
+# Benaglio et al. blood datasets in hg19
 load("output/u19_output/peakCalling/peaks_called_by_TissueCellType.RData")
-union_peaks <- proj@peakSet
+#union_peaks <- proj@peakSet
 d_main <- list()
 d_main[["Lung_NK"]] <- d_major$Lung_NK
 d_main[["Spleen_NK"]] <- d_major$Spleen_NK
@@ -46,55 +62,269 @@ d_main[["Spleen_B"]] <-
     as.character(c(d_major[["Spleen_Naive_B"]], 
                  d_major[["Spleen_Memory_B"]]))
   ))
+d_main[["Lung_T"]] <- 
+  unique(GRanges(
+    unlist(lapply(d_major[grep("T", names(d_major)[1:9])], function(i){as.character(i)}))
+  ))
+      
+d_main[["Spleen_T"]] <- 
+  unique(GRanges(
+    unlist(lapply(d_major[10:18][grep("T", names(d_major)[10:18])], function(i){as.character(i)}))
+  ))
+
+
+# add blood dataset into our list
+for(i in c("T", "B", "NK")){
+  bed <- read.table(sprintf("~/cluster/data/features/raw/Benaglio2023/merged/scBlood_%s.bed", i))
+  bed_gr <- GRanges(seqnames = bed$V1,
+                    IRanges(start = bed$V2, 
+                            end = bed$V3))
+  seqlevelsStyle(bed_gr) = "UCSC"
+  d_main[[paste0("Blood_", i)]] <- unlist(liftOver(bed_gr, ch))
+}
+
+d_main$Lung_Memory_B <- d_major$Lung_Memory_B
+d_main$Spleen_Memory_B <- d_major$Spleen_Memory_B
+d_main$Lung_CD8_T <- d_major$Lung_CD8_T
+d_main$Spleen_CD8_T <- d_major$Spleen_CD8_T
 ```
 
-```{r message = F }
-ggVennDiagram(
-  lapply(d_main[c(1,2)], as.character)) + 
-  coord_flip()
+```{r message = F}
+d_main <- readRDS("output/u19_output/peakCalling/reproducible_peaks_list_hg38.RDS")
+p1<-
+  euler(
+    c("Lung_B" = length(unique(d_main$Lung_B)) - length(intersect(d_main$Lung_B, d_main$Spleen_B)), 
+      "Spleen_B" = length(unique(d_main$Spleen_B)) - length(intersect(d_main$Lung_B, d_main$Spleen_B)),
+      "Lung_B&Spleen_B" = length(intersect(d_main$Lung_B, d_main$Spleen_B))))
+p2<-
+  euler(
+    c("Lung_T" = length(unique(d_main$Lung_T)) - length(intersect(d_main$Lung_T, d_main$Spleen_T)), 
+      "Spleen_T" = length(unique(d_main$Spleen_T)) - length(intersect(d_main$Lung_T, d_main$Spleen_T)),
+      "Lung_T&Spleen_T" = length(intersect(d_main$Lung_T, d_main$Spleen_T))))
+p3<-
+  euler(
+    c("Lung_NK" = length(unique(d_main$Lung_NK)) - length(intersect(d_main$Lung_NK, d_main$Spleen_NK)),
+      "Spleen_NK" = length(unique(d_main$Spleen_NK)) - length(intersect(d_main$Lung_NK, d_main$Spleen_NK)),
+      "Lung_NK&Spleen_NK" = length(intersect(d_main$Lung_NK, d_main$Spleen_NK)))
+    )
 
-ggVennDiagram(
-  lapply(d_main[c(3,4)], as.character)) + 
-  coord_flip()
+plot_grid(
+  plot(p3, quantitie = list(type = c("percent", "counts"))),
+  plot(p1, quantitie = list(type = c("percent", "counts"))),
+  plot(p2, quantitie = list(type = c("percent", "counts"))))
 ```
-Out of 168K peaks unique to lung B cells, we focused on ~7K peaks with the highest normalized p-values in B cells compared to other cell types. 
+Lung vs. Blood
+
+Lung and Blood peaks were called by different procedures. Lung peaks have fixed size (500bp), while blood peaks have sizes ranging from 200 to 5K bp. To make comparison, I first made a union set of peaks and then comparing peaks from each tissue against the union set. 
+
+```{r}
+# anchor on Lung B, mapping everything to Lung B
+get_eulerr_inputs <- function(set1, set2){
+  d_union <- unique(union(d_main[[set1]], d_main[[set2]]))
+  common <- intersect(unique(findOverlaps(d_main[[set1]], d_union)@to), 
+                unique(findOverlaps(d_main[[set2]], d_union)@to))
+  nset1_only = length(setdiff(findOverlaps(d_main[[set1]], d_union)@to, common))
+  nset2_only = length(setdiff(findOverlaps(d_main[[set2]], d_union)@to, common))
+  return(c(nset1_only, length(common), nset2_only))
+}
+
+p1<-
+  euler(
+    c("Lung_B" = get_eulerr_inputs("Lung_B", "Blood_B")[1],
+      "Blood_B" = get_eulerr_inputs("Lung_B", "Blood_B")[3],
+      "Lung_B&Blood_B" = get_eulerr_inputs("Lung_B", "Blood_B")[2])
+    )
+
+p2<-
+  euler(
+    c("Lung_T" = get_eulerr_inputs("Lung_T", "Blood_T")[1],
+      "Blood_T" = get_eulerr_inputs("Lung_T", "Blood_T")[3],
+      "Lung_T&Blood_T" = get_eulerr_inputs("Lung_T", "Blood_T")[2])
+    )
+
+p3<-
+  euler(
+    c("Lung_NK" = get_eulerr_inputs("Lung_NK", "Blood_NK")[1],
+      "Blood_NK" = get_eulerr_inputs("Lung_NK", "Blood_NK")[3],
+      "Lung_NK&Blood_NK" = get_eulerr_inputs("Lung_NK", "Blood_NK")[2])
+    )
+
+plot_grid(
+  plot(p3, quantitie = list(type = c("percent", "counts"))),
+  plot(p1, quantitie = list(type = c("percent", "counts"))),
+  plot(p2, quantitie = list(type = c("percent", "counts"))))
+```
+## Checking differential CA results for top peaks called only in lungs
+
+*CA: chromatin accessibility
 
 ### Preparing positive control peaks 
 
-Set 1: top 5 lung-specific peaks with high peak calling quality
-```{r pressure, echo=FALSE}
-# get a set of lung-specific peaks with high peak calling quality
-lung_specificB <- 
-  setdiff(as.character(d_main$Lung_B),
-            as.character(d_main$Spleen_B))
+top 5 lung-specific peaks ranked by peak calling significance
 
-spleen_specificB <- 
-  setdiff(as.character(d_main$Spleen_B),
-          as.character(d_main$Lung_B))
+Selected cell types: 
 
-gr_sub <- proj@peakSet[na.omit(match(lung_specificB, as.character(proj@peakSet)))]
-spleenB <- proj@peakSet[na.omit(match(spleen_specificB, as.character(proj@peakSet)))]
-# check if any lung specific B cell peaks in spleens
-findOverlaps(gr_sub, d_main$Spleen_B)
+* B (Memory_B)
+* T (CD8+ T)
 
-# subset peaks by retaining only those with the highest normalized p-values in B cells
-gr_B <- gr_sub[grepl("Lung_Memory_B", names(gr_sub))|
-                 grepl("Lung_Naive_B", names(gr_sub))]
+```{r}
+# get peaks unique called in lungs and with most significant peak scores in lung MemB
+lung_B <- subsetByOverlaps(
+  d_main$Lung_Memory_B,
+  setdiff(d_main$Lung_Memory_B,
+          d_main$Spleen_Memory_B))
 
-spleenB <- spleenB[grepl("Spleen_Memory_B", names(spleenB)) | 
-                     grepl("Spleen_Naive", names(spleenB))]
 
-# top 5 peaks ranked by peak score
-pset1 <- gr_B[order(gr_B$score, decreasing = T)[1:5],]
-#pset1
+spleen_B <- subsetByOverlaps(
+  d_main$Spleen_Memory_B,
+  setdiff(d_main$Spleen_Memory_B,
+          d_main$Lung_Memory_B))
+
+
+# top 5 peaks ranked by peak scores 
+lung_topB <- lung_B[names(lung_B) == "Lung_Memory_B"]
+lung_top5 <- lung_topB[order(lung_topB$score, decreasing = T)[1:5],]
+spleen_topB <- spleen_B[names(spleen_B) == "Spleen_Memory_B"] 
+spleen_top5 <- spleen_topB[order(spleen_topB$score, decreasing = T)[1:5],]
+
 ```
-**Comparing zscores for SNPs within peaks vs. peak scores** 
 
-Peak scores were defined as -log10(p-value) output from MACS2 normalized by sequencing depth across cell types. 
+From the table of differential peak analyses, we see the five peaks only called in lung memory B cells with high quality do not have large fold change compared with spleen, and did not pass p-value thresholds. Noticeably, all five peaks have decent number of read counts in spleen, but they were missing in peak calling for spleen samples.
 
-We found ~400 out of 168K peaks contain COA GWAS SNPs and their z-scores mostly center around zero. For those with more deviated z scores, they tend to locate in peaks with low quality. 
+```{r, warning = F, fig.height = 4, fig.width = 12}
+qlf <- readRDS("output/u19_output/diff_peak_analysis/cross_tissue_B_edgeR.RDS")
 
-Comparing lung and spleen specific peaks, we found more COA GWAS SNPs in lung peaks have z scores deviated from zero. 
+qlf$table[na.omit(match(findOverlaps(lung_top5, proj@peakSet)@to, rownames(qlf$table))), ]
+
+y <- readRDS("output/u19_output/diff_peak_analysis/u19_B_DGEList_edgeR.RDS")
+
+peak_boxplot(y[, grepl("Memory_B", rownames(y$samples))], 
+             peak_idx = findOverlaps(lung_top5, proj@peakSet)@to) + 
+  guides(fill = "none")
+```
+
+```{r}
+# get peaks unique called in lungs and with most significant peak scores in lung CD4_T
+lung_T <- subsetByOverlaps(
+  d_main$Lung_CD8_T,
+  setdiff(d_main$Lung_CD8_T,
+          d_main$Spleen_CD8_T))
+#lung_T <- lung_T[names(lung_T) == "Lung_CD8_T"]
+
+spleen_T <- subsetByOverlaps(
+  d_main$Spleen_CD8_T,
+  setdiff(d_main$Spleen_CD8_T,
+          d_main$Lung_CD8_T))
+#spleen_T <- spleen_T[names(spleen_T) == "Spleen_CD8_T"] 
+
+
+# top 5 peaks ranked by peak scores 
+lung_topT <- lung_T[names(lung_T) == "Lung_CD8_T"]
+lung_top5<- lung_topT[order(lung_topT$score, decreasing = T)[1:5],]
+spleen_topT <- spleen_T[names(spleen_T) == "Spleen_CD8_T"] 
+spleen_top5 <- spleen_topT[order(spleen_topT$score, decreasing = T)[1:5],]
+
+```
+
+
+From the table of differential peak analyses, we see the five peaks only called in lung CD8_T cells with high quality did not pass p-value thresholds. Three out of two peaks have comparable or higher mean reads in spleen, but they were missing in spleen. 
+
+```{r, warning = F, fig.height = 4, fig.width = 12}
+load("output/u19_output/diff_peak_analysis/cross_tissue_subsets_lymph_byCellType_edgeR.Rdata")
+
+tests$CD8_T[na.omit(match(findOverlaps(lung_top5, proj@peakSet)@to, rownames(tests$CD8_T))), ]
+
+peak_boxplot(outputs$CD8_T, 
+             peak_idx = findOverlaps(lung_top5, proj@peakSet)@to) + 
+  guides(fill = "none")
+```
+
+
+## Reviewing peak calling process
+
+ArchR makes pseudo-bulk replicates for each cell grouping (cell-type) by sampling cells and then pooling the data from each single cell. With the pseudo-bulk replicates generated, ArchR call peaks for each cell group with MACS2 in a sample-aware manner. Basically, for each cell group, ArchR generates a list of peak summits with genomic positions and score values using 5 pseudo-bulk replicates, and then extends 250 bp from each summit to define peaks, which results in fixed length of 501 bp. The peaks called from each replicate can overlap with each other, so ArchR performs two rounds of filtering to generate non-overlapping peaks: 1) removal of peaks overlapping within each replicate 2) remove of peaks overlapping across replicates. Lastly, ArchR retain peaks with at least 2 pseudo-bulk replicates and above the numeric significance cutoff for peak scores (0.1). 
+
+### Factors contributing to peaks not called in spleen 
+
+Out of 17.8K peaks only called in lung Memory B cells, ~ 70% (12.8K) peaks were found to overlap with peaks originally called in spleen Memory B replicates. Half peaks were not detected in at least two replicates, while the other half were filtered out during the process of removing overlapped peaks. 
+
+The genome tracks for top peaks overlapped with more than two spleen replicates show that the peaks at center (lung-specific) have stronger peaks nearby. 
+```{r}
+# load summit files of replicates for Spleen Mem B cells
+summitFiles <- 
+lapply(c("SMO.1", "SMO.4", "SMO.10", "COB.7", "COB.10"), function(i){
+  readRDS(sprintf("output/u19_analysis/u19_peaks_tissue/PeakCalls/ReplicateCalls/Spleen_Memory_B._.%s-summits.rds", i))})
+
+names(summitFiles) <- c("SMO.1", "SMO.4", "SMO.10", "COB.7", "COB.10")
+summitList <-
+  lapply(names(summitFiles), function(i){
+    peaks = unique(as.character(subsetByOverlaps(lung_B, summitFiles[[i]] + 250)))
+    return(data.frame(Sample = i, peaks))
+  })
+
+print("Number of peaks specifically called in spleen Memory B replicates:")
+data.frame(
+  Sample = paste0("Rep", 1:5),
+  nPeaks = unlist(lapply(summitList, nrow)))
+
+summitDF <- do.call(rbind, summitList)
+
+barplot(table(table(summitDF$peaks)), 
+        main = "Half peaks were detected in at least two replicates",
+        xlab = "Number of replicates", ylab = "Peak counts")
+
+ambigousPeaks <- 
+  summitDF %>% group_by(peaks) %>% 
+  dplyr::summarise(freq = n()) %>% filter(freq > 1) %>%
+  dplyr::pull(peaks)
+
+negCtrl_gr <- lung_B[!as.character(lung_B) %in% summitDF$peaks]
+negCtrl_gr <- negCtrl_gr[names(negCtrl_gr) == "Lung_Memory_B"]
+neg_top  <- negCtrl_gr[order(negCtrl_gr$score, decreasing = TRUE)[1:10], ]
+```
+
+**CD8_T cells**
+
+Out of 23K peaks only called in lung CD8+ T cells, ~ 67% (15K) peaks were found to overlap with peaks originally called in spleen CD8+ T replicates. Two thirds of peaks were not detected in at least two replicates, while the remaining third were filtered out during the process of removing overlapped peaks. 
+
+```{r}
+summitFiles <- 
+lapply(c("COB.10", "COB.7", "COB.9", "SMO.1", "SMO.4"), function(i){
+  readRDS(sprintf("output/u19_analysis/u19_peaks_tissue/PeakCalls/ReplicateCalls/Spleen_CD8_T._.%s-summits.rds", i))})
+
+names(summitFiles) <- c("COB.10", "COB.7", "COB.9", "SMO.1", "SMO.4")
+summitList <-
+  lapply(names(summitFiles), function(i){
+    peaks = unique(as.character(subsetByOverlaps(lung_T, summitFiles[[i]] + 250)))
+    return(data.frame(Sample = i, peaks))
+  })
+
+print("Number of peaks specifically called in spleen CD8_T replicates:")
+data.frame(
+  Sample = paste0("Rep", 1:5),
+  nPeaks = unlist(lapply(summitList, nrow)))
+
+summitDF <- do.call(rbind, summitList)
+
+barplot(table(table(summitDF$peaks)), 
+        main = "One third peaks were detected in at least two replicates",
+        xlab = "Number of replicates", ylab = "Peak counts")
+
+ambigousPeaks <- 
+  summitDF %>% group_by(peaks) %>% 
+  dplyr::summarise(freq = n()) %>% filter(freq > 1) %>%
+  dplyr::pull(peaks)
+```
+
+
+## Overlapping peaks only called in lungs with COA GWAS SNPs
+
+**Memory B cells**
+
+Two sets of peaks: 
+
+1. lung-ambiguous: peaks found in more than two spleen replicates
+2. lung-only: peaks with low coverage in spleens or did not pass reproducibility 
 
 ```{r}
 # get a set of lung-specific peaks with SNPs in high z scores 
@@ -108,60 +338,155 @@ ch=import.chain("~/resources/genomes/chain_files/hg19ToHg38.over.chain")
 seqlevelsStyle(f_gr) <- "UCSC"
 f_hg38_gr<- unlist(liftOver(f_gr, ch))
 
-overlapped <- mergeByOverlaps(gr_B, f_hg38_gr)
-overlapped_sp <- mergeByOverlaps(spleenB, f_hg38_gr)
+# all lung peaks
+lung_B$ambigous <- "lung-only"
+lung_B$ambigous[findOverlaps(lung_B, GRanges(ambigousPeaks))@from] <- "lung-ambiguous"
+#z_spleen <- mergeByOverlaps(spleen_B, f_hg38_gr)
+z_lung <- mergeByOverlaps(lung_B, f_hg38_gr)
 
-gginput <- rbind(data.frame(type = "LungOnly", score = overlapped$zscore),
-             data.frame(type = "SpleenOnly", score = overlapped_sp$zscore))
 
-plot(sort(overlapped$zscore),
-      main = "GWAS SNPs in specific peaks to lung (black) or spleen (red)",
-         ylab = "Sorted Z scores") + 
-  points(sort(overlapped_sp$zscore), col = "red")
+gginput <- data.frame(score = z_lung$zscore,
+                      type = z_lung$ambigous)
 
-plot(y = overlapped$score,
-     x = overlapped$zscore,
-     ylab = "Peak score",
-     xlab = "SNP z-score")
+# Q-Q plot colored by peak sets
+ggplot(gginput, 
+       aes(sample = score, color = type)) + 
+  stat_qq() + 
+  stat_qq_line(col = "blue") + 
+  theme_bw(base_size = 10) + 
+  ylab("GWAS SNP z-scores") + 
+  xlab("Theoretical quantiles") + 
+  ggtitle("Lung-only peaks in Memory B cells contains slightly more SNPs at higher z-scores")
 ```
 
-Set 2: top 50 peaks ranked by absolute z-scores (|Z| > 2.3) of asthma GWAS SNPs within peaks 
-
+**CD8+ T cells**
 ```{r}
-pset2 <- overlapped[order(abs(overlapped$zscore), decreasing = TRUE)[1:50], ]$gr_B
+# all lung peaks
+lung_T$ambigous <- "lung-ony"
+lung_T$ambigous[findOverlaps(lung_T, GRanges(ambigousPeaks))@from] <- "lung-ambiguous"
+#z_spleen <- mergeByOverlaps(spleen_B, f_hg38_gr)
+z_lung <- mergeByOverlaps(lung_T, f_hg38_gr)
+
+
+gginput <- data.frame(score = z_lung$zscore,
+                      type = z_lung$ambigous)
+
+# Q-Q plot colored by peak sets
+ggplot(gginput, 
+       aes(sample = score, color = type)) + 
+  stat_qq() + 
+  stat_qq_line(col = "blue") + 
+  theme_bw(base_size = 10) + 
+  ylab("Z-scores for GWAS SNPs within peaks") + 
+  xlab("Theoretical quantiles") + 
+  ggtitle("Lung-only peaks in CD8+ T cells are enriched with SNPs at higher z-scores")
 ```
 
-### Checking differential results for the selected peaks
 
-Set 1
+The discrepancy between heritability enrichment and differential CA analyses is due to the peak calling process that by selecting smaller windows for defining peaks arises many peaks only called in one tissue. Comparing lung-only peaks and lung-ambiguous peaks, we see more GWAS SNPs with high z-scores in peaks that are clearly only called in lungs. For the enrichment analyses, we can add the ambiguous peaks to both tissues. Otherwise, we may focus on lung-blood comparison. 
 
-From the table of differential peak analyses, we see the five peaks only called in lung B cells with high quality do not have large fold change compared with spleen. 
-```{r, message = F}
-qlf <- readRDS("output/u19_output/diff_peak_analysis/cross_tissue_B_edgeR.RDS")
-print("Positive set 1:")
-top5_out <- qlf$table[na.omit(match(findOverlaps(pset1, union_peaks)@to, rownames(qlf$table))), ]
-top5_out
-```
-We further looked into how read counts in CPMs differ in those peaks across samples for each tissue. You can see there are reads mapped to those peak regions in spleen, but somehow they were not called as peaks. 
+## Overlapping lung-specific peaks with COA GWAS SNPs
+
+**Differential CA peaks from wilcoxon ranksum tests**
+
+We check differential CA peaks aggregated from different cell types at each fdr threshold and plot quantile-quantile plots for GWAS SNPs within those peaks. The LD blocks were labeled on SNPs at z-score greater than 2.
 ```{r warning = F}
-y <- readRDS("output/u19_output/diff_peak_analysis/u19_B_DGEList_edgeR.RDS")
 
-peak_boxplot(y, peak_idx = rownames(top5_out))
+load("output/u19_analysis/u19_peaks_tissue/u19_peaks_by_tissue_celltype_DA.RData")
+cutoffs = c(0.4, 0.5, 0.6)
+
+# Subset lung specific peaks by different FDR cutoffs
+diff_outs <- 
+  lapply(cutoffs, function(i){
+    unlist(
+      lapply(btw_tissue[c(1, 3, 4, 5, 6)], function(j){
+          return(rownames(unlist(getMarkers(j, paste0(cutOff = "FDR <= ", i)))))
+      }))
+  })
+
+markerPeaks <- list()
+for(i in 1:length(diff_outs)){
+  idx <- unlist(
+    lapply(strsplit(as.character(diff_outs[[i]]), "[.]"), function(j) {j[2]}))
+  markerPeaks[[i]] <- proj@peakSet[as.numeric(idx)]
+}
+
+DT::datatable(
+  data.frame(
+    fdr = cutoffs,
+    nPeaks = sapply(markerPeaks, length)),
+  caption = "Number of differential CA peaks above fdr threshold"
+)
+# Overlap lung-specific peaks with GWAS SNPs
+z_list <- 
+  lapply(markerPeaks, function(i){
+    mergeByOverlaps(i, f_hg38_gr)
+  })
+
+# create a random set of peaks as background
+z_list[[4]] <- 
+  mergeByOverlaps(
+    proj@peakSet[sample(1:length(proj@peakSet), 2412)], f_hg38_gr)
+
+gginput_list <-
+  lapply(1:length(z_list), function(i) {
+    df = data.frame(
+      fdr = cutoffs[i],
+      score = z_list[[i]]$zscore,
+      locus = z_list[[i]]$locus
+    )
+  })
+gginput <- do.call(rbind, gginput_list)
+# tests_fdr <- 
+#   lapply(tests, function(i){
+#     for(c in c(0.8, 0.9)){
+#       fdr = p.adjust(i$PValue, method = "fdr")
+#       print(quantile(fdr))
+#       i[, paste0("fdr_", c)] = fdr <= c}
+#     print(apply(i[, 5:6], 2, sum))
+#     return(i)})
+
+
+# Q-Q plot colored by peak sets
+qq_plot <-
+  ggplot(gginput %>% filter(fdr != 0.7), 
+         aes(sample = score, 
+             color = factor(fdr))) + 
+    stat_qq(size = 0.6) + 
+    stat_qq_line(col = "blue")
+plot_data <- ggplot_build(qq_plot)$data[[1]]
+plot_data$label <- ifelse(plot_data$sample >= 2, gginput$locus, "")
+qq_plot_labeled <- 
+  ggplot(plot_data, 
+         aes(x = theoretical, y = sample, 
+             color = factor(group),
+             label = label))+ 
+  geom_point(size = 0.6) + 
+  geom_label_repel(max.overlaps = 20) + 
+  #scale_color_brewer(palette = "Set1") + 
+  #scale_color_manual(values =  c("tomato1", "tomato2", "tomato3", "tomato4")) + 
+  scale_color_manual(
+    values = c("#8DA0CB", "#66C2A5", "#FC8D62", "#E78AC3"),
+    labels = c("random", "fdr0.4", "fdr0.5", "fdr0.6")) + 
+  theme_bw(base_size = 12) + 
+  theme(legend.position = "bottom") + 
+  ylab("Z-scores for GWAS SNPs within peaks") + 
+  xlab("Theoretical quantiles") + 
+  ggtitle("Differential CA peaks above fdr 0.6 contain more SNPs with high z scores")
+
+qq_plot_labeled
 ```
-Set 2
 
-Similar results were seen in the Set 2 peak. 
-```{r}
-print("Positive set 2:")
-qlf$table[na.omit(match(findOverlaps(pset2, union_peaks)@to, rownames(qlf$table))), ]
-```
-```{r warning=F, fig.width = 4}
-peak_boxplot(y, peak_idx = "205004")
-```
 
-### Review peak calling process
 
-ArchR makes pseudo-bulk replicates by bootstrapping and then call peaks with MACS2. It requires at least 2 pseudo-bulk replicates to have a peak call at each locus and the numeric significance cutoff for peaks to be at least 0.1. There could be bias from pseudo-bulk replicates that somehow calls many tissue specific peaks that are false positives. 
+
+
+
+
+
+
+
+
 
 
 
